@@ -1,0 +1,6 @@
+interface:
+  display_name: "Prosperity 4 Strategy Engineer"
+  short_description: "Reusable workflow for building and diagnosing valid Prosperity 4 trading strategies"
+  default_prompt: "Use the Prosperity 4 Strategy Engineer skill to separate official current Prosperity 4 facts from older repo inspiration, classify each product, identify the dominant failure mode, propose the smallest defensible strategy change, and state exactly what the next backtest should confirm."
+policy:
+  allow_implicit_invocation: true
