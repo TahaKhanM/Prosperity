@@ -60,3 +60,39 @@ A typical strategy task is done only when:
 - the relevant local backtest command has been identified or run,
 - the expected effect on PnL, inventory, or execution is clearly stated,
 - next validation steps are named.
+
+## Codex multi-agent operating model
+
+This repository uses project-scoped custom agents and role skills.
+
+### Canonical role set
+- `competition_research`
+- `repo_librarian`
+- `alpha_miner`
+- `execution_risk`
+- `strategy_engineer`
+- `validator`
+
+### Role boundaries
+- Only `strategy_engineer` may edit trader code unless explicitly instructed otherwise.
+- `competition_research` owns official current competition facts, syntax/interface facts, stale-assumption checks, and unknown tracking.
+- `repo_librarian` owns public-repo discovery, pattern extraction, architecture notes, and stale-pattern warnings.
+- `alpha_miner` owns local dataset analysis, signal discovery, regime/state slicing, and passive vs aggressive monetization mapping.
+- `execution_risk` owns fill sensitivity, queue assumptions, inventory diagnostics, drawdown decomposition, and counterfactual quote studies.
+- `validator` owns benchmark reruns, baseline comparisons, robustness assessment, and final ship or reject recommendation.
+
+### Mandatory role order
+1. `competition_research`
+2. `repo_librarian` when external pattern search is relevant
+3. `alpha_miner`
+4. `execution_risk`
+5. `strategy_engineer`
+6. `validator`
+
+### Non-negotiable rules
+- Do all current strategy work in `prosperity_rust_backtester/`.
+- Treat `Trader1/` as legacy reference only.
+- Non-code role outputs must be written under `prosperity-research/`.
+- Implementation changes must be narrow, attributable, and submission-compatible.
+- One strategy iteration equals one dominant change.
+- No role except `strategy_engineer` may edit files under `prosperity_rust_backtester/traders/`.
