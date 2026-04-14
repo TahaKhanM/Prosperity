@@ -5,20 +5,32 @@ Date: 2026-04-14
 Scope:
 - baseline: `prosperity_rust_backtester/traders/round1_baseline_v1.py`
 - lower-concentration fallback: `prosperity_rust_backtester/traders/round1_candidate_v2.py`
-- prior ship: `prosperity_rust_backtester/traders/round1_overhaul_v3.py`
-- new contenders:
-  - `prosperity_rust_backtester/traders/round1_overhaul_v5.py`
-  - `prosperity_rust_backtester/traders/round1_overhaul_v6.py`
-  - `prosperity_rust_backtester/traders/round1_overhaul_v7.py`
+- prior ships:
+  - `prosperity_rust_backtester/traders/round1_overhaul_v8.py`
+  - `prosperity_rust_backtester/traders/round1_overhaul_v10.py`
+- new contenders from this pass:
+  - `prosperity_rust_backtester/traders/round1_overhaul_v12.py`
+  - `prosperity_rust_backtester/traders/round1_overhaul_v13.py`
+  - `prosperity_rust_backtester/traders/round1_overhaul_v14.py`
+  - `prosperity_rust_backtester/traders/round1_overhaul_v15.py`
+  - `prosperity_rust_backtester/traders/round1_overhaul_v16.py`
+  - `prosperity_rust_backtester/traders/round1_overhaul_v17.py`
+  - `prosperity_rust_backtester/traders/round1_overhaul_v18.py`
+  - `prosperity_rust_backtester/traders/round1_overhaul_v19.py`
+  - `prosperity_rust_backtester/traders/round1_overhaul_v20.py`
+  - `prosperity_rust_backtester/traders/round1_overhaul_v21.py`
+  - `prosperity_rust_backtester/traders/round1_overhaul_v22.py`
 
 ## Bottom Line
 
-- `round1_overhaul_v6.py` is the new local best ship.
-- `round1_overhaul_v5.py` confirms that Pepper trade processing contains useful secondary signal, but only a small amount.
-- `round1_overhaul_v6.py` wins because it fixes the more important issue:
-  - the Pepper fair curve in `v3` was too coarse by session phase.
-- `round1_overhaul_v7.py` is rejected.
-  - The extra residual × imbalance overlay added tactical complexity without beating `v6`.
+- `round1_overhaul_v22.py` is the new current best ship.
+- The gain is real because it improves all required modes and the entire improvement still comes from Ash.
+- `round1_overhaul_v12.py` is the warning case:
+  - Ash signal is real,
+  - but an overcomplicated directional translation can still lose money.
+- `round1_overhaul_v13.py` validated the Ash bottleneck.
+- `round1_overhaul_v17.py` validated book-aware Ash quoting.
+- `round1_overhaul_v20.py` validated fair-based Ash inventory clearing as the next bottleneck.
 
 ## Score Under Stress
 
@@ -26,33 +38,31 @@ Scope:
 | --- | ---: | ---: | ---: | ---: |
 | Baseline | `152,305.5` | `156,131.0` | `159,915.5` | n/a |
 | Candidate v2 | `239,372.0` | `239,584.0` | `216,731.5` | `227,724.0` |
-| Overhaul v3 | `282,373.0` | `282,340.0` | `245,303.0` | `259,507.0` |
-| Overhaul v5 | `282,407.0` | `282,374.0` | `245,314.0` | `259,542.0` |
-| Overhaul v6 | `282,974.0` | `282,941.0` | `245,673.0` | `259,990.0` |
-| Overhaul v7 | `282,920.0` | `282,887.0` | `245,630.0` | `259,919.0` |
+| Overhaul v8 | `283,576.0` | `283,543.0` | `246,168.0` | `260,683.0` |
+| Overhaul v10 | `283,766.0` | `283,733.0` | `246,184.0` | `260,765.0` |
+| Overhaul v12 | `280,326.0` | not run | not run | not run |
+| Overhaul v13 | `286,236.0` | `286,224.0` | `247,519.0` | `261,973.0` |
+| Overhaul v14 | `286,971.0` | `286,916.0` | `247,998.0` | `262,604.0` |
+| Overhaul v15 | `286,851.0` | not run | not run | not run |
+| Overhaul v16 | `286,963.0` | not run | not run | not run |
+| Overhaul v17 | `287,714.0` | `287,714.0` | `247,998.0` | `262,803.0` |
+| Overhaul v18 | `287,664.0` | not run | not run | not run |
+| Overhaul v19 | `287,768.0` | not run | not run | not run |
+| Overhaul v20 | `287,940.0` | not run | not run | not run |
+| Overhaul v21 | `287,993.0` | `287,993.0` | `248,108.0` | `263,032.0` |
+| Overhaul v22 | `288,401.0` | `288,401.0` | `248,290.0` | `263,370.0` |
+
+## Deltas Versus `v10`
+
+| Strategy | default | `worse` | `none` | `worse + q=0.35` |
+| --- | ---: | ---: | ---: | ---: |
+| `v13 - v10` | `+2,470.0` | `+2,491.0` | `+1,335.0` | `+1,208.0` |
+| `v14 - v10` | `+3,205.0` | `+3,183.0` | `+1,814.0` | `+1,839.0` |
+| `v22 - v10` | `+4,635.0` | `+4,668.0` | `+2,106.0` | `+2,605.0` |
 
 Interpretation:
-- `v5` validates the tape overlay, but only by `+34 / +34 / +11 / +35` over `v3`.
-- `v6` is the real upgrade:
-  - `+601 / +601 / +370 / +483` over `v3`
-  - `+567 / +567 / +359 / +448` over `v5`
-- `v7` gives back `54 / 54 / 43 / 71` versus `v6`.
-
-## Concentration Profile
-
-### Pepper default inventory
-
-| Strategy | Avg abs pos | Time `|pos| >= 60` | Time `|pos| >= 70` | First `|pos| >= 78` |
-| --- | ---: | ---: | ---: | --- |
-| Candidate v2 | `58.66` | `45.58%` | `20.23%` | much later than overhaul family |
-| Overhaul v3 | `78.96` | `99.94%` | `99.94%` | `[900, 1000, 300]` |
-| Overhaul v5 | `78.96` | `99.94%` | `99.94%` | `[900, 1000, 300]` |
-| Overhaul v6 | `78.88` | `99.94%` | `99.94%` | `[900, 1000, 300]` |
-| Overhaul v7 | effectively unchanged from `v6` | effectively unchanged | effectively unchanged | effectively unchanged |
-
-Interpretation:
-- None of the post-`v3` upgrades reduce the basic Pepper concentration.
-- The winning change set is better understood as a cleaner exploit of the same local generator, not a safer posture.
+- These are not another `+100` to `+200` Pepper refinements.
+- The best candidate clears every required mode by a meaningfully larger margin than the `v8 -> v10` steps did.
 
 ## Product-Level Risk Read
 
@@ -60,62 +70,136 @@ Interpretation:
 
 | Strategy | `ASH_COATED_OSMIUM` | `INTARIAN_PEPPER_ROOT` |
 | --- | ---: | ---: |
-| Candidate v2 | `38,318.0` | `201,054.0` |
-| Overhaul v3 | `45,608.0` | `236,765.0` |
-| Overhaul v5 | `45,608.0` | `236,799.0` |
-| Overhaul v6 | `45,608.0` | `237,366.0` |
-| Overhaul v7 | `45,608.0` | `237,312.0` |
+| Overhaul v10 | `45,608.0` | `238,158.0` |
+| Overhaul v13 | `48,078.0` | `238,158.0` |
+| Overhaul v14 | `48,813.0` | `238,158.0` |
+| Overhaul v22 | `50,243.0` | `238,158.0` |
 
 ### `none` contribution
 
 | Strategy | `ASH_COATED_OSMIUM` | `INTARIAN_PEPPER_ROOT` |
 | --- | ---: | ---: |
-| Candidate v2 | `10,627.0` | `206,104.5` |
-| Overhaul v3 | `10,262.0` | `235,041.0` |
-| Overhaul v5 | `10,262.0` | `235,052.0` |
-| Overhaul v6 | `10,262.0` | `235,411.0` |
-| Overhaul v7 | `10,262.0` | `235,368.0` |
+| Overhaul v10 | `10,262.0` | `235,922.0` |
+| Overhaul v13 | `11,597.0` | `235,922.0` |
+| Overhaul v14 | `12,076.0` | `235,922.0` |
+| Overhaul v22 | `12,368.0` | `235,922.0` |
+
+### `worse + q=0.35` contribution
+
+| Strategy | `ASH_COATED_OSMIUM` | `INTARIAN_PEPPER_ROOT` |
+| --- | ---: | ---: |
+| Overhaul v10 | `23,316.0` | `237,449.0` |
+| Overhaul v14 | `25,155.0` | `237,449.0` |
+| Overhaul v22 | `25,921.0` | `237,449.0` |
 
 Interpretation:
-- All new gain is still Pepper.
-- Ash remains stable but unchanged across `v3` through `v7`.
-- The post-`v3` contest was a Pepper fair-model contest, not a portfolio rebalance.
+- `v22` still improves only Ash.
+- Pepper is deliberately unchanged, which keeps the attribution clean.
 
-## What Each New Variant Taught
+## Fill-Quality Read
 
-### `round1_overhaul_v5.py`
+### Default Ash own-trade counts
 
-- Useful lesson:
-  - prior market-trade processing contains some real Pepper state information.
-- Risk conclusion:
-  - that signal is too small to justify large tactical rewrites by itself.
+| Strategy | Ash buy trades | Ash buy qty | Ash sell trades | Ash sell qty |
+| --- | ---: | ---: | ---: | ---: |
+| Overhaul v10 | `665` | `3,307` | `661` | `3,278` |
+| Overhaul v14 | `795` | `4,216` | `764` | `4,167` |
 
-### `round1_overhaul_v6.py`
+### `none` Ash own-trade counts
 
-- Useful lesson:
-  - fixing the Pepper phase curve matters more than adding more tactical logic.
-- Risk conclusion:
-  - the cleaner fair model improves score without making the architecture materially more brittle.
+| Strategy | Ash buy trades | Ash buy qty | Ash sell trades | Ash sell qty |
+| --- | ---: | ---: | ---: | ---: |
+| Overhaul v10 | `187` | `1,060` | `173` | `1,026` |
+| Overhaul v14 | `306` | `1,806` | `273` | `1,760` |
 
-### `round1_overhaul_v7.py`
+Interpretation:
+- The new Ash sleeve improves robust aggressive monetization, not just optimistic passive matching.
+- That is exactly the kind of change that had been missing in the `v10` lineage.
 
-- Useful lesson:
-  - residual × imbalance interactions are real in research, but the trader already had enough tactical conditioning.
-- Risk conclusion:
-  - adding that layer on top of `v6` increased complexity faster than it improved monetization.
+## Candidate Risk Notes
 
-## Main Remaining Risks
+### `round1_overhaul_v12.py`
 
-1. The core local edge is still a Pepper generator story, not a diversified two-product story.
-2. The data set is still only three local Round 1 days.
-3. If live Pepper is materially less template-like, `candidate_v2` remains the safer fallback.
-4. Ash still looks improvable, but not enough to outweigh the current Pepper concentration in the total score.
+Why it failed:
+- It changed too many Ash components at once.
+- It turned a real Ash signal into an over-opinionated directional state machine.
+- Default deterioration showed that the fair-to-order translation was wrong even though the research direction was useful.
+
+### `round1_overhaul_v13.py`
+
+Why it worked:
+- It kept the Ash generator story unchanged.
+- It only tightened take logic, quote offsets, and position use.
+
+Why it lost to `v14`:
+- It was still slightly too conservative.
+
+### `round1_overhaul_v14.py`
+
+Why it is better:
+- It pushes the `v13` Ash execution improvement further without touching Pepper.
+- It improves all required modes.
+- It gives the strategy a second edge without inventing a fragile new market story.
+
+Main remaining risks:
+1. Pepper is still the dominant driver of total PnL.
+2. The local Round 1 sample is still only three days.
+3. Ash is improved, but still partially exposed to matching-quality assumptions.
+4. The official backtester may still differ in ways the local stress modes do not capture.
+
+### `round1_overhaul_v15.py`
+
+Why it failed:
+- It implemented the deep-report idea of a safe-regime Ash directional skew.
+- The added directional lean did not beat the simpler `v14` Ash execution layer.
+- That is evidence against pushing Ash toward a more directional hidden-pattern story locally.
+
+### `round1_overhaul_v16.py`
+
+Why it failed:
+- It implemented the deep-report idea of a symmetric Pepper recycle–reacquire layer.
+- The branch only produced a near-tie to `v14` and did not surpass it.
+- This suggests the local reacquire opportunity is either too small or too unstable to justify more Pepper state complexity right now.
+
+### `round1_overhaul_v17.py`
+
+Why it worked:
+- It replaced fixed Ash passive offsets with explicit positive-edge join/undercut logic around the live book.
+- That lifted default, `worse`, and queue stress without changing Pepper.
+
+Why it was not the final winner:
+- It did not improve `none`.
+- That meant quote placement improved, but Ash capacity release was still a bottleneck.
+
+### `round1_overhaul_v20.py`
+
+Why it worked:
+- It switched large-inventory Ash clearing from the hard anchor toward current fair.
+- That improved Ash across all three local days and established that recycling capacity was the next real bottleneck.
+
+Why it was not the final winner:
+- The hybrid clear reference still left money on the table relative to the fully fair-based `v22` variant.
+
+### `round1_overhaul_v22.py`
+
+Why it is better:
+- It combines:
+  - book-aware Ash quoting,
+  - stronger wide-spread Ash sizing,
+  - and fair-based Ash inventory clearing.
+- It improves every required mode over `v14`.
+- It adds no new Pepper complexity and no new Ash hidden-pattern story.
+
+Main remaining risks:
+1. Pepper is still the dominant driver of total PnL.
+2. The local Round 1 sample is still only three days.
+3. Ash still depends on the competition’s permissive anchored-maker environment.
+4. Official matching could still be harsher than local `none` and queue stress capture.
 
 ## Execution-Risk Verdict
 
-- `round1_overhaul_v6.py` is the best current ship if the goal is strongest local evidence-weighted performance.
-- `round1_overhaul_v6.py` is not a de-risked design.
-- The correct description is:
-  - more faithful to the observed Pepper generator than `v3`,
-  - slightly more profitable than `v3`,
-  - still a high-conviction competition-specific Pepper carry-and-recycle strategy.
+- **SHIP** `round1_overhaul_v22.py`
+- Keep `round1_overhaul_v14.py` as the prior clean control.
+- Keep `round1_overhaul_v20.py` as the key intermediate branch that identified Ash fair-based recycling as the dominant new bottleneck.
+- Keep `round1_overhaul_v16.py` only as a near-tie research branch for future official-focused Pepper work.
+- Keep `round1_candidate_v2.py` as the lower-concentration fallback.
