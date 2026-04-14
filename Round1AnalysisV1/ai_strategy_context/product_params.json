@@ -1,0 +1,299 @@
+{
+  "round": 1,
+  "generated": "2026-04-14T14:17:40.635483",
+  "products": {
+    "ASH_COATED_OSMIUM": {
+      "position_limit": 80,
+      "classification": "STABLE",
+      "within_day_cv": 0.000459,
+      "has_drift": false,
+      "drift_per_day": 0,
+      "recommended_strategy": "Fixed Fair Value Market Making",
+      "fair_value": {
+        "best_estimator": "mm_mid",
+        "stds": {
+          "simple_mid": 4.8582,
+          "microprice": 4.8483,
+          "wall_mid": 4.7538,
+          "mm_mid": 4.7523
+        },
+        "mm_size_threshold": 10
+      },
+      "spread": {
+        "mean": 16.18,
+        "p25": 16.0,
+        "p50": 16.0,
+        "p75": 18.0,
+        "take_edge": 4.0,
+        "passive_edge": 5.33
+      },
+      "mean_reversion": {
+        "lag1_acf": -0.4937,
+        "verdict": "MEAN REVERTING"
+      },
+      "best_signal": "wall_delta",
+      "signals": {
+        "ret1": {
+          "corr_h1": -0.4937,
+          "corr_h5": -0.4559,
+          "corr_h20": -0.385,
+          "hit_rate": 0.1228,
+          "use": true,
+          "direction": "contrarian"
+        },
+        "z20": {
+          "corr_h1": -0.5423,
+          "corr_h5": -0.5091,
+          "corr_h20": -0.4406,
+          "hit_rate": 0.1994,
+          "use": true,
+          "direction": "contrarian"
+        },
+        "micro_delta": {
+          "corr_h1": 0.4987,
+          "corr_h5": 0.4647,
+          "corr_h20": 0.3991,
+          "hit_rate": 0.2963,
+          "use": true,
+          "direction": "momentum"
+        },
+        "wall_delta": {
+          "corr_h1": 0.5881,
+          "corr_h5": 0.553,
+          "corr_h20": 0.4667,
+          "hit_rate": 0.439,
+          "use": true,
+          "direction": "momentum"
+        },
+        "mm_delta": {
+          "corr_h1": 0.5536,
+          "corr_h5": 0.5146,
+          "corr_h20": 0.4311,
+          "hit_rate": 0.0738,
+          "use": true,
+          "direction": "momentum"
+        },
+        "imbalance": {
+          "corr_h1": -0.0765,
+          "corr_h5": -0.079,
+          "corr_h20": -0.0662,
+          "hit_rate": 0.1389,
+          "use": true,
+          "direction": "contrarian"
+        },
+        "spread_chg": {
+          "corr_h1": -0.0339,
+          "corr_h5": -0.034,
+          "corr_h20": -0.0342,
+          "hit_rate": 0.2181,
+          "use": true,
+          "direction": "contrarian"
+        }
+      },
+      "spikes": {
+        "count": 61,
+        "per_10k_ticks": 22.1,
+        "avg_magnitude": 4.29,
+        "reversion_tradeable": true
+      },
+      "periodicities": [
+        {
+          "lag": 5,
+          "acf": 0.0155
+        },
+        {
+          "lag": 18,
+          "acf": 0.0133
+        },
+        {
+          "lag": 40,
+          "acf": -0.0141
+        },
+        {
+          "lag": 73,
+          "acf": 0.0197
+        },
+        {
+          "lag": 95,
+          "acf": -0.0233
+        },
+        {
+          "lag": 104,
+          "acf": 0.0179
+        },
+        {
+          "lag": 112,
+          "acf": 0.015
+        },
+        {
+          "lag": 130,
+          "acf": 0.0167
+        }
+      ],
+      "daily_stats": [
+        {
+          "day": -2,
+          "open": 10000.0,
+          "close": 9993.5,
+          "low": 9984.5,
+          "high": 10012.0,
+          "mean": 9998.2,
+          "std": 4.7
+        },
+        {
+          "day": -1,
+          "open": 9992.0,
+          "close": 10002.0,
+          "low": 9986.5,
+          "high": 10013.5,
+          "mean": 10000.8,
+          "std": 3.8
+        },
+        {
+          "day": 0,
+          "open": 10003.0,
+          "close": 10007.0,
+          "low": 9981.5,
+          "high": 10017.5,
+          "mean": 10001.6,
+          "std": 5.2
+        }
+      ],
+      "simulation": {
+        "max_position": 0,
+        "pct_at_limit": 0.0,
+        "mtm_pnl": 0.0
+      }
+    },
+    "INTARIAN_PEPPER_ROOT": {
+      "position_limit": 80,
+      "classification": "DRIFTING",
+      "within_day_cv": 0.025161,
+      "has_drift": true,
+      "drift_per_day": 1000.0,
+      "recommended_strategy": "Dynamic / Rolling Fair Value Market Making",
+      "fair_value": {
+        "best_estimator": "wall_mid",
+        "stds": {
+          "simple_mid": 866.1518,
+          "microprice": 866.1548,
+          "wall_mid": 866.1437,
+          "mm_mid": 866.1492
+        },
+        "mm_size_threshold": 10
+      },
+      "spread": {
+        "mean": 13.05,
+        "p25": 12.0,
+        "p50": 13.0,
+        "p75": 14.0,
+        "take_edge": 3.0,
+        "passive_edge": 4.33
+      },
+      "mean_reversion": {
+        "lag1_acf": -0.0072,
+        "verdict": "NEUTRAL"
+      },
+      "best_signal": "z20",
+      "signals": {
+        "ret1": {
+          "corr_h1": -0.0072,
+          "corr_h5": -0.0039,
+          "corr_h20": -0.0017,
+          "hit_rate": 0.1019,
+          "use": false,
+          "direction": "contrarian"
+        },
+        "z20": {
+          "corr_h1": -0.0704,
+          "corr_h5": -0.0391,
+          "corr_h20": -0.0149,
+          "hit_rate": 0.2398,
+          "use": true,
+          "direction": "contrarian"
+        },
+        "micro_delta": {
+          "corr_h1": 0.0395,
+          "corr_h5": 0.0191,
+          "corr_h20": -0.0059,
+          "hit_rate": 0.2694,
+          "use": true,
+          "direction": "momentum"
+        },
+        "wall_delta": {
+          "corr_h1": 0.0671,
+          "corr_h5": 0.0299,
+          "corr_h20": 0.004,
+          "hit_rate": 0.3208,
+          "use": true,
+          "direction": "momentum"
+        },
+        "mm_delta": {
+          "corr_h1": 0.0687,
+          "corr_h5": 0.0281,
+          "corr_h20": 0.0113,
+          "hit_rate": 0.1513,
+          "use": true,
+          "direction": "momentum"
+        },
+        "imbalance": {
+          "corr_h1": -0.0151,
+          "corr_h5": -0.0032,
+          "corr_h20": 0.0072,
+          "hit_rate": 0.1164,
+          "use": false,
+          "direction": "contrarian"
+        },
+        "spread_chg": {
+          "corr_h1": -0.0048,
+          "corr_h5": -0.0045,
+          "corr_h20": -0.0024,
+          "hit_rate": 0.1918,
+          "use": false,
+          "direction": "contrarian"
+        }
+      },
+      "spikes": {
+        "count": 131,
+        "per_10k_ticks": 47.3,
+        "avg_magnitude": 25.82,
+        "reversion_tradeable": true
+      },
+      "periodicities": [],
+      "daily_stats": [
+        {
+          "day": -2,
+          "open": 9998.5,
+          "close": 11001.5,
+          "low": 9998.5,
+          "high": 11001.5,
+          "mean": 10500.6,
+          "std": 287.9
+        },
+        {
+          "day": -1,
+          "open": 10998.5,
+          "close": 11998.0,
+          "low": 10998.0,
+          "high": 12001.0,
+          "mean": 11501.4,
+          "std": 287.6
+        },
+        {
+          "day": 0,
+          "open": 11998.5,
+          "close": 13000.0,
+          "low": 11998.5,
+          "high": 13000.5,
+          "mean": 12501.0,
+          "std": 288.2
+        }
+      ],
+      "simulation": {
+        "max_position": 80,
+        "pct_at_limit": 22.4,
+        "mtm_pnl": 132895.0
+      }
+    }
+  }
+}
