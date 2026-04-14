@@ -5,149 +5,117 @@ Date: 2026-04-14
 Scope:
 - baseline: `prosperity_rust_backtester/traders/round1_baseline_v1.py`
 - lower-concentration fallback: `prosperity_rust_backtester/traders/round1_candidate_v2.py`
-- prior ships:
-  - `prosperity_rust_backtester/traders/round1_overhaul_v1.py`
-  - `prosperity_rust_backtester/traders/round1_overhaul_v2.py`
-- new redesigns:
-  - `prosperity_rust_backtester/traders/round1_overhaul_v3.py`
-  - `prosperity_rust_backtester/traders/round1_overhaul_v4.py`
+- prior ship: `prosperity_rust_backtester/traders/round1_overhaul_v3.py`
+- new contenders:
+  - `prosperity_rust_backtester/traders/round1_overhaul_v5.py`
+  - `prosperity_rust_backtester/traders/round1_overhaul_v6.py`
+  - `prosperity_rust_backtester/traders/round1_overhaul_v7.py`
 
 ## Bottom Line
 
-- `round1_overhaul_v3.py` is the strongest local design under all tested fill settings.
-- It is not an inventory-risk reduction versus `round1_overhaul_v1.py`.
-- It is a more explicit competition-specific Pepper template exploit:
-  - better score,
-  - still strong under `worse`, `none`, and queue stress,
-  - but even more committed to holding near-max-long Pepper.
-- `round1_overhaul_v4.py` is strategically useful only as a falsification test.
-  - It shows that slower Pepper acquisition with more reserve capacity gives up score in every tested mode.
+- `round1_overhaul_v6.py` is the new local best ship.
+- `round1_overhaul_v5.py` confirms that Pepper trade processing contains useful secondary signal, but only a small amount.
+- `round1_overhaul_v6.py` wins because it fixes the more important issue:
+  - the Pepper fair curve in `v3` was too coarse by session phase.
+- `round1_overhaul_v7.py` is rejected.
+  - The extra residual × imbalance overlay added tactical complexity without beating `v6`.
 
-## Score Under Fill Stress
+## Score Under Stress
 
 | Strategy | default | `worse` | `none` | `worse + q=0.35` |
 | --- | ---: | ---: | ---: | ---: |
 | Baseline | `152,305.5` | `156,131.0` | `159,915.5` | n/a |
 | Candidate v2 | `239,372.0` | `239,584.0` | `216,731.5` | `227,724.0` |
-| Overhaul v1 | `276,821.0` | `276,835.0` | `241,552.0` | `254,590.0` |
-| Overhaul v2 | `276,828.0` | `276,842.0` | `241,564.0` | `254,602.0` |
 | Overhaul v3 | `282,373.0` | `282,340.0` | `245,303.0` | `259,507.0` |
-| Overhaul v4 | `281,652.0` | `281,619.0` | `242,893.0` | `257,793.0` |
+| Overhaul v5 | `282,407.0` | `282,374.0` | `245,314.0` | `259,542.0` |
+| Overhaul v6 | `282,974.0` | `282,941.0` | `245,673.0` | `259,990.0` |
+| Overhaul v7 | `282,920.0` | `282,887.0` | `245,630.0` | `259,919.0` |
 
 Interpretation:
-- `v3` beats `v1` by `+5,552.0 / +5,505.0 / +3,751.0 / +4,917.0`.
-- `v3` beats `candidate_v2` by `+43,001.0 / +42,756.0 / +28,571.5 / +31,783.0`.
-- The edge survives stricter matching assumptions, so the redesign is not just harvesting optimistic passive fills.
+- `v5` validates the tape overlay, but only by `+34 / +34 / +11 / +35` over `v3`.
+- `v6` is the real upgrade:
+  - `+601 / +601 / +370 / +483` over `v3`
+  - `+567 / +567 / +359 / +448` over `v5`
+- `v7` gives back `54 / 54 / 43 / 71` versus `v6`.
 
-## Inventory Concentration
+## Concentration Profile
 
-### Pepper default-mode inventory
+### Pepper default inventory
 
-| Strategy | Avg abs pos | Time `|pos| >= 60` | Time `|pos| >= 70` | Max abs pos |
-| --- | ---: | ---: | ---: | ---: |
-| Candidate v2 | `58.66` | `45.58%` | `20.23%` | `80` |
-| Overhaul v1 | `77.72` | `99.70%` | `99.64%` | `80` |
-| Overhaul v2 | `77.71` | `99.65%` | `99.58%` | `80` |
-| Overhaul v3 | `78.96` | `99.94%` | `99.94%` | `80` |
-| Overhaul v4 | `77.65` | `97.68%` | `96.99%` | `80` |
-
-### Pepper first large-position timestamps by day
-
-| Strategy | First `|pos| >= 60` | First `|pos| >= 78` |
-| --- | --- | --- |
-| Candidate v2 | `[53100, 86600, 36900]` | n/a in the prior report set |
-| Overhaul v1 | `[1900, 3900, 3200]` | n/a in the prior report set |
-| Overhaul v3 | `[900, 200, 600]` | `[1000, 300, 900]` |
-| Overhaul v4 | `[24500, 22600, 22500]` | `[38700, 35100, 28400]` |
+| Strategy | Avg abs pos | Time `|pos| >= 60` | Time `|pos| >= 70` | First `|pos| >= 78` |
+| --- | ---: | ---: | ---: | --- |
+| Candidate v2 | `58.66` | `45.58%` | `20.23%` | much later than overhaul family |
+| Overhaul v3 | `78.96` | `99.94%` | `99.94%` | `[900, 1000, 300]` |
+| Overhaul v5 | `78.96` | `99.94%` | `99.94%` | `[900, 1000, 300]` |
+| Overhaul v6 | `78.88` | `99.94%` | `99.94%` | `[900, 1000, 300]` |
+| Overhaul v7 | effectively unchanged from `v6` | effectively unchanged | effectively unchanged | effectively unchanged |
 
 Interpretation:
-- `v3` is more concentrated than `v1`, not less.
-- It reaches high Pepper size almost immediately and then stays there.
-- `v4` proves that a slower-build reserve-capacity variant is feasible, but the bundle rewards it less.
-
-## Trade Mix And Fill Realism
-
-### Aggregate default-mode own-trade counts
-
-| Strategy | Total trades | Take | Make |
-| --- | ---: | ---: | ---: |
-| Candidate v2 | `2355` | `1090` | `1265` |
-| Overhaul v1 | `1421` | `400` | `1021` |
-| Overhaul v2 | `1427` | `406` | `1021` |
-| Overhaul v3 | `2079` | `1029` | `1050` |
-| Overhaul v4 | `2083` | `1006` | `1077` |
-
-Interpretation:
-- `v1` looked like a very pure carry posture:
-  - buy the Pepper long once,
-  - keep it,
-  - rely on mark-to-market drift.
-- `v3` is different:
-  - it still carries near-max-long Pepper,
-  - but it also trades around the template fair more actively.
-- This matters because the redesign is not only "reach the same max-long state earlier."
-- It is "use a stronger generator hypothesis to both acquire and recycle around the position."
+- None of the post-`v3` upgrades reduce the basic Pepper concentration.
+- The winning change set is better understood as a cleaner exploit of the same local generator, not a safer posture.
 
 ## Product-Level Risk Read
 
-### Default-mode contribution
+### Default contribution
 
-| Strategy | `ASH_COATED_OSMIUM` | `INTARIAN_PEPPER_ROOT` | Pepper share |
-| --- | ---: | ---: | ---: |
-| Candidate v2 | `38,318.0` | `201,054.0` | `84.0%` |
-| Overhaul v1 | `45,608.0` | `231,213.0` | `83.5%` |
-| Overhaul v3 | `45,608.0` | `236,765.0` | `83.8%` |
-| Overhaul v4 | `45,608.0` | `236,044.0` | `83.8%` |
+| Strategy | `ASH_COATED_OSMIUM` | `INTARIAN_PEPPER_ROOT` |
+| --- | ---: | ---: |
+| Candidate v2 | `38,318.0` | `201,054.0` |
+| Overhaul v3 | `45,608.0` | `236,765.0` |
+| Overhaul v5 | `45,608.0` | `236,799.0` |
+| Overhaul v6 | `45,608.0` | `237,366.0` |
+| Overhaul v7 | `45,608.0` | `237,312.0` |
 
-### `none`-mode contribution
+### `none` contribution
 
-| Strategy | `ASH_COATED_OSMIUM` | `INTARIAN_PEPPER_ROOT` | Pepper share |
-| --- | ---: | ---: | ---: |
-| Candidate v2 | `10,627.0` | `206,104.5` | `95.1%` |
-| Overhaul v1 | `10,262.0` | `231,290.0` | `95.8%` |
-| Overhaul v3 | `10,262.0` | `235,041.0` | `95.8%` |
-| Overhaul v4 | `10,262.0` | `232,631.0` | `95.8%` |
+| Strategy | `ASH_COATED_OSMIUM` | `INTARIAN_PEPPER_ROOT` |
+| --- | ---: | ---: |
+| Candidate v2 | `10,627.0` | `206,104.5` |
+| Overhaul v3 | `10,262.0` | `235,041.0` |
+| Overhaul v5 | `10,262.0` | `235,052.0` |
+| Overhaul v6 | `10,262.0` | `235,411.0` |
+| Overhaul v7 | `10,262.0` | `235,368.0` |
 
 Interpretation:
-- Ash is steady and healthy, but it is not where the redesign wins.
-- All meaningful uplift from `v3` is Pepper.
-- The new ship decision therefore turns on whether the stronger Pepper generator story is convincing enough to justify the concentration.
+- All new gain is still Pepper.
+- Ash remains stable but unchanged across `v3` through `v7`.
+- The post-`v3` contest was a Pepper fair-model contest, not a portfolio rebalance.
 
-## Generator-Specific Counterfactual
+## What Each New Variant Taught
 
-This was the most important execution-risk test in this iteration.
+### `round1_overhaul_v5.py`
 
-Question:
-- If the Pepper edge is real, should a slower-build reserve-capacity version hold up?
+- Useful lesson:
+  - prior market-trade processing contains some real Pepper state information.
+- Risk conclusion:
+  - that signal is too small to justify large tactical rewrites by itself.
 
-Counterfactual:
-- `round1_overhaul_v4.py` preserved the same template story but forced materially slower inventory build and more reserve capacity.
+### `round1_overhaul_v6.py`
 
-Result:
-- `v4` still beat `v1` and `candidate_v2`.
-- `v4` still lost to `v3` in every tested mode.
+- Useful lesson:
+  - fixing the Pepper phase curve matters more than adding more tactical logic.
+- Risk conclusion:
+  - the cleaner fair model improves score without making the architecture materially more brittle.
 
-Risk implication:
-- The local evidence supports faster template-aware ownership of Pepper.
-- It does not reduce concentration risk.
-- It does increase confidence that `v3` is exploiting a real bundle pattern instead of just a lucky threshold in `v1`.
+### `round1_overhaul_v7.py`
+
+- Useful lesson:
+  - residual × imbalance interactions are real in research, but the trader already had enough tactical conditioning.
+- Risk conclusion:
+  - adding that layer on top of `v6` increased complexity faster than it improved monetization.
 
 ## Main Remaining Risks
 
-1. The entire redesign remains highly dependent on the Pepper session-template story persisting outside the local three-day bundle.
-2. `v3` has almost no spare long capacity once the session starts.
-3. If live Pepper stalls, gaps down, or becomes materially less monotone, `v3` will likely underperform `candidate_v2` faster than `v1` did.
-4. The improved score does not come from diversification. It comes from stronger exploitation of the same product that already dominated the prior ship.
+1. The core local edge is still a Pepper generator story, not a diversified two-product story.
+2. The data set is still only three local Round 1 days.
+3. If live Pepper is materially less template-like, `candidate_v2` remains the safer fallback.
+4. Ash still looks improvable, but not enough to outweigh the current Pepper concentration in the total score.
 
 ## Execution-Risk Verdict
 
-- `round1_overhaul_v3.py` passes fill-stress validation.
-- `round1_overhaul_v3.py` does not pass any "reduced concentration" test, because that is not what it is.
+- `round1_overhaul_v6.py` is the best current ship if the goal is strongest local evidence-weighted performance.
+- `round1_overhaul_v6.py` is not a de-risked design.
 - The correct description is:
-  - more explainable than `v1`,
-  - more locally profitable than `v1`,
+  - more faithful to the observed Pepper generator than `v3`,
+  - slightly more profitable than `v3`,
   - still a high-conviction competition-specific Pepper carry-and-recycle strategy.
-
-Decision framing:
-- If the objective is the strongest locally validated exploit of the observed Round 1 generator, prefer `v3`.
-- If the objective is lower single-story dependence, keep `candidate_v2` as the operational fallback.
