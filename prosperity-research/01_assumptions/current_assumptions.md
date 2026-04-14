@@ -32,6 +32,18 @@ Soft-hint files only:
 - Hint themes about calm execution, spread intent, and slow Pepper growth are useful for research ideas only.
 - The auction hints are useful for later manual-side simulation work, not as authority for this continuous-book trader.
 
+## Official Narrative Versus Local Data
+
+- The official screenshot is genuine and matches the local Round 1 file verbatim.
+- The Pepper clue is only loosely grounded in truth:
+  - locally, Pepper is indeed extremely steady in shape,
+  - but it is not steady around a fixed fair,
+  - it is better described as a near-deterministic rising session fair.
+- The Ash clue is even softer:
+  - Ash does show more local microstructure noise than Pepper,
+  - but the data still do not support a strong clocked hidden pattern,
+  - the strongest Ash structure remains anchored fair plus imbalance-sensitive short-horizon behavior.
+
 ## Local Empirical Findings
 
 - `ASH_COATED_OSMIUM` behaves like an anchored wide-spread market with fair value centered near `10000`, replenishing liquidity, and modest book-driven lean.
@@ -48,21 +60,25 @@ Soft-hint files only:
 
 These are local working hypotheses, not official truths.
 
-What `round1_overhaul_v1.py` appears to get right:
+What the current ship family appears to get right:
 - `ASH` is still best modeled as anchored replenishing-maker microstructure, not as a clock-template market.
 - `PEPPER` should not be traded as fixed-anchor market making.
 - Owning Pepper inventory early is locally rewarded.
 
-What `round1_overhaul_v1.py` likely still over-assumes:
-- It treats Pepper mainly as a reactive ramp state inferred from the opening wall and current book.
-- The deeper local evidence now points to a stronger story: Pepper looks more like a session-template latent fair, with the book revealing and locally overshooting that path.
-- `round1_overhaul_v1.py` also assumes that near-max-long Pepper is the best way to exploit the local generator. That was locally strong, but still only a hypothesis before the new template-aware counterfactuals were tested.
+What the post-`v3` evidence added:
+- `round1_overhaul_v5.py` showed that Pepper trade-tape pressure is real, but only a small overlay on the core template story.
+- `round1_overhaul_v6.py` showed that the bigger remaining miss was the coarse Pepper template itself.
+- A finer phase-corrected Pepper curve beat `round1_overhaul_v3.py` in every tested mode.
+- `round1_overhaul_v7.py` then showed that adding extra residual × imbalance tactical logic on top of `v6` gave some of that gain back.
 
 What the new template-aware counterfactuals added:
 - A slower-build Pepper counterfactual was tested in `round1_overhaul_v4.py`.
 - It still beat the older ships, but it lost to the more explicit template-owning design in `round1_overhaul_v3.py` in every tested mode.
 - That does not prove the live generator must reward immediate max-long ownership.
 - It does strengthen the local working assumption that, in this bundle, early template-aware Pepper acquisition is a real competition-specific edge rather than just a lucky threshold choice inside `round1_overhaul_v1.py`.
+
+Current local best interpretation:
+- `round1_overhaul_v6.py` is the best current ship because it keeps the competition-specific template-owning Pepper architecture, confirms a smaller trade-tape overlay from `v5`, and improves the core fair curve without adding decorative complexity.
 
 ## Public-Repo Analogy Only
 

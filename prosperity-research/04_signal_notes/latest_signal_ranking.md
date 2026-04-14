@@ -624,3 +624,97 @@ Why it is strategically distinct from `round1_overhaul_v1.py`:
 - The best current design is therefore a hybrid:
   - Ash traded with restrained, real-market-like anchored maker logic,
   - Pepper traded as a competition-specific template exploit with local residual control.
+
+## Official Narrative Truth Test
+
+- The organiser screenshot is real official wording, not an internet rumor.
+- It is only partially grounded in the local data.
+- `INTARIAN_PEPPER_ROOT` is indeed "steady" in path shape:
+  - the three local days are extremely repeatable,
+  - the fair path is smooth,
+  - and the residual around that path is small.
+- But Pepper is not steady in the anchored-`EMERALDS` sense.
+  - It rises by about `+1000` over each local session.
+- `ASH_COATED_OSMIUM` is more microstructurally noisy than Pepper, so the "more volatile" clue is directionally fair.
+- The hidden-pattern part is still weak.
+  - The exploitable Ash structure is mostly anchor-plus-imbalance, not a strong session clock.
+
+## Post-`v3` Iteration Results
+
+### `round1_overhaul_v5.py`
+
+Hypothesis:
+- Pepper tape pressure from prior market trades contains real tactical information beyond residual alone.
+
+Result:
+- Small but consistent improvement over `v3`:
+  - default `+34.0`
+  - `worse` `+34.0`
+  - `none` `+11.0`
+  - `worse + q=0.35` `+35.0`
+
+Interpretation:
+- The trade-tape overlay is real.
+- It is not the main missing engine.
+
+### `round1_overhaul_v6.py`
+
+Hypothesis:
+- The bigger remaining miss in `v3` is the coarse Pepper phase template.
+
+Implemented change:
+- Replace the `21`-point Pepper template with a finer phase-corrected curve while preserving the broader `v5` architecture.
+
+Result:
+- Clear improvement over `v3` in every tested mode:
+  - default `+601.0`
+  - `worse` `+601.0`
+  - `none` `+370.0`
+  - `worse + q=0.35` `+483.0`
+- Product delta versus `v3`:
+  - `ASH`: unchanged at `45,608.0`
+  - `PEPPER`: `+601.0`
+
+Interpretation:
+- The dominant post-`v3` improvement path was a better Pepper fair curve, not a heavier tactical overlay.
+
+### `round1_overhaul_v7.py`
+
+Hypothesis:
+- Pepper residuals should recycle better when explicitly gated by current top-of-book imbalance.
+
+Result:
+- Improved over `v3`, but gave back part of the `v6` gain:
+  - default `282,920.0` vs `282,974.0` for `v6`
+  - `worse` `282,887.0` vs `282,941.0`
+  - `none` `245,630.0` vs `245,673.0`
+  - `worse + q=0.35` `259,919.0` vs `259,990.0`
+
+Interpretation:
+- The imbalance overlay was directionally sensible in research, but not worth the extra live complexity on top of `v6`.
+
+## Updated Candidate Ranking
+
+1. `round1_overhaul_v6.py`
+   Why: best stressed score with the cleanest explanation. The main gain comes from fixing the Pepper fair curve itself.
+2. `round1_overhaul_v7.py`
+   Why: still strong, but weaker than `v6`; rejected because the extra tactical imbalance layer did not earn its keep.
+3. `round1_overhaul_v5.py`
+   Why: validates that Pepper tape pressure is a real secondary overlay.
+4. `round1_overhaul_v3.py`
+   Why: still a strong and simpler template-owning Pepper design, but now superseded.
+5. `round1_candidate_v2.py`
+   Why: lower-concentration fallback when template confidence is lower.
+
+## External Repo Detail Used
+
+The most useful ideas adapted from the Mark Brezina repository were architectural, not product-specific:
+- reduce each market to a simpler fair object before optimizing execution,
+- keep product-specific alpha engines separate,
+- persist only compact running state,
+- and treat execution as `take -> clear -> make` around the modeled edge rather than as one opaque block.
+
+What was not adopted:
+- any Prosperity-3 product truths,
+- any old hardcoded participant assumptions,
+- any round-specific thresholds as current authority.
