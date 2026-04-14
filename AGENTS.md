@@ -5,7 +5,6 @@ This repository is for developing, backtesting, and iterating IMC Prosperity 4 t
 
 There are two main areas:
 - `prosperity_rust_backtester/` is the active workspace for current strategy development, local backtesting, and run artifacts.
-- `Trader1/` is legacy reference material only. Do not use it as the default place for new strategy work unless explicitly asked.
 
 ## Instruction layering
 - Follow this repo-root `AGENTS.md` for repository-wide routing and guardrails.

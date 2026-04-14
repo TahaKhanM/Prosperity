@@ -1,0 +1,24 @@
+name: prosperity
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - ipython>=8.18.1
+  - jupyterlab
+  - jsonpickle>=4.0.2
+  - orjson>=3.10.15
+  - tqdm>=4.67.1
+  - typer>=0.15.2
+  - pandas
+  - polars
+  - duckdb
+  - pyarrow
+  - matplotlib
+  - seaborn
+  - maturin>=1.8,<2
+  - ruff
+  - mypy
+  - pip:
+      - -e ./imc-prosperity-4-backtester
+      - -e ./prosperity_rust_backtester
