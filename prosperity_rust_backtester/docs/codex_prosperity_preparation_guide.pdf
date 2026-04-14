@@ -1,0 +1,1190 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Count 12 /Kids [3 0 R 5 0 R 7 0 R 9 0 R 11 0 R 13 0 R 15 0 R 17 0 R 19 0 R 21 0 R 23 0 R 25 0 R] >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 27 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 2126 >>
+stream
+BT
+/F1 11 Tf
+14 TL
+1 0 0 1 54 738 Tm
+(Codex Preparation Guide for IMC Prosperity 4) Tj
+T*
+(Page 1 of 12) Tj
+T*
+T*
+(CODEX PREPARATION GUIDE FOR IMC PROSPERITY 4) Tj
+T*
+T*
+(PURPOSE) Tj
+T*
+T*
+(This document summarizes the highest-value preparations that can be made so Codex) Tj
+T*
+(can:) Tj
+T*
+T*
+(- discover stronger strategies faster,) Tj
+T*
+(- write cleaner and safer submission code,) Tj
+T*
+(- avoid fake progress caused by local overfitting,) Tj
+T*
+(- reuse good public ideas without importing stale competition assumptions,) Tj
+T*
+(- operate more like a structured research team than a single prompt-response) Tj
+T*
+(  loop.) Tj
+T*
+T*
+(The focus is this competition specifically: limited visible data, round-specific) Tj
+T*
+(products, local backtester dependence, hidden submission slices, and strong) Tj
+T*
+(sensitivity to execution and inventory behavior.) Tj
+T*
+T*
+(WHAT CODEX NEEDS MOST) Tj
+T*
+T*
+(Codex improves the most when the environment answers these questions quickly:) Tj
+T*
+T*
+(1. What assumptions are official, and what is only inferred?) Tj
+T*
+(2. What market type is each product in the current round?) Tj
+T*
+(3. Which local states actually contain monetizable edge?) Tj
+T*
+(4. Is the observed PnL coming from alpha, inventory carry, or local fill) Tj
+T*
+(assumptions?) Tj
+T*
+(5. Which strategy variant is the current frontier, and why?) Tj
+T*
+T*
+(That means the best preparations are not generic coding helpers. They are) Tj
+T*
+(competition-specific research infrastructure, validation tooling, and curated) Tj
+T*
+(knowledge sources.) Tj
+T*
+T*
+(EXISTING LOCAL BASE) Tj
+T*
+T*
+(The current repo already provides a useful base:) Tj
+T*
+T*
+(- Rust backtester and command surface:) Tj
+T*
+(  - `prosperity_rust_backtester/README.md`) Tj
+T*
+(  - `prosperity_rust_backtester/Makefile`) Tj
+T*
+(- Local datasets:) Tj
+T*
+(  - `prosperity_rust_backtester/datasets/`) Tj
+T*
+(- Core diagnostics:) Tj
+T*
+(  - `scripts/market_discovery.py`) Tj
+T*
+(  - `scripts/forensic_bundle.py`) Tj
+T*
+(  - `scripts/branch_scorecard.py`) Tj
+T*
+(  - `scripts/analyze_artifacts.py`) Tj
+T*
+(  - `scripts/sweep_research_params.py`) Tj
+T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 27 0 R >> >> /Contents 6 0 R >>
+endobj
+6 0 obj
+<< /Length 1521 >>
+stream
+BT
+/F1 11 Tf
+14 TL
+1 0 0 1 54 738 Tm
+(Codex Preparation Guide for IMC Prosperity 4) Tj
+T*
+(Page 2 of 12) Tj
+T*
+T*
+(- Trader variants and run artifacts:) Tj
+T*
+(  - `traders/`) Tj
+T*
+(  - `runs/`) Tj
+T*
+T*
+(This is already enough for normal iteration. The missing pieces are mostly) Tj
+T*
+(research depth, experiment structure, and reusable external context.) Tj
+T*
+T*
+(RECOMMENDED RESOURCE STACK) Tj
+T*
+T*
+(1. CURATED PUBLIC REPO CORPUS) Tj
+T*
+T*
+(Create a local folder such as:) Tj
+T*
+T*
+(- `prosperity_public_corpus/`) Tj
+T*
+T*
+(Mirror high-quality public Prosperity repositories there, then keep a structured) Tj
+T*
+(manifest for each repo.) Tj
+T*
+T*
+(Each repo note should include:) Tj
+T*
+T*
+(- competition year,) Tj
+T*
+(- placement if known,) Tj
+T*
+(- repo URL,) Tj
+T*
+(- what it is useful for,) Tj
+T*
+(- whether it is architecture-only or strategy-relevant,) Tj
+T*
+(- transferability notes,) Tj
+T*
+(- stale-assumption warnings.) Tj
+T*
+T*
+(Recommended examples to mirror:) Tj
+T*
+T*
+(- `MarkBrezina/Ctrl-Alt-DefeatTheMarket`) Tj
+T*
+(- `ericcccsliu/imc-prosperity-2`) Tj
+T*
+(- `jmerle/imc-prosperity-2`) Tj
+T*
+(- recent public Prosperity 4 repos when available) Tj
+T*
+T*
+(Use public repos for:) Tj
+T*
+T*
+(- experiment workflow ideas,) Tj
+T*
+(- dashboards,) Tj
+T*
+(- backtester utilities,) Tj
+T*
+(- inventory management patterns,) Tj
+T*
+(- logging structure,) Tj
+T*
+(- code organization.) Tj
+T*
+T*
+(Do not use them as authority for:) Tj
+T*
+T*
+(- current Prosperity 4 product mechanics,) Tj
+T*
+(- hidden rules,) Tj
+T*
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 27 0 R >> >> /Contents 8 0 R >>
+endobj
+8 0 obj
+<< /Length 1178 >>
+stream
+BT
+/F1 11 Tf
+14 TL
+1 0 0 1 54 738 Tm
+(Codex Preparation Guide for IMC Prosperity 4) Tj
+T*
+(Page 3 of 12) Tj
+T*
+T*
+(- thresholds,) Tj
+T*
+(- exact fair values,) Tj
+T*
+(- simulator behavior.) Tj
+T*
+T*
+(2. OFFICIAL ASSUMPTIONS PACK) Tj
+T*
+T*
+(Maintain one living file such as:) Tj
+T*
+T*
+(- `competition_assumptions.md`) Tj
+T*
+T*
+(Split it into:) Tj
+T*
+T*
+(- official facts,) Tj
+T*
+(- local backtester assumptions,) Tj
+T*
+(- inferred hypotheses,) Tj
+T*
+(- disproven ideas.) Tj
+T*
+T*
+(This keeps Codex from repeatedly mixing older Prosperity ideas into current-round) Tj
+T*
+(reasoning.) Tj
+T*
+T*
+(3. EXPERIMENT REGISTRY) Tj
+T*
+T*
+(Create a structured registry:) Tj
+T*
+T*
+(- `benchmarks/frontier_registry.csv`) Tj
+T*
+(- or `research.duckdb`) Tj
+T*
+(- or `experiments.sqlite`) Tj
+T*
+T*
+(Minimum fields:) Tj
+T*
+T*
+(- trader file,) Tj
+T*
+(- run id,) Tj
+T*
+(- date,) Tj
+T*
+(- dataset and slice,) Tj
+T*
+(- total PnL,) Tj
+T*
+(- product PnL,) Tj
+T*
+(- stress PnL,) Tj
+T*
+(- trade count,) Tj
+T*
+(- inventory metrics,) Tj
+T*
+(- main hypothesis,) Tj
+T*
+(- verdict.) Tj
+T*
+T*
+(This prevents repeated rediscovery of dead ends.) Tj
+T*
+T*
+(BEST TOOLS TO BUILD) Tj
+T*
+T*
+(1. SCENARIO LAB) Tj
+T*
+T*
+ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 27 0 R >> >> /Contents 10 0 R >>
+endobj
+10 0 obj
+<< /Length 1583 >>
+stream
+BT
+/F1 11 Tf
+14 TL
+1 0 0 1 54 738 Tm
+(Codex Preparation Guide for IMC Prosperity 4) Tj
+T*
+(Page 4 of 12) Tj
+T*
+T*
+(Highest-priority new tool.) Tj
+T*
+T*
+(Purpose:) Tj
+T*
+T*
+(- generate hidden-day-like robustness tests,) Tj
+T*
+(- make the visible tutorial or round data more informative,) Tj
+T*
+(- expose strategies that only work on one lucky slice.) Tj
+T*
+T*
+(What it should do:) Tj
+T*
+T*
+(- block-bootstrap from real event sequences,) Tj
+T*
+(- preserve local order-book discreteness,) Tj
+T*
+(- splice early, mid, and late regimes from different days,) Tj
+T*
+(- perturb spreads and displayed volumes,) Tj
+T*
+(- test multiple fill assumptions,) Tj
+T*
+(- create tail-heavy scenarios where late-day behavior matters more.) Tj
+T*
+T*
+(Why this matters:) Tj
+T*
+T*
+(Generic Monte Carlo is too weak for Prosperity because the order book is discrete) Tj
+T*
+(and regime dependent. A block-bootstrap or regime-splice generator is much more) Tj
+T*
+(realistic.) Tj
+T*
+T*
+(2. STATE ALPHA EXPLORER) Tj
+T*
+T*
+(Purpose:) Tj
+T*
+T*
+(- automatically score conditional states and rank them by monetizable edge.) Tj
+T*
+T*
+(Examples of states:) Tj
+T*
+T*
+(- spread regime,) Tj
+T*
+(- ret1,) Tj
+T*
+(- rolling deviation,) Tj
+T*
+(- top-book imbalance,) Tj
+T*
+(- full-depth imbalance,) Tj
+T*
+(- microprice delta,) Tj
+T*
+(- time-of-day bucket,) Tj
+T*
+(- prior move sign,) Tj
+T*
+(- run length of last move.) Tj
+T*
+T*
+(The explorer should report:) Tj
+T*
+T*
+(- sample count,) Tj
+T*
+(- future-mid edge,) Tj
+T*
+(- future-fill edge,) Tj
+T*
+(- passive vs aggressive monetization,) Tj
+T*
+(- per-day consistency,) Tj
+T*
+ET
+endstream
+endobj
+11 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 27 0 R >> >> /Contents 12 0 R >>
+endobj
+12 0 obj
+<< /Length 1424 >>
+stream
+BT
+/F1 11 Tf
+14 TL
+1 0 0 1 54 738 Tm
+(Codex Preparation Guide for IMC Prosperity 4) Tj
+T*
+(Page 5 of 12) Tj
+T*
+T*
+(- submission consistency,) Tj
+T*
+(- whether the signal survives stricter execution assumptions.) Tj
+T*
+T*
+(3. EXECUTION SENSITIVITY HARNESS) Tj
+T*
+T*
+(Purpose:) Tj
+T*
+T*
+(- run every serious trader under multiple fill assumptions.) Tj
+T*
+T*
+(Use the current Rust backtester modes as the starting point:) Tj
+T*
+T*
+(- default,) Tj
+T*
+(- `trade_match_mode=worse`,) Tj
+T*
+(- `queue_penetration=0.5`,) Tj
+T*
+(- `trade_match_mode=none`.) Tj
+T*
+T*
+(Every serious candidate should be scored on:) Tj
+T*
+T*
+(- default total,) Tj
+T*
+(- submission PnL,) Tj
+T*
+(- stricter matching total,) Tj
+T*
+(- `none` total,) Tj
+T*
+(- inventory shape.) Tj
+T*
+T*
+(4. COUNTERFACTUAL QUOTE ANALYZER) Tj
+T*
+T*
+(Purpose:) Tj
+T*
+T*
+(- answer what would have happened if a quote were one tick closer, one tick) Tj
+T*
+(  farther, or not posted.) Tj
+T*
+T*
+(This is especially valuable in Prosperity because many strategies lose not from) Tj
+T*
+(bad alpha, but from quote placement that is too timid or too eager.) Tj
+T*
+T*
+(5. INVENTORY PATH DASHBOARD) Tj
+T*
+T*
+(Purpose:) Tj
+T*
+T*
+(- decompose PnL by inventory state and time.) Tj
+T*
+T*
+(Track:) Tj
+T*
+T*
+(- average absolute position,) Tj
+T*
+(- time above warning bands,) Tj
+T*
+(- PnL while long,) Tj
+T*
+(- PnL while short,) Tj
+T*
+(- realized vs unrealized path,) Tj
+T*
+(- drawdown,) Tj
+T*
+ET
+endstream
+endobj
+13 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 27 0 R >> >> /Contents 14 0 R >>
+endobj
+14 0 obj
+<< /Length 1174 >>
+stream
+BT
+/F1 11 Tf
+14 TL
+1 0 0 1 54 738 Tm
+(Codex Preparation Guide for IMC Prosperity 4) Tj
+T*
+(Page 6 of 12) Tj
+T*
+T*
+(- final inventory dependence.) Tj
+T*
+T*
+(BEST TOOLS TO INSTALL) Tj
+T*
+T*
+(DUCKDB) Tj
+T*
+T*
+(Use for:) Tj
+T*
+T*
+(- joining run metrics, bundles, CSVs, public-repo metadata, and research tables.) Tj
+T*
+T*
+(Best use:) Tj
+T*
+T*
+(- one queryable research database for everything.) Tj
+T*
+T*
+(POLARS) Tj
+T*
+T*
+(Use for:) Tj
+T*
+T*
+(- fast feature engineering and state studies on tick-level data.) Tj
+T*
+T*
+(Best use:) Tj
+T*
+T*
+(- replacing ad hoc CSV scripts with faster, cleaner research pipelines.) Tj
+T*
+T*
+(OPTUNA) Tj
+T*
+T*
+(Use for:) Tj
+T*
+T*
+(- constrained parameter search.) Tj
+T*
+T*
+(Only use it with hard gates, for example:) Tj
+T*
+T*
+(- minimum training PnL,) Tj
+T*
+(- minimum stress PnL,) Tj
+T*
+(- inventory cap constraints,) Tj
+T*
+(- max drawdown limits.) Tj
+T*
+T*
+(Do not use it as blind submission-score maximization.) Tj
+T*
+T*
+(STREAMLIT OR PLOTLY) Tj
+T*
+T*
+(Use for:) Tj
+T*
+T*
+(- interactive dashboards over runs and state studies.) Tj
+T*
+T*
+(Best use:) Tj
+T*
+T*
+(- browsing fills, positions, and state-conditioned results without rewriting) Tj
+T*
+ET
+endstream
+endobj
+15 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 27 0 R >> >> /Contents 16 0 R >>
+endobj
+16 0 obj
+<< /Length 1206 >>
+stream
+BT
+/F1 11 Tf
+14 TL
+1 0 0 1 54 738 Tm
+(Codex Preparation Guide for IMC Prosperity 4) Tj
+T*
+(Page 7 of 12) Tj
+T*
+T*
+(  analysis each time.) Tj
+T*
+T*
+(MLFLOW OR LIGHTWEIGHT RUN TRACKING) Tj
+T*
+T*
+(Use for:) Tj
+T*
+T*
+(- structured experiment comparison once the run count becomes large.) Tj
+T*
+T*
+(Lower priority than DuckDB, but useful once many strategy branches exist.) Tj
+T*
+T*
+(AGENT STRUCTURE THAT HELPS CODEX MOST) Tj
+T*
+T*
+(Codex benefits from explicit role separation.) Tj
+T*
+T*
+(Recommended roles:) Tj
+T*
+T*
+(COMPETITION RESEARCH AGENT) Tj
+T*
+T*
+(Responsibilities:) Tj
+T*
+T*
+(- official documentation,) Tj
+T*
+(- rule changes,) Tj
+T*
+(- public-repo discovery,) Tj
+T*
+(- current competition context.) Tj
+T*
+T*
+(Output:) Tj
+T*
+T*
+(- updated assumptions doc,) Tj
+T*
+(- repo shortlist,) Tj
+T*
+(- warnings about stale ideas.) Tj
+T*
+T*
+(ALPHA MINER AGENT) Tj
+T*
+T*
+(Responsibilities:) Tj
+T*
+T*
+(- local dataset analysis,) Tj
+T*
+(- signal discovery,) Tj
+T*
+(- state-conditioned edge studies.) Tj
+T*
+T*
+(Output:) Tj
+T*
+T*
+(- ranked signal candidates,) Tj
+T*
+(- passive vs aggressive monetization map,) Tj
+T*
+(- slice stability report.) Tj
+T*
+T*
+(EXECUTION AND RISK AGENT) Tj
+T*
+T*
+(Responsibilities:) Tj
+T*
+ET
+endstream
+endobj
+17 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 27 0 R >> >> /Contents 18 0 R >>
+endobj
+18 0 obj
+<< /Length 1162 >>
+stream
+BT
+/F1 11 Tf
+14 TL
+1 0 0 1 54 738 Tm
+(Codex Preparation Guide for IMC Prosperity 4) Tj
+T*
+(Page 8 of 12) Tj
+T*
+T*
+T*
+(- fill sensitivity,) Tj
+T*
+(- queue assumptions,) Tj
+T*
+(- inventory analysis,) Tj
+T*
+(- drawdown decomposition,) Tj
+T*
+(- counterfactual quote studies.) Tj
+T*
+T*
+(Output:) Tj
+T*
+T*
+(- real edge vs fill-model-assisted edge report.) Tj
+T*
+T*
+(STRATEGY ENGINEER AGENT) Tj
+T*
+T*
+(Responsibilities:) Tj
+T*
+T*
+(- write only the chosen change,) Tj
+T*
+(- preserve submission compatibility,) Tj
+T*
+(- keep changes narrow and attributable.) Tj
+T*
+T*
+(Output:) Tj
+T*
+T*
+(- one clear trader variant,) Tj
+T*
+(- implementation notes,) Tj
+T*
+(- known risks.) Tj
+T*
+T*
+(VALIDATOR AGENT) Tj
+T*
+T*
+(Responsibilities:) Tj
+T*
+T*
+(- rerun benchmarks,) Tj
+T*
+(- compare to controls,) Tj
+T*
+(- summarize score, robustness, and inventory metrics.) Tj
+T*
+T*
+(Output:) Tj
+T*
+T*
+(- ship or reject recommendation.) Tj
+T*
+T*
+(REPO LIBRARIAN AGENT) Tj
+T*
+T*
+(Responsibilities:) Tj
+T*
+T*
+(- scrape and index public repos,) Tj
+T*
+(- extract reusable ideas,) Tj
+T*
+(- keep a pattern library.) Tj
+T*
+T*
+(Output:) Tj
+T*
+T*
+(- searchable architecture and tooling notes.) Tj
+T*
+ET
+endstream
+endobj
+19 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 27 0 R >> >> /Contents 20 0 R >>
+endobj
+20 0 obj
+<< /Length 1357 >>
+stream
+BT
+/F1 11 Tf
+14 TL
+1 0 0 1 54 738 Tm
+(Codex Preparation Guide for IMC Prosperity 4) Tj
+T*
+(Page 9 of 12) Tj
+T*
+T*
+T*
+(PROMPT AND WORKFLOW PREPARATION) Tj
+T*
+T*
+(Create a small prompt library for Codex.) Tj
+T*
+T*
+(Examples:) Tj
+T*
+T*
+(- `alpha_discovery_prompt.md`) Tj
+T*
+(- `inventory_diagnosis_prompt.md`) Tj
+T*
+(- `execution_falsification_prompt.md`) Tj
+T*
+(- `public_repo_extraction_prompt.md`) Tj
+T*
+(- `strategy_comparison_prompt.md`) Tj
+T*
+T*
+(Each prompt should force:) Tj
+T*
+T*
+(- official vs inferred separation,) Tj
+T*
+(- product classification,) Tj
+T*
+(- one dominant failure mode,) Tj
+T*
+(- one narrow change,) Tj
+T*
+(- one validation plan.) Tj
+T*
+T*
+(This reduces prompt drift and keeps strategy work disciplined.) Tj
+T*
+T*
+(RESEARCH DATABASE STRUCTURE) Tj
+T*
+T*
+(Use one DuckDB file such as:) Tj
+T*
+T*
+(- `research/research.duckdb`) Tj
+T*
+T*
+(Suggested tables:) Tj
+T*
+T*
+(- `ticks`) Tj
+T*
+(- `market_trades`) Tj
+T*
+(- `own_trades`) Tj
+T*
+(- `bundles`) Tj
+T*
+(- `run_metrics`) Tj
+T*
+(- `state_features`) Tj
+T*
+(- `public_repo_manifest`) Tj
+T*
+(- `idea_registry`) Tj
+T*
+T*
+(High-value derived tables:) Tj
+T*
+T*
+(- `state_alpha_summary`) Tj
+T*
+(- `execution_sensitivity_summary`) Tj
+T*
+(- `inventory_path_summary`) Tj
+T*
+(- `frontier_summary`) Tj
+T*
+T*
+(This makes Codex much better because it can query evidence directly instead of re-) Tj
+T*
+ET
+endstream
+endobj
+21 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 27 0 R >> >> /Contents 22 0 R >>
+endobj
+22 0 obj
+<< /Length 1441 >>
+stream
+BT
+/F1 11 Tf
+14 TL
+1 0 0 1 54 738 Tm
+(Codex Preparation Guide for IMC Prosperity 4) Tj
+T*
+(Page 10 of 12) Tj
+T*
+T*
+(parsing logs every turn.) Tj
+T*
+T*
+(PUBLIC REPO SCRAPING PLAN) Tj
+T*
+T*
+(Build a small scraper/indexer that:) Tj
+T*
+T*
+(- clones selected repos,) Tj
+T*
+(- records directory tree,) Tj
+T*
+(- extracts README sections,) Tj
+T*
+(- indexes files mentioning:) Tj
+T*
+(  - inventory,) Tj
+T*
+(  - liquidation,) Tj
+T*
+(  - dashboard,) Tj
+T*
+(  - backtester,) Tj
+T*
+(  - risk,) Tj
+T*
+(  - spread,) Tj
+T*
+(  - market making,) Tj
+T*
+(  - pair trading,) Tj
+T*
+(  - conversion,) Tj
+T*
+(  - volatility,) Tj
+T*
+(- tags each repo by relevance.) Tj
+T*
+T*
+(This should populate:) Tj
+T*
+T*
+(- `prosperity_public_corpus/manifest.yaml`) Tj
+T*
+(- or a DuckDB table.) Tj
+T*
+T*
+(CODE QUALITY PREPARATION) Tj
+T*
+T*
+(To help Codex write better strategy code specifically:) Tj
+T*
+T*
+(- keep one current frontier file and one benchmark table,) Tj
+T*
+(- keep helper functions for:) Tj
+T*
+(  - book parsing,) Tj
+T*
+(  - fair-value computation,) Tj
+T*
+(  - inventory budgeting,) Tj
+T*
+(  - passive quote placement,) Tj
+T*
+(  - aggressive take logic,) Tj
+T*
+(  - traderData serialization,) Tj
+T*
+(- enforce a common strategy structure:) Tj
+T*
+(  1. read state,) Tj
+T*
+(  2. compute features,) Tj
+T*
+(  3. compute fair,) Tj
+T*
+(  4. aggressive takes,) Tj
+T*
+(  5. temporary position update,) Tj
+T*
+(  6. passive quotes,) Tj
+T*
+(  7. serialize state.) Tj
+T*
+T*
+ET
+endstream
+endobj
+23 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 27 0 R >> >> /Contents 24 0 R >>
+endobj
+24 0 obj
+<< /Length 1743 >>
+stream
+BT
+/F1 11 Tf
+14 TL
+1 0 0 1 54 738 Tm
+(Codex Preparation Guide for IMC Prosperity 4) Tj
+T*
+(Page 11 of 12) Tj
+T*
+T*
+(This makes future trader diffs smaller and easier to evaluate.) Tj
+T*
+T*
+(COMPETITION-SPECIFIC GUARDRAILS) Tj
+T*
+T*
+(Codex should always be set up to remember:) Tj
+T*
+T*
+(- older Prosperity repos are inspiration, not truth,) Tj
+T*
+(- local backtester assumptions can create fake winners,) Tj
+T*
+(- submission-only optimization is dangerous,) Tj
+T*
+(- later rounds may have completely different product types,) Tj
+T*
+(- strategy complexity should follow diagnosed need, not style.) Tj
+T*
+T*
+(Every evaluation stack should therefore include:) Tj
+T*
+T*
+(- full round bundle,) Tj
+T*
+(- per-slice view,) Tj
+T*
+(- product-level PnL,) Tj
+T*
+(- inventory metrics,) Tj
+T*
+(- stress modes,) Tj
+T*
+(- a note on likely fill-model dependence.) Tj
+T*
+T*
+(HIGHEST-ROI BUILD ORDER) Tj
+T*
+T*
+(If only a few preparations are possible, do them in this order:) Tj
+T*
+T*
+(1. Build `scenario_lab`.) Tj
+T*
+(2. Build `state_alpha_explorer`.) Tj
+T*
+(3. Create a DuckDB research database.) Tj
+T*
+(4. Add a dashboard on top of it.) Tj
+T*
+(5. Mirror a curated public Prosperity repo corpus.) Tj
+T*
+(6. Add a structured experiment registry.) Tj
+T*
+(7. Formalize the agent split.) Tj
+T*
+T*
+(MINIMAL PRACTICAL SETUP) Tj
+T*
+T*
+(If the goal is the smallest setup that still helps a lot:) Tj
+T*
+T*
+(- keep the current Rust backtester,) Tj
+T*
+(- add DuckDB,) Tj
+T*
+(- add Polars,) Tj
+T*
+(- add one scenario tool,) Tj
+T*
+(- add one state explorer,) Tj
+T*
+(- mirror a few strong public repos,) Tj
+T*
+(- maintain a frontier registry,) Tj
+T*
+(- use at least three Codex roles:) Tj
+T*
+(  - research,) Tj
+T*
+(  - strategy engineering,) Tj
+T*
+(  - validation.) Tj
+T*
+ET
+endstream
+endobj
+25 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 27 0 R >> >> /Contents 26 0 R >>
+endobj
+26 0 obj
+<< /Length 981 >>
+stream
+BT
+/F1 11 Tf
+14 TL
+1 0 0 1 54 738 Tm
+(Codex Preparation Guide for IMC Prosperity 4) Tj
+T*
+(Page 12 of 12) Tj
+T*
+T*
+T*
+(SUMMARY) Tj
+T*
+T*
+(The best way to help Codex produce stronger Prosperity strategies is to turn the) Tj
+T*
+(environment into a research system rather than a folder of trader files.) Tj
+T*
+T*
+(The most valuable additions are:) Tj
+T*
+T*
+(- a curated public-repo corpus,) Tj
+T*
+(- a scenario generator,) Tj
+T*
+(- a state alpha explorer,) Tj
+T*
+(- execution-sensitivity tooling,) Tj
+T*
+(- an experiment registry,) Tj
+T*
+(- a DuckDB-backed research layer,) Tj
+T*
+(- separate Codex roles for research, engineering, and validation.) Tj
+T*
+T*
+(That setup helps Codex do better work for this competition because it improves) Tj
+T*
+(evidence quality, reduces repeated dead ends, and keeps strategy development) Tj
+T*
+(aligned with the actual Prosperity workflow: hidden slices, round-specific) Tj
+T*
+(mechanics, and strong sensitivity to execution and inventory.) Tj
+T*
+ET
+endstream
+endobj
+27 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 28
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000196 00000 n 
+0000000323 00000 n 
+0000002501 00000 n 
+0000002628 00000 n 
+0000004201 00000 n 
+0000004328 00000 n 
+0000005558 00000 n 
+0000005686 00000 n 
+0000007322 00000 n 
+0000007451 00000 n 
+0000008928 00000 n 
+0000009057 00000 n 
+0000010284 00000 n 
+0000010413 00000 n 
+0000011672 00000 n 
+0000011801 00000 n 
+0000013016 00000 n 
+0000013145 00000 n 
+0000014555 00000 n 
+0000014684 00000 n 
+0000016178 00000 n 
+0000016307 00000 n 
+0000018103 00000 n 
+0000018232 00000 n 
+0000019265 00000 n 
+trailer
+<< /Size 28 /Root 1 0 R >>
+startxref
+19336
+%%EOF
