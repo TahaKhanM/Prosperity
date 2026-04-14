@@ -2,313 +2,625 @@
 
 Date: 2026-04-14
 
-Scope: Round 1 signal ranking for `ASH_COATED_OSMIUM` and `INTARIAN_PEPPER_ROOT`, using the official Round 1 files first, then the raw local Round 1 datasets, then older public-repo ideas only as workflow analogy.
+Scope: `alpha_miner` adversarial mechanism analysis of the local Round 1 bundle for `ASH_COATED_OSMIUM` and `INTARIAN_PEPPER_ROOT`.
 
-Primary sources used:
-- `Prosperity Context/Official Prosperity Context.md`
-- `Prosperity Context/Official Prosperity Context Round 1.md`
-- `Prosperity Context/ROUND1_PROMPT_HINTS_CONTEXT.md`
-- `prosperity_rust_backtester/datasets/round1/prices_round_1_day_-2.csv`
-- `prosperity_rust_backtester/datasets/round1/prices_round_1_day_-1.csv`
-- `prosperity_rust_backtester/datasets/round1/prices_round_1_day_0.csv`
-- `prosperity_rust_backtester/datasets/round1/trades_round_1_day_-2.csv`
-- `prosperity_rust_backtester/datasets/round1/trades_round_1_day_-1.csv`
-- `prosperity_rust_backtester/datasets/round1/trades_round_1_day_0.csv`
-- `prosperity-research/03_repo_notes/prosperity3_rank2_repo_research_note.md`
-- `prosperity-research/03_repo_notes/prosperity3_research_note.md`
-- `prosperity-research/03_repo_notes/chrispyroberts_imc_prosperity_3_research_note.md`
-- `Round1AnalysisV1/ai_strategy_context.zip`
+Primary sources:
+- Official files under `Prosperity Context/`
+- Local Round 1 datasets under `prosperity_rust_backtester/datasets/round1/`
+- Existing Round 1 research notes under `prosperity-research/`
 
-Method summary:
-- Fair-value tests used only two-sided, non-zero-mid rows.
-- Sample size after filtering:
-  - `ASH_COATED_OSMIUM`: 27,644 two-sided rows, 1,265 trades
-  - `INTARIAN_PEPPER_ROOT`: 27,688 two-sided rows, 1,011 trades
-- Estimators tested:
-  - `simple mid = (best_bid + best_ask) / 2`
-  - `microprice = (ask * bid_vol + bid * ask_vol) / (bid_vol + ask_vol)`
-  - `wall mid = midpoint of the largest displayed bid wall and largest displayed ask wall`
-  - `filtered market-maker mid (mm10) = midpoint of the best bid and best ask among visible levels with size >= 10, fallback to BBO`
-- For `INTARIAN_PEPPER_ROOT`, I also tested a fitted linear intraday trend baseline because the raw data visibly drifts within each day.
+Public-repo material was not used as authority for any current Round 1 mechanism claim.
 
 ## Source Status
 
 ### Confirmed by official docs
 
-- Round 1 live products are `ASH_COATED_OSMIUM` and `INTARIAN_PEPPER_ROOT`.
-- Both Round 1 position limits are `80`.
-- Round 1 also includes an Exchange Auction, but that is separate from this signal note.
-- The official round brief frames:
-  - `INTARIAN_PEPPER_ROOT` as relatively steady, similar in spirit to tutorial `EMERALDS`
-  - `ASH_COATED_OSMIUM` as more volatile, possibly pattern-driven
+- Round 1 products are `ASH_COATED_OSMIUM` and `INTARIAN_PEPPER_ROOT`.
+- Both position limits are `80`.
+- Round 1 uses the normal `Trader.run(self, state)` continuous-book interface.
+- The Exchange Auction exists, but it is a separate side task.
+- Narrative prompt cards and screenshots are soft clues, not formal rules.
 
 ### Supported by local data
 
-- `ASH_COATED_OSMIUM` is best treated as an anchored / stationary wide-spread market-making product with small book-driven lean and modest short-horizon spike reversion.
-- `INTARIAN_PEPPER_ROOT` is not fixed-anchor stable in the sample. It shows a strong deterministic intraday upward drift on all three local days, plus smaller book and trade-pressure overlays.
-- Spread state exists, but spread itself is weak as a predictive alpha signal in both products.
-- One-sided or empty books are common enough to matter operationally:
-  - `ASH_COATED_OSMIUM`: 7.7% of rows
-  - `INTARIAN_PEPPER_ROOT`: 7.7% of rows
-
-### Supported only by public analogy
-
-- Use a phased order-construction pattern: take -> clear -> make.
-- Use calm quote placement, size discipline, and inventory-aware skew rather than eager crossing on small signals.
-- Consider wall-mid / market-maker-mid style fair-value candidates first for market-making products before reaching for heavier models.
+- `ASH_COATED_OSMIUM` is anchored near `10000` and behaves like a replenishing wide-spread maker market.
+- `INTARIAN_PEPPER_ROOT` follows an extremely repeatable rising session path in the local three-day bundle.
+- Pepper one-sided books are short refresh artifacts, not durable states.
+- Pepper's time-of-session path explains more of the local sample than book-only fair proxies do.
+- Pepper imbalance still matters, but mainly as a local overlay on top of the session ramp.
 
 ### Still unproven
 
-- That the exact local drift shape in `INTARIAN_PEPPER_ROOT` will persist unchanged in live Round 1.
-- That spread-regime shifts themselves are a primary alpha source.
-- That periodic bot-cycle timing signals are robust enough to trade.
-- That quote-wall effects are large enough to monetize directly rather than just use as a weak tie-breaker.
+- Whether the Pepper session ramp persists live outside the local three-day bundle.
+- Whether the Pepper ramp is literally scripted by time, or instead produced by lagged bots reacting to a hidden fair that itself follows a stable template.
+- Whether Ash has a deeper periodic generator beyond anchored replenishment and microstructure fade.
 
-## Product Classification
+## Re-Tested Prior Conclusions
 
-| Product | Market type | Main fair-value view | Main monetization path | Confidence |
-| --- | --- | --- | --- | --- |
-| `ASH_COATED_OSMIUM` | Anchored / stationary, wide-spread, mildly book-driven | Anchor around `10000` with book-refined fair via `mm10` or `wall_mid` | Passive spread capture, selective stale-quote taking, small book-skew overlay | High |
-| `INTARIAN_PEPPER_ROOT` | Drifting / rolling-fair-value, with secondary directional pressure | Time-aware rolling fair, then refine with `wall_mid` or `microprice` | Passive market making around a rising fair, upward skew, selective takes against stale offers | High |
+The prior local story still holds after adversarial slicing, but the causal interpretation is now sharper.
 
-## Fair-Value Estimator Tests
+What still looks right:
+- Ash is not a time-template market.
+- Pepper is not well described as a fixed-anchor market.
+- One-sided Pepper books should not be promoted to first-class state variables.
 
-Average MAE versus future mid on horizons `1`, `5`, `10` ticks:
+What needed tightening:
+- Pepper does not merely "trend upward."
+- The local evidence says Pepper follows a near-deterministic session-shaped fair path, with the visible book mostly revealing that path plus small local deviations.
+- The strongest competition-specific edge is therefore not generic trend following. It is exploiting what looks locally like a telegraphed session fair.
 
-### `ASH_COATED_OSMIUM`
+## Adversarial Empirical Findings
 
-| Estimator | h=1 | h=5 | h=10 | Verdict |
-| --- | ---: | ---: | ---: | --- |
-| Fixed anchor `10000` | 3.86 | 3.86 | 3.86 | Useful sanity anchor, too coarse for execution |
-| Simple mid | 1.25 | 1.41 | 1.56 | Acceptable baseline |
-| Microprice | 1.24 | 1.41 | 1.55 | Similar level estimate, more useful as lean |
-| Wall mid | 1.14 | 1.26 | 1.39 | Strong level estimator |
-| Filtered MM mid `>=10` | 1.04 | 1.21 | 1.36 | Best tested level estimator |
-
-Interpretation:
-- `ASH` does behave like an anchored market, but the actionable fair is not a naked `10000`.
-- The best short-horizon execution fair comes from the visible book, especially the `>=10` filtered market-maker mid.
-- `microprice` is not the best level estimate, but it is directionally useful.
-
-### `INTARIAN_PEPPER_ROOT`
-
-| Estimator | h=1 | h=5 | h=10 | Verdict |
-| --- | ---: | ---: | ---: | --- |
-| Fixed anchor `10000` | 1501.03 | 1501.25 | 1501.52 | Falsified immediately |
-| Linear intraday trend fit | 1.09 | 1.20 | 1.47 | Drift matters materially |
-| Simple mid | 1.08 | 1.30 | 1.58 | Too naive |
-| Microprice | 1.01 | 1.23 | 1.53 | Better as skew than as base fair |
-| Wall mid | 0.96 | 1.16 | 1.45 | Best tested base fair |
-| Filtered MM mid `>=10` | 0.96 | 1.17 | 1.46 | Near-tie with wall mid, slightly worse overall |
-
-Interpretation:
-- `PEPPER` must be treated as rolling fair value, not fixed-fair-value market making.
-- The right base fair is time-aware and book-aware.
-- `wall_mid` edges out `mm10` on this product, while `microprice` still helps as a directional overlay.
-
-## Local Findings by Product
+## 1. Price Process Structure
 
 ### `ASH_COATED_OSMIUM`
 
-#### What the raw data says
-
-- Intraday mid is tightly centered around `10000`:
-  - day `-2`: mean `9998.16`, std `4.73`
-  - day `-1`: mean `10000.83`, std `3.83`
-  - day `0`: mean `10001.62`, std `5.22`
-- Drift is negligible: roughly `0` per step across all three days.
-- Spread is wide and stable:
-  - mean `16.18`
-  - dominant regime `16`
-  - secondary regimes `18` and `19`
-
-#### Spread regimes
-
-- Spread-state persistence exists mechanically because `16` dominates the book, but it is not a strong alpha source.
-- Narrow-vs-wide spread response is weak:
-  - narrow spreads: average `+0.14` over 5 ticks
-  - wide spreads: average `-0.01` over 5 ticks
-- Conclusion: spread is mainly an execution-cost input, not a primary predictor.
-
-#### Imbalance and short-horizon return behavior
-
-- Top-level imbalance is not persistent:
-  - lag-1 imbalance autocorrelation is near `0`
-  - strong-sign imbalance keeps the same sign only about `16%` of the time on the next row
-- But current imbalance still predicts short-horizon direction:
-  - negative imbalance bucket: about `-1.9` over 5 ticks
-  - positive imbalance bucket: about `+2.0` over 5 ticks
-- `microprice` and `mm10` lean directionally the right way:
-  - `microprice > mid`: average `+1.91` over 5 ticks
-  - `microprice < mid`: average `-1.82` over 5 ticks
-  - `mm10 > mid`: average `+4.05` over 5 ticks
-  - `mm10 < mid`: average `-3.50` over 5 ticks
+- Effective two-sided mid by day:
+  - day `-2`: `10000.0 -> 9993.5`
+  - day `-1`: `9992.0 -> 10002.0`
+  - day `0`: `10003.0 -> 10007.0`
+- Daily std of effective mid: about `3.8` to `5.2`.
+- Cross-day normalized path correlation is weak or slightly negative:
+  - `-2/-1`: `-0.0969`
+  - `-2/0`: `-0.1391`
+  - `-1/0`: `-0.0878`
+- Leave-one-day-out current-fair MAE:
+  - `mm10_mid`: `0.288`
+  - `microprice`: `0.981`
+  - `wall_mid`: `0.979`
+  - `ema_wall`: `1.244`
+  - time template: `7.862`
+- Ten-step-ahead MAE:
+  - `mm10_mid`: `1.336`
+  - `microprice`: `1.528`
+  - `wall_mid`: `1.666`
+  - time template: `7.868`
 
 Interpretation:
-- There is usable book-driven lean.
-- The effect size is still small relative to the `16`-tick spread, so this is a quote-skew / selective-taking signal, not a license for constant aggressive crossing.
-
-#### Quote-wall behavior
-
-- Back-of-book walls show a small bounce-away effect, not a large follow-through effect:
-  - bid-side wall case: about `-0.31` residual move over 5 ticks
-  - ask-side wall case: about `+0.33` residual move over 5 ticks
-- This is too small to rank as a primary edge.
-
-#### Spike behavior
-
-- Short-horizon jumps do revert often:
-  - spike threshold around `3.8` to `3.9`
-  - 689 to 761 spike cases per day under that rule
-  - reversion rate over 5 ticks: about `71%` to `74%`
-  - average 5-tick reversion: about `2.45` to `2.52`
-
-Interpretation:
-- Spike fading is real, but still smaller than the full spread.
-- Best use: temporary contra-skew or inventory relief, not a standalone high-turnover reversal engine.
-
-#### Trade tape
-
-- Anonymous trades do not carry strong follow-through in `ASH`.
-- Prints at the bid or ask are close to flat on a 5-tick horizon.
-
-Conclusion:
-- `ASH` is a stable market-making product first.
-- Best fair base: `mm10`, with `wall_mid` as a simpler near-equivalent fallback.
-- Best overlay: mild book-based lean plus optional spike-fade skew.
+- Ash is anchored and locally book-driven.
+- Time-of-session does not explain Ash.
+- The right fair story is still anchored maker + small book-based lean.
 
 ### `INTARIAN_PEPPER_ROOT`
 
-#### What the raw data says
-
-- Each local day rises by about `+1000` from open to close:
+- Effective two-sided mid by day:
   - day `-2`: `9998.5 -> 11001.5`
   - day `-1`: `10998.5 -> 11998.0`
   - day `0`: `11998.5 -> 13000.0`
-- Fitted slope is extremely consistent:
-  - about `+0.108` mid units per step on each day
-- After removing that linear drift, residual volatility is small:
-  - residual std about `1.36` to `1.62`
+- Daily std of effective mid: about `288.7` every day.
+- Cross-day normalized path correlation is effectively `1.0`:
+  - `-2/-1`: `0.999983`
+  - `-2/0`: `0.999982`
+  - `-1/0`: `0.999980`
+- Decile normalized path points are almost identical across days:
+  - day `-2`: `[0.0, 101.0, 202.5, 302.5, 400.5, 500.0, 601.5, 700.0, 801.5, 900.0, 1003.0]`
+  - day `-1`: `[0.0, 103.0, 201.5, 303.0, 403.0, 501.5, 601.5, 700.0, 806.0, 901.0, 999.5]`
+  - day `0`: `[0.0, 101.0, 199.5, 301.5, 401.5, 501.5, 603.0, 703.0, 803.0, 901.5, 1001.5]`
+- Third-session slopes are almost constant:
+  - day `-2`: `[0.1005, 0.1004, 0.1001]`
+  - day `-1`: `[0.1004, 0.1001, 0.0995]`
+  - day `0`: `[0.1005, 0.1001, 0.0999]`
+- Leave-one-day-out current-fair MAE:
+  - `mm10_mid`: `0.3845`
+  - `microprice`: `0.7050`
+  - time template: `1.0153`
+  - `wall_mid`: `1.0474`
+  - `ema_wall`: `1.6506`
+- Ten-step-ahead MAE:
+  - time template: `1.0156`
+  - `mm10_mid`: `1.4260`
+  - `microprice`: `1.4749`
+  - `wall_mid`: `2.2195`
+  - `ema_wall`: `2.6210`
 
 Interpretation:
-- The dominant feature is deterministic / session-like drift.
-- Residual microstructure exists, but it sits on top of that drift rather than replacing it.
+- Pepper's local fair path is far more clock-like than book-like.
+- The book still helps for local alignment and short-horizon tilt, but the dominant structure is a session template.
 
-#### Spread regimes
+## 2. Return Structure And Regime Persistence
 
-- Spread is narrower than `ASH` and mostly lives in `12` to `14` on days `-2` and `-1`, then `13` to `17` on day `0`.
-- Spread state has only weak predictive value:
-  - narrow-spread average 5-tick move: `+0.56`
-  - wide-spread average 5-tick move: `+0.54`
-- That is basically just the background drift.
+### Both products
+
+- One-step return autocorrelation is strongly negative:
+  - Ash: `-0.4578`
+  - Pepper: `-0.4506`
+- Longer-lag return autocorrelation is near zero.
+
+Interpretation:
+- Both books exhibit short-horizon quote bounce / replenishment effects.
+- There is no evidence that simple return-momentum logic is the primary engine.
+
+### Pepper drift stability under slicing
+
+Pepper ten-step effective-mid return stays near `+1.0` tick under hard slicing:
+
+- early / mid / late session:
+  - `1.0005`, `0.9995`, `1.0004`
+- after excluding top `5%` of ten-step moves:
+  - full sample: `1.0001`
+  - trimmed: `0.8938`
+- in ordinary two-sided states:
+  - `0.9949`
+- after recent trade activity:
+  - no recent trade: `0.9947`
+  - recent trade: `1.0499`
+- after just-refreshed books:
+  - just refreshed: `0.9399`
+  - not refresh: `1.0046`
+
+Interpretation:
+- The Pepper ramp is not a few bursts.
+- It persists by day, by segment, by ordinary book state, and after trimming extremes.
+
+## 3. Spread And Book Behavior
+
+### `ASH_COATED_OSMIUM`
+
+- State counts per day are about:
+  - two-sided: `9187` to `9232`
+  - one-sided bid/ask combined: about `750` to `795`
+  - empty: about `14` to `18`
+- Non-two-sided streak median is `1`, max `2` to `4`.
+- Dominant spreads:
+  - `16`, `18`, `19`
+- Spread state has only small predictive value once the anchored fair is accounted for.
+
+### `INTARIAN_PEPPER_ROOT`
+
+- State counts per day are about:
+  - two-sided: `9216` to `9253`
+  - one-sided bid/ask combined: about `726` to `794`
+  - empty: about `16` to `21`
+- Non-two-sided streak median is `1`, max `3`.
+- Ordinary spreads from `11` to `18` all still carry about the same ten-step drift, roughly `+0.97` to `+1.04`.
+
+Interpretation:
+- One-sided Pepper books are overwhelmingly refresh artifacts.
+- Spread regime is not the main causal state for Pepper. The session fair is.
+
+## 4. Imbalance Persistence And Book Alpha
+
+### `ASH_COATED_OSMIUM`
+
+- Top-of-book imbalance correlates with future effective-mid returns:
+  - `h=1`: `0.5665`
+  - `h=5`: `0.5535`
+  - `h=10`: `0.5191`
+  - `h=20`: `0.4779`
+- Ten-step future return by imbalance bucket:
+  - `pos_hi`: `+3.8935`
+  - `pos`: `+1.6681`
+  - `flat`: `-0.0116`
+  - `neg`: `-1.6137`
+  - `neg_hi`: `-3.2974`
+
+Interpretation:
+- Ash imbalance is real alpha and consistent with maker skew / selective taking.
+
+### `INTARIAN_PEPPER_ROOT`
+
+- Top-of-book imbalance correlates with future effective-mid returns:
+  - `h=1`: `0.5436`
+  - `h=5`: `0.5612`
+  - `h=10`: `0.5700`
+  - `h=20`: `0.5635`
+- Ten-step future return by imbalance bucket:
+  - `pos_hi`: `+6.8729`
+  - `pos`: `+2.7411`
+  - `flat`: `+0.9728`
+  - `neg`: `-0.7877`
+  - `neg_hi`: `-4.4677`
+
+Interpretation:
+- Pepper imbalance matters.
+- But the key adversarial point is this: even flat imbalance still gives about `+1.0` tick over ten steps.
+- Imbalance modulates a rising fair. It does not generate the whole drift.
+
+## 5. Time Template Versus Book Revelation
+
+This is the strongest competition-specific result in the local bundle.
+
+### Pepper time-template evidence
+
+- Pepper leave-one-day-out time-template ten-step MAE is `1.0156`, better than any tested book-only proxy.
+- Pepper residual around the leave-one-day-out template has std about `1.52`.
+- Pepper wall-minus-template residual has std about `1.41`.
+- Relative to the full intraday Pepper scale, those residuals are tiny.
+
+### Does the book add information beyond the template?
+
+Yes, but mainly as a local reveal / overshoot signal.
+
+Correlation of `(wall_mid - template_now)` with excess future return over the template path:
+- `h=1`: `-0.5281`
+- `h=5`: `-0.5609`
+- `h=10`: `-0.5549`
+- `h=20`: `-0.5505`
+
+Interpretation:
+- If wall-mid is above the template, future excess return tends to be smaller or mean-reverting.
+- If wall-mid is below the template, future excess return tends to be larger.
+- That is exactly what a lagged noisy book reveal should look like around a dominant latent fair path.
 
 Conclusion:
-- The prompt hint that spread may encode “intention” is only weakly supported here.
-- Spread looks more like an execution-state variable than a standalone alpha.
+- Pepper's book is more consistent with revealing and locally overshooting a template fair than with causing the main drift.
 
-#### Imbalance and short-horizon return behavior
+## 6. Trades, Quote Changes, And Refresh Artifacts
 
-- Raw imbalance has little persistence, same as `ASH`.
-- Once drift is removed, imbalance still matters:
-  - negative imbalance residual move: about `-1.64` to `-2.02` over 5 ticks
-  - positive imbalance residual move: about `+1.70` to `+1.95` over 5 ticks
-- `microprice` is the best directional overlay:
-  - `microprice > mid`: average `+2.37` over 5 ticks
-  - `microprice < mid`: average `-1.25` over 5 ticks
+### `ASH_COATED_OSMIUM`
 
-Interpretation:
-- `PEPPER` has both drift and subtle repeated one-sided pressure.
-- A rolling fair should lean upward by default, then further skew on positive book pressure.
-
-#### Trade tape
-
-- The tape is informative even though buyer/seller IDs are anonymized:
-  - trades at or above the ask are followed by about `+2.03`, `+2.37`, `+2.69` over 5 ticks on the three days
-  - trades at or below the bid are followed by about `-0.42`, `-0.98`, `-0.79`
+- Trade relation counts:
+  - sell-hit: `618`
+  - buy-lift: `647`
+- Average next effective-mid move:
+  - after any trade row: `+0.0519`
+  - after no-trade row: `-0.0020`
+- Trade-signed impact is small:
+  - buy-lifts, `h=10`: `+0.1731`
+  - sell-hits, `h=10`: `-0.0712`
+- `P(next book change | trade)` is not elevated versus no trade:
+  - trade: `0.6989`
+  - no trade: `0.7235`
 
 Interpretation:
-- Repeated directional pressure is real.
-- This supports a light continuation overlay on top of the session drift.
+- Ash is not dominated by trade-triggered quote chasing.
+- Replenishing liquidity remains the better story.
 
-#### Quote-wall behavior
+### `INTARIAN_PEPPER_ROOT`
 
-- Back-of-book wall effects are again small:
-  - bid-side wall residual move: about `-0.24` to `-0.33` over 5 ticks
-  - ask-side wall residual move: about `+0.29` to `+0.32`
-- This is too weak for a standalone wall strategy.
+- Trade relation counts:
+  - sell-hit: `518`
+  - buy-lift: `492`
+  - inside: `1`
+- Average next effective-mid move:
+  - after any trade row: `+0.3049`
+  - after no-trade row: `+0.0929`
+- Trade-signed impact:
+  - buy-lifts: `+1.6423` at `h=1`, `+2.6443` at `h=10`
+  - sell-hits: `-0.9411` at `h=1`, `-0.1535` at `h=10`
+- `P(next book change | trade)` is clearly elevated:
+  - trade: `0.7527`
+  - no trade: `0.6774`
+- `P(next trade | prior book change)` only rises slightly:
+  - change: `0.0344`
+  - no change: `0.0318`
 
-#### Spike behavior
+Interpretation:
+- Pepper trades look more like triggers for later quote updates than quote updates look like triggers for later trades.
+- That supports lagged quote bots or stale-update bots, not purely book-led price discovery.
 
-- Raw spikes often revert:
-  - spike threshold around `3.16` to `3.75`
-  - reversion rate over 5 ticks about `72%` to `74%`
-- But this is not the main story.
-- Once the deterministic drift is accounted for, spike-fade is secondary and should not override the rolling-fair-value logic.
+## 7. Clocked Quote Updates And Template Bots
 
-Conclusion:
-- `PEPPER` is a drift-tracking market-making product with secondary microstructure continuation.
-- Best fair base: time-aware rolling fair with `wall_mid` refinement.
-- Best overlay: `microprice` / tape-confirmed upward pressure, used carefully to skew rather than blindly chase.
+### What is true
 
-## Ranked Candidate Edges
+- Pepper quote shifts use a small discrete menu:
+  - best-bid top shifts: `+3`, `-3`, `+1`, `-2`, `+4`, `+2`, `+9`, `-9`
+  - best-ask top shifts: `+3`, `-3`, `+1`, `-2`, `+4`, `+2`, `-4`, `-10`
+- Pepper change intervals favor short gaps:
+  - `1`, `2`, `3`, `4`, `5`, `6`, `10`
 
-| Rank | Edge | Support class | Why it ranks here | Monetization path | Main failure mode |
-| --- | --- | --- | --- | --- | --- |
-| 1 | `INTARIAN_PEPPER_ROOT` session drift tracking with rolling fair and upward skew | Supported by local data | The `+1000/day` drift is the clearest, largest, most repeatable pattern in the sample | Quote around a rising fair, buy stale asks, avoid donating with stale sells, inventory-aware skew | Drift disappears, reverses, or becomes non-linear live |
-| 2 | `ASH_COATED_OSMIUM` anchored market making around `mm10` / `wall_mid` | Supported by local data | Stable center around `10000`, stable wide spread, best clean spread-capture setup | Two-sided passive quoting plus selective stale-quote takes | Hidden fair drifts more in live than in sample |
-| 3 | `ASH` book-lead overlay from `mm10`, `microprice`, and imbalance | Supported by local data | Directional effect exists, but it is smaller than the spread | Use as quote skew and selective taking filter, not as pure directional strategy | Overtrading small signals gives up spread edge |
-| 4 | `PEPPER` continuation overlay from `microprice` and trade-at-ask / trade-at-bid pressure | Supported by local data | Trade tape and book both show repeated one-sided pressure beyond baseline drift | Lean quotes upward after buy pressure, be slower to offer size into strength | Inventory builds too fast in an already drifting product |
-| 5 | `ASH` short-horizon spike fade | Supported by local data | Reversion exists, but payoff is modest relative to spread | Temporary contra-skew, inventory relief, occasional selective fade | Fading too aggressively in a genuine move |
-| 6 | Calm quote placement, context-aware sizing, inventory-aware skew | Supported only by public analogy plus prompt hints | Strong execution pattern, but not directly inferable from the sample alone | Better fill quality and lower adverse selection | Hidden if backtester fills are too optimistic |
+### What is not true
 
-## Explicitly Rejected or Downgraded Ideas
+- Cross-day quote-increment sequence correlation is near zero:
+  - Pepper best-bid increment sequence correlation across day pairs is roughly `-0.0147` to `0.0246`
+  - Pepper best-ask increment sequence correlation across day pairs is roughly `0.0048` to `0.0132`
+- Change counts by `timestamp mod 10` are not tightly concentrated.
 
-- Reject as primary edge: spread-regime alpha on either product.
-  - The spread is observable and worth logging, but predictive content is weak.
-- Reject: `INTARIAN_PEPPER_ROOT` fixed-anchor market making.
-  - The local sample falsifies this immediately.
-- Reject as primary edge: standalone quote-wall direction trading.
-  - Effects are too small and sign is more “bounce away from the wall” than “follow the wall.”
-- Downgrade heavily: `PEPPER` pure spike-reversion strategy.
-  - Drift is the dominant state variable; spike fading is secondary.
-- Downgrade: `ASH` periodicity / bot-cycle timing models.
-  - I do not see enough direct raw-data support to elevate periodicity above book-state signals.
-- Downgrade: aggressive directional crossing from small book signals on either product.
-  - Signal magnitudes are smaller than the quoted spread; this belongs in skew logic first.
+Interpretation:
+- The local data do not support a naive "same quote update at the same clock tick every day" story.
+- The better story is a stable latent fair path rendered through noisy discrete update templates.
 
-## Comparison Against Prompt Hints
+## 8. Hidden Periodic Structure
 
-### What the hints got right
+### `ASH_COATED_OSMIUM`
 
-- `INTARIAN_PEPPER_ROOT` really does behave like a slow market with subtle leaning.
-- There is repeated small directional pressure beyond a naive “stable commodity” model.
-- Calm execution is likely important because the usable signal sizes are modest relative to spread.
+- After removing the anchor, Ash levels are persistent, but there is no clean periodic signature.
+- The high short-lag level autocorrelation looks like anchored mean reversion and slow book evolution, not a detectable session clock.
 
-### What the hints overstate or leave unproven
+### `INTARIAN_PEPPER_ROOT`
 
-- “Spread behaving like intention” is not strongly confirmed by the raw local data.
-- The strongest `PEPPER` effect is not just subtle leaning; it is a nearly mechanical session drift with smaller microstructure overlays.
-- `ASH` looks less like hidden long-cycle trend discovery and more like wide-spread stationary market making with short-horizon book patterns.
+- After removing the leave-one-day-out time template, residual lag correlations are small.
+- No additional strong periodic residual structure emerges.
 
-## Comparison Against `ai_strategy_context.zip`
+Interpretation:
+- Pepper's main periodicity is the session fair itself.
+- Ash does not show a second, strong, exploitable session clock in the local bundle.
 
-### Agreement
+## Ranked Mechanism Hypotheses
 
-- `ASH` is stable / stationary.
-- `PEPPER` is drifting and should use rolling fair value.
-- `wall_mid` is a strong estimator on both products.
-- `ASH` has real mean-reverting behavior after jumps.
+## `INTARIAN_PEPPER_ROOT`
 
-### Adjustments I would make
+### 1. Smooth session-template latent fair with lagged discrete quote bots
 
-- For `ASH`, the filtered market-maker mid only wins cleanly under the exact visible-level `>=10` definition. A stricter “large quote” threshold loses quality.
-- For `PEPPER`, `wall_mid` remains the cleanest base estimator. Filtered MM mid is basically a tie, not an upgrade.
-- I would not rank periodicities as tradeable evidence from the current raw sample.
-- I would not promote `PEPPER` spike-reversion or spread-state ideas above drift-tracking and directional-pressure overlays.
+Mechanism:
+- A latent fair rises at an almost fixed session slope.
+- Visible quotes are a noisy, discrete, delayed rendering of that fair.
+- Trades sometimes trigger book refreshes, but they do not create the whole move.
+
+Explains well:
+- near-perfect normalized path repeatability
+- constant third-session slopes
+- time-template forecast dominance at ten-step horizon
+- trade leading later quote changes
+- discrete but not cross-day-synchronized quote shifts
+- wall-vs-template mean reversion
+
+Fails to explain:
+- why imbalance is still strong without adding the "lagged reveal" piece
+
+Favored strategy families:
+- time-template fair ownership
+- carry / acquire-and-defend long inventory
+- template fair plus local book overshoot correction
+
+Punished if wrong:
+- fully ramp-committed long carry
+- fast max-long acquisition
+
+Verdict:
+- strongest local mechanism hypothesis
+
+### 2. Synthetic near-deterministic fair path plus noisy book renderer
+
+Mechanism:
+- The simulator may effectively specify a fair path first, then generate book states around it.
+- The book is more presentation layer than driver.
+
+Explains well:
+- tiny template residuals
+- cross-day path stability
+- weak cross-day correlation of exact quote increments
+
+Fails to explain:
+- trade-triggered quote refresh patterns unless paired with update bots
+
+Favored strategy families:
+- competition-specific time-template exploitation
+- simple fair-carry strategies with only modest book conditioning
+
+Punished if wrong:
+- strategies that ignore the book completely
+
+Verdict:
+- very plausible locally, but slightly less complete than hypothesis 1
+
+### 3. Rising fair with imbalance-modulated local drift
+
+Mechanism:
+- The dominant fair rises exogenously, while current imbalance changes local timing and overshoot.
+
+Explains well:
+- strong imbalance correlations
+- flat-imbalance state still having positive drift
+- large positive returns in `pos_hi` and negative returns in `neg_hi`
+
+Fails to explain:
+- near-perfect cross-day path without adding the session template
+
+Favored strategy families:
+- template fair plus state-conditioned aggression
+- adaptive carry with reserve capacity
+
+Punished if wrong:
+- pure imbalance followers
+
+Verdict:
+- useful execution overlay, not the root story
+
+### 4. Book-driven hidden-state trend regime
+
+Mechanism:
+- The book itself carries persistent directional states and the local sample happened to over-sample upward states.
+
+Explains well:
+- strong imbalance alpha
+
+Fails to explain:
+- flat imbalance still drifting up
+- one-sided states being brief
+- the near-identical daily path
+
+Favored strategy families:
+- hidden-state book followers
+
+Punished if wrong:
+- one-sided-book chasing
+- spread-state-first logic
+
+Verdict:
+- weaker than the time-template explanation
+
+### 5. Clocked quote-template bot with same updates every day
+
+Mechanism:
+- Bots update on a fixed clock schedule with repeated exact shift patterns.
+
+Explains well:
+- discrete quote increments
+
+Fails to explain:
+- near-zero cross-day quote increment alignment
+- lack of strong timestamp-modulo concentration
+
+Favored strategy families:
+- exact clock-arbitrage on quote moves
+
+Punished if wrong:
+- rigid event-time entry timing
+
+Verdict:
+- rejected as the main story
+
+## `ASH_COATED_OSMIUM`
+
+### 1. Anchored replenishing maker market with small book-led deviations
+
+Mechanism:
+- A stable fair near `10000`.
+- Wide quoted spread.
+- Replenishing liquidity with modest imbalance information.
+
+Explains well:
+- strong `mm10_mid` fit
+- anchored daily range
+- imbalance-to-return correlation
+- weak time-template fit
+
+Fails to explain:
+- any larger hidden periodic component
+
+Favored strategy families:
+- anchored market making
+- book-skewed quoting
+- selective stale-quote taking
+
+Punished if wrong:
+- directional momentum engines
+
+Verdict:
+- strongest Ash mechanism
+
+### 2. Anchored fair with short spike-fade microstructure
+
+Mechanism:
+- Short deviations around the anchor mean-revert quickly.
+
+Explains well:
+- negative one-step autocorrelation
+- small signed trade impact
+- microprice usefulness as an overlay
+
+Fails to explain:
+- the whole Ash edge by itself
+
+Favored strategy families:
+- anchored MM plus small fade overlays
+
+Punished if wrong:
+- over-aggressive contrarian taking
+
+Verdict:
+- good overlay, not full architecture
+
+### 3. Hidden periodic session clock
+
+Mechanism:
+- Ash fair follows a repeated session pattern.
+
+Explains well:
+- little
+
+Fails to explain:
+- weak or negative cross-day path correlation
+- poor template MAE
+- near-zero cross-day quote increment alignment
+
+Favored strategy families:
+- time-template Ash logic
+
+Punished if wrong:
+- any clock-driven Ash positioning
+
+Verdict:
+- rejected
+
+## Strategy Families Favored Or Punished
+
+### Favored by the current mechanism map
+
+1. Pepper time-template fair ownership with inventory tolerance.
+2. Pepper template fair plus local book overshoot correction.
+3. Ash anchored market making with `mm10_mid` / `wall_mid` and imbalance skew.
+4. Competition-specific hybrid: time-shaped Pepper carry plus conservative Ash spread capture.
+
+### Punished by the current mechanism map
+
+1. Fixed-anchor Pepper market making.
+2. One-sided-book Pepper chasing as a primary alpha.
+3. Exact clock-tick quote-arbitrage without a latent-fair story.
+4. Time-template Ash logic.
+5. Purely reactive Pepper book-only strategies that refuse to encode session shape.
+
+## Competition-Specific Exploit Takeaway
+
+If this Round 1 environment is synthetic rather than real-market-like, the locally rational exploit is:
+- treat Pepper as a telegraphed session fair first,
+- use the visible book as a noisy reveal and overshoot control layer,
+- and tolerate inventory concentration more than a real-market trader normally would.
+
+That is not an official fact.
+It is the strongest local mechanism inference currently supported by the bundle.
 
 ## Bottom Line
 
-- `ASH_COATED_OSMIUM` should be treated as a stable wide-spread market-making product with `mm10` or `wall_mid` fair, plus small directional skew from the book.
-- `INTARIAN_PEPPER_ROOT` should be treated as a rolling-fair-value drift product first, with `wall_mid` refinement and a secondary `microprice` / tape-pressure continuation overlay.
-- The strongest rejected idea is “spread state itself is alpha.”
-- The strongest caution is that `PEPPER` inventory can build quickly if drift and buy pressure are monetized too aggressively without skew discipline.
+- Ash is best understood as an anchored replenishing-maker market with real but modest book alpha.
+- Pepper is best understood as a competition-specific session-template fair rendered through lagged discrete quote updates.
+- The strongest local Round 1 edge is therefore a hybrid:
+  - real-market-like logic for Ash,
+  - competition-specific template exploitation for Pepper.
+
+## Current Ship Re-Read
+
+### What `round1_overhaul_v1.py` gets right
+
+- It already abandons fixed-anchor Pepper market making.
+- It correctly leans into early Pepper ownership instead of waiting for repeated confirmation that arrives too late.
+- It keeps Ash in the right family: anchored fair, maker-first, selective taking, modest book overlays.
+
+### What `round1_overhaul_v1.py` still over-assumes
+
+- It treats Pepper mainly as a reactive drift state inferred from the current book and opening observations.
+- It does not encode the stronger local evidence that Pepper's fair path itself is session-shaped and near-deterministic in the local bundle.
+- It therefore captures the right carry posture, but not the cleanest generator story behind that posture.
+
+## Candidate-Family Ranking
+
+| Family | Market hypothesis | Generator hypothesis | Why it might beat `round1_overhaul_v1.py` | Failure mode | Verdict |
+| --- | --- | --- | --- | --- | --- |
+| Improved Ash maker + improved Pepper ramp ownership | Ash anchored maker, Pepper rising fair | Pepper fair rises on a stable session template | Own the same Pepper edge earlier and with cleaner fair anchoring | Still fragile if the template weakens live | Strong |
+| Time-template Pepper strategy | Pepper is primarily clock-shaped | Synthetic or exogenous session fair dominates the visible book | Converts the local mechanism map directly into fair estimation | Overfits if the ramp is only a three-day coincidence | Strong |
+| Explicit generator-aware strategy | Book is a lagged renderer of a hidden session fair | Stable latent fair plus noisy quote updates | Uses time template first and book residual second | Too aggressive if book-only states matter more live | Strong |
+| Adaptive carry with reserve capacity | Same Pepper fair, but uncertainty deserves spare capacity | Template exists, but only some sessions should be fully owned | Better fallback if the live ramp weakens | Gives away too much bundle PnL if the template is real | Medium |
+| Structural exploit candidate | Refresh / template artifacts are themselves tradable | Small family of quote-template bots | Could beat carry by timing discrete refreshes | Evidence too weak for exact clock exploitation | Rejected |
+| Full overhaul candidate | Product-specific logic with no architecture constraint | Ash anchored maker, Pepper template fair with local overshoot control | Best chance to align code with the mechanism map | Complexity without evidence | Chosen family |
+| Robust fallback candidate | Lower Pepper concentration, more reactive logic | Generator remains partly unidentified | Less single-story dependence | Leaves too much edge unowned if the bundle story holds | Reserve only |
+
+## Implemented Contenders
+
+### `round1_overhaul_v3.py`
+
+- Ash logic stays in the anchored-maker family from `v1`.
+- Pepper is redesigned around an explicit session-template fair using a locally derived offset curve.
+- The book is used as a secondary reveal / overshoot control layer, not as the primary source of drift.
+- Inventory policy is intentionally competition-specific: acquire and defend long Pepper earlier when price sits below the template fair.
+
+Why it is strategically distinct from `round1_overhaul_v1.py`:
+- `v1` mostly infers a rising Pepper state from current book conditions.
+- `v3` encodes the stronger local generator hypothesis directly: session-template fair first, local book second.
+
+### `round1_overhaul_v4.py`
+
+- `v4` is the slower-build counterfactual.
+- It preserves the same template story but holds more reserve capacity and delays max-long acquisition.
+- Its main value is diagnostic:
+  - if it had matched or beaten `v3`, the case for immediate template ownership would have weakened.
+  - it did not.
+
+## Candidate Outcome Ranking
+
+1. `round1_overhaul_v3.py`
+   Why: best alignment with the current mechanism map and best stressed local validation.
+2. `round1_overhaul_v1.py`
+   Why: simpler and already strong, but it under-specifies the session-template story.
+3. `round1_overhaul_v4.py`
+   Why: useful falsification test, but dominated by `v3`.
+4. `round1_candidate_v2.py`
+   Why: lower-concentration fallback when mechanism confidence is lower.
+
+## Updated Takeaway
+
+- The local bundle does not just reward "Pepper up, buy Pepper."
+- It looks more like a synthetic environment where Pepper fair is telegraphed by time-of-session and only partially revealed through the book.
+- The best current design is therefore a hybrid:
+  - Ash traded with restrained, real-market-like anchored maker logic,
+  - Pepper traded as a competition-specific template exploit with local residual control.
