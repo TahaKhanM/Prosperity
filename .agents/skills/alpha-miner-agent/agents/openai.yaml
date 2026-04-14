@@ -1,6 +1,0 @@
-interface:
-  display_name: "Alpha Miner Agent"
-  short_description: "Signal discovery, regime slicing, monetization mapping"
-  default_prompt: "Use the Alpha Miner Agent skill to analyze local datasets, rank signal candidates, and separate passive from aggressive monetization paths."
-policy:
-  allow_implicit_invocation: false

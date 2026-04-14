@@ -1,6 +1,0 @@
-interface:
-  display_name: "Execution and Risk Agent"
-  short_description: "Fill sensitivity, inventory path, drawdown decomposition"
-  default_prompt: "Use the Execution and Risk Agent skill to determine whether the observed edge survives execution, fill, and inventory reality."
-policy:
-  allow_implicit_invocation: false

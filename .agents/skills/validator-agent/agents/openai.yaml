@@ -1,6 +1,0 @@
-interface:
-  display_name: "Validator Agent"
-  short_description: "Backtests, controls, robustness, ship-or-reject"
-  default_prompt: "Use the Validator Agent skill to compare the candidate trader against a named baseline and decide whether the change should ship."
-policy:
-  allow_implicit_invocation: false

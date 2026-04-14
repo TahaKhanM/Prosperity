@@ -1,6 +1,0 @@
-interface:
-  display_name: "Repo Librarian Agent"
-  short_description: "Public repo mining, pattern extraction, architecture notes"
-  default_prompt: "Use the Repo Librarian Agent skill to mine public Prosperity repos, extract reusable patterns, and separate reusable structure from stale round-specific ideas."
-policy:
-  allow_implicit_invocation: false
