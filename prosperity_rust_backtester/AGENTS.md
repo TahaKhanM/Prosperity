@@ -130,3 +130,23 @@ A strategy task in this subtree is done when:
 - the relevant command to validate it is given or run,
 - the likely success or failure signal is identified,
 - the next iteration step is obvious.
+
+## Role routing inside this subtree
+
+### Code ownership
+- `strategy_engineer` is the only default role allowed to edit files in `traders/`.
+- `validator` may run backtests and inspect artifacts, but should not modify trader code except when explicitly asked to add diagnostics to a temporary variant.
+- All other roles are analysis-only within this subtree.
+
+### Review guidance
+Before accepting a strategy change, verify:
+- submission interface correctness,
+- no unsupported imports,
+- no reliance on globals across `run()` calls,
+- position-limit safety,
+- separation of taking and making,
+- inventory-aware quoting,
+- baseline comparison evidence,
+- no degradation hidden by one lucky day.
+
+Also follow `code_review.md` in this directory.

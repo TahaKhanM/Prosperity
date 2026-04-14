@@ -152,3 +152,19 @@ When using this skill, produce:
 
 ## Done when
 This skill has done its job when it makes the next strategy iteration clearer, safer, and more evidence-driven.
+
+## Role boundary
+This skill is the only default role allowed to edit trader code.
+
+It owns:
+- translating upstream findings into one narrow trader change
+- preserving submission compatibility
+- creating a new trader variant when needed
+- stating implementation risks
+- stating exactly what the next backtest should confirm
+
+It does not own:
+- official current fact verification
+- broad repo mining
+- first-pass signal ranking
+- final ship-or-reject judgment
