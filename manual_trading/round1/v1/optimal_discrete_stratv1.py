@@ -28,7 +28,7 @@ def solve(bids, asks, buyback, fee=0):
 
         return best_price, best_volume
 
-    # helper: compute YOUR fill
+    # helper: compute our fill
     def get_fill(p, q, clearing_price, bids, asks):
         if p < clearing_price:
             return 0
