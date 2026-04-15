@@ -15,7 +15,21 @@ from prosperity4bt.open import open_visualizer
 from prosperity4bt.runner import run_backtest
 
 
+def _ensure_datamodel_importable() -> None:
+    """Ensure 'from datamodel import ...' works for trader files.
+
+    Official Prosperity traders use 'from datamodel import ...'. The actual
+    classes live in prosperity4bt.datamodel. We register a 'datamodel' alias
+    in sys.modules so the import works regardless of how the package is
+    installed (editable, pip install, site-packages, etc.).
+    """
+    if "datamodel" not in sys.modules:
+        from prosperity4bt import datamodel
+        sys.modules["datamodel"] = datamodel
+
+
 def parse_algorithm(algorithm: Path) -> Any:
+    _ensure_datamodel_importable()
     sys.path.append(str(algorithm.parent))
     return import_module(algorithm.stem)
 

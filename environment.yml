@@ -10,10 +10,14 @@ dependencies:
   - orjson>=3.10.15
   - tqdm>=4.67.1
   - typer>=0.15.2
+  - numpy
   - pandas
   - polars
   - duckdb
   - pyarrow
+  - scipy
+  - scikit-learn
+  - statsmodels
   - matplotlib
   - seaborn
   - maturin>=1.8,<2
