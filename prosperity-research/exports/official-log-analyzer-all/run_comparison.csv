@@ -1,0 +1,6 @@
+baseline,candidate,profit,profit_delta,ASH_COATED_OSMIUM_pnl,ASH_COATED_OSMIUM_delta,INTARIAN_PEPPER_ROOT_pnl,INTARIAN_PEPPER_ROOT_delta
+round1_candidate_v2,round1_overhaul_v14,10141.71875,3001.656,2715.71875,-168.094,7426.0,3169.75
+round1_candidate_v2,round1_overhaul_v16,10065.34375,2925.281,2684.34375,-199.469,7381.0,3124.75
+round1_candidate_v2,round1_overhaul_v22,10604.53125,3464.469,3178.53125,294.719,7426.0,3169.75
+round1_candidate_v2,round1_probe_ash_microstructur,-1314.0,-8454.062,0.0,-2883.812,-1314.0,-5570.25
+round1_candidate_v2,round1_probe_pepper_microstructure,-1314.0,-8454.062,0.0,-2883.812,-1314.0,-5570.25

@@ -1,5 +1,10 @@
 # Prosperity 4 Strategy Context For A New Codex Instance
 
+Current note:
+
+- This file is older and contains tutorial-era context.
+- For current Round 1 work, start with `CODEX_ROUND1_STRATEGY_CONTEXT.md`.
+
 This file is a handoff for a fresh Codex instance working in this repository.
 
 Layout note:
