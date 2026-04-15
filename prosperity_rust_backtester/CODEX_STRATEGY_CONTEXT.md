@@ -2,6 +2,11 @@
 
 This file is a handoff for a fresh Codex instance working in this repository.
 
+Layout note:
+- active traders now live under `traders/`
+- historical tutorial traders referenced in this document were moved to `trader_archive/Tutorial/archive/`
+- historical Round 1 traders, probes, and research traders were moved to `trader_archive/Round1/`
+
 It is meant to answer:
 - where to work
 - what the important files are
@@ -28,7 +33,7 @@ Follow these instructions first:
 Important repo guidance:
 - Preserve official Prosperity submission compatibility.
 - Do not overwrite benchmark traders unless explicitly asked.
-- Prefer new clearly named variants under `traders/`.
+- Prefer new clearly named variants under `traders/Round1/work/` unless the file is becoming the new default trader.
 - Use the Rust backtester here, not `Trader1/backtest.py`.
 - Keep `traderData` compact and intentional.
 - Do not add unsupported libraries.
@@ -90,15 +95,15 @@ cd /Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester
 Common commands:
 
 ```bash
-make tutorial TRADER=traders/improved_final_trader.py
-make tutorial TRADER=traders/improved_final_trader.py PERSIST=1 FLAT=1 PRODUCTS=full
-make tutorial TRADER=traders/improved_final_trader.py CARRY=1 PERSIST=1 FLAT=1 PRODUCTS=full
+make tutorial TRADER=trader_archive/Tutorial/archive/improved_final_trader.py
+make tutorial TRADER=trader_archive/Tutorial/archive/improved_final_trader.py PERSIST=1 FLAT=1 PRODUCTS=full
+make tutorial TRADER=trader_archive/Tutorial/archive/improved_final_trader.py CARRY=1 PERSIST=1 FLAT=1 PRODUCTS=full
 ```
 
 Direct CLI:
 
 ```bash
-./target/release/rust_backtester --trader traders/improved_final_trader.py --dataset tutorial --persist --flat --products full --run-id baseline-improved-final
+./target/release/rust_backtester --trader trader_archive/Tutorial/archive/improved_final_trader.py --dataset tutorial --persist --flat --products full --run-id baseline-improved-final
 ```
 
 Useful flags:
@@ -545,10 +550,10 @@ When continuing from here:
 1. Read this file.
 2. Read both AGENTS files.
 3. Read:
-   - `traders/improved_final_trader.py`
-   - `traders/tutorial_overhaul_trader.py`
-   - `traders/tutorial_champion_scorer.py`
-   - `traders/tutorial_champion_robust.py`
+   - `trader_archive/Tutorial/archive/improved_final_trader.py`
+   - `trader_archive/Tutorial/archive/tutorial_overhaul_trader.py`
+   - `trader_archive/Tutorial/archive/tutorial_champion_scorer.py`
+   - `trader_archive/Tutorial/archive/tutorial_champion_robust.py` if present in your local copy
 4. Run:
 
 ```bash
@@ -557,7 +562,7 @@ python3 scripts/branch_scorecard.py baseline-improved-final reference-overhaul c
 ```
 
 5. Use `scripts/forensic_bundle.py` on the run you are targeting.
-6. Create a new trader variant under `traders/`.
+6. Create a new trader variant under `traders/Round1/work/` unless it is replacing `traders/latest_trader.py`.
 7. Compare it against both:
    - scorer baseline
    - robustness reference
@@ -577,4 +582,3 @@ At the time this context file was written:
 - multiple strategy and script files were untracked
 
 Do not revert user work or unrelated changes.
-

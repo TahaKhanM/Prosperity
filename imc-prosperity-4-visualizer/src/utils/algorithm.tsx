@@ -17,6 +17,7 @@ import {
   Observation,
   Order,
   OrderDepth,
+  Position,
   Product,
   ProsperitySymbol,
   Trade,
@@ -28,6 +29,33 @@ export class AlgorithmParseError extends Error {
   public constructor(public readonly node: ReactNode) {
     super('Failed to parse algorithm logs');
   }
+}
+
+interface OfficialPayloadTrade {
+  timestamp: number;
+  buyer: string;
+  seller: string;
+  symbol: ProsperitySymbol;
+  currency: string;
+  price: number;
+  quantity: number;
+}
+
+interface OfficialPayloadLogRow {
+  timestamp: number;
+  sandboxLog?: string;
+  lambdaLog?: string;
+}
+
+interface OfficialPayload {
+  submissionId?: string;
+  activitiesLog?: string;
+  graphLog?: string;
+  tradeHistory?: OfficialPayloadTrade[];
+  logs?: OfficialPayloadLogRow[];
+  profit?: number;
+  status?: string;
+  positions?: unknown[];
 }
 
 function getColumnValues(columns: string[], indices: number[]): number[] {
@@ -43,20 +71,18 @@ function getColumnValues(columns: string[], indices: number[]): number[] {
   return values;
 }
 
-function getActivityLogs(logLines: string[]): ActivityLogRow[] {
-  const headerIndex = logLines.indexOf('Activities log:');
-  if (headerIndex === -1) {
+function parseActivityLogCsv(csvContent: string): ActivityLogRow[] {
+  const lines = csvContent.trim().split(/\r?\n/);
+  if (lines.length <= 1) {
     return [];
   }
 
   const rows: ActivityLogRow[] = [];
-
-  for (let i = headerIndex + 2; i < logLines.length; i++) {
-    const line = logLines[i];
-    if (line === '') {
-      break;
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line) {
+      continue;
     }
-
     const columns = line.split(';');
 
     rows.push({
@@ -73,6 +99,23 @@ function getActivityLogs(logLines: string[]): ActivityLogRow[] {
   }
 
   return rows;
+}
+
+function getActivityLogs(logLines: string[]): ActivityLogRow[] {
+  const headerIndex = logLines.indexOf('Activities log:');
+  if (headerIndex === -1) {
+    return [];
+  }
+
+  const csvLines: string[] = [];
+  for (let i = headerIndex + 2; i < logLines.length; i++) {
+    const line = logLines[i];
+    if (line === '') {
+      break;
+    }
+    csvLines.push(line);
+  }
+  return parseActivityLogCsv(csvLines.join('\n'));
 }
 
 function decompressListings(compressed: CompressedListing[]): Record<ProsperitySymbol, Listing> {
@@ -191,6 +234,175 @@ function decompressDataRow(compressed: CompressedAlgorithmDataRow, sandboxLogs: 
   };
 }
 
+function createEmptyObservations(): Observation {
+  return {
+    plainValueObservations: {},
+    conversionObservations: {},
+  };
+}
+
+function buildTradesByTimestamp(trades: OfficialPayloadTrade[]): Record<number, OfficialPayloadTrade[]> {
+  const byTimestamp: Record<number, OfficialPayloadTrade[]> = {};
+  for (const trade of trades) {
+    if (byTimestamp[trade.timestamp] === undefined) {
+      byTimestamp[trade.timestamp] = [];
+    }
+    byTimestamp[trade.timestamp].push(trade);
+  }
+  return byTimestamp;
+}
+
+function buildPositionsBeforeTimestamp(trades: OfficialPayloadTrade[]): Record<number, Record<Product, Position>> {
+  const positions: Record<number, Record<Product, Position>> = {};
+  const running: Record<Product, Position> = {};
+  const tradesByTimestamp = buildTradesByTimestamp(trades);
+  const timestamps = Object.keys(tradesByTimestamp)
+    .map(Number)
+    .sort((a, b) => a - b);
+
+  for (const timestamp of timestamps) {
+    positions[timestamp] = { ...running };
+    for (const trade of tradesByTimestamp[timestamp]) {
+      if (trade.buyer === 'SUBMISSION') {
+        running[trade.symbol] = (running[trade.symbol] ?? 0) + trade.quantity;
+      } else if (trade.seller === 'SUBMISSION') {
+        running[trade.symbol] = (running[trade.symbol] ?? 0) - trade.quantity;
+      }
+    }
+  }
+
+  return positions;
+}
+
+function buildListings(activityLogs: ActivityLogRow[]): Record<ProsperitySymbol, Listing> {
+  const listings: Record<ProsperitySymbol, Listing> = {};
+  for (const row of activityLogs) {
+    if (listings[row.product] !== undefined) {
+      continue;
+    }
+    listings[row.product] = {
+      symbol: row.product,
+      product: row.product,
+      denomination: 'XIRECS',
+    };
+  }
+  return listings;
+}
+
+function activityLogOrderDepth(rows: ActivityLogRow[]): Record<ProsperitySymbol, OrderDepth> {
+  const orderDepths: Record<ProsperitySymbol, OrderDepth> = {};
+  for (const row of rows) {
+    const buyOrders: Record<number, number> = {};
+    const sellOrders: Record<number, number> = {};
+    row.bidPrices.forEach((price, i) => {
+      buyOrders[price] = row.bidVolumes[i];
+    });
+    row.askPrices.forEach((price, i) => {
+      sellOrders[price] = -row.askVolumes[i];
+    });
+    orderDepths[row.product] = { buyOrders, sellOrders };
+  }
+  return orderDepths;
+}
+
+function convertOfficialTrade(trade: OfficialPayloadTrade): Trade {
+  return {
+    symbol: trade.symbol,
+    price: trade.price,
+    quantity: trade.quantity,
+    buyer: trade.buyer,
+    seller: trade.seller,
+    timestamp: trade.timestamp,
+  };
+}
+
+function summarizeOfficialRowTrades(trades: OfficialPayloadTrade[]): string {
+  if (trades.length === 0) {
+    return '';
+  }
+
+  const lines = ['Official payload trades at this timestamp:'];
+  for (const trade of trades) {
+    const side =
+      trade.buyer === 'SUBMISSION'
+        ? 'submission buy'
+        : trade.seller === 'SUBMISSION'
+          ? 'submission sell'
+          : 'external';
+    lines.push(`${trade.symbol} | ${side} | px=${trade.price} | qty=${trade.quantity}`);
+  }
+  return lines.join('\n');
+}
+
+function parseOfficialAlgorithm(payload: OfficialPayload, summary?: AlgorithmSummary): Algorithm {
+  if (!payload.activitiesLog) {
+    throw new AlgorithmParseError(<Text>Official payload is missing `activitiesLog`.</Text>);
+  }
+
+  const activityLogs = parseActivityLogCsv(payload.activitiesLog);
+  const listings = buildListings(activityLogs);
+  const trades = payload.tradeHistory ?? [];
+  const tradesByTimestamp = buildTradesByTimestamp(trades);
+  const positionsBeforeTimestamp = buildPositionsBeforeTimestamp(trades);
+  const logRowsByTimestamp: Record<number, OfficialPayloadLogRow> = {};
+  for (const row of payload.logs ?? []) {
+    logRowsByTimestamp[row.timestamp] = row;
+  }
+
+  const activityRowsByTimestamp: Record<number, ActivityLogRow[]> = {};
+  for (const row of activityLogs) {
+    if (activityRowsByTimestamp[row.timestamp] === undefined) {
+      activityRowsByTimestamp[row.timestamp] = [];
+    }
+    activityRowsByTimestamp[row.timestamp].push(row);
+  }
+
+  const timestamps = Object.keys(activityRowsByTimestamp)
+    .map(Number)
+    .sort((a, b) => a - b);
+
+  const data: AlgorithmDataRow[] = timestamps.map(timestamp => {
+    const rows = activityRowsByTimestamp[timestamp];
+    const orderDepths = activityLogOrderDepth(rows);
+    const timestampTrades = tradesByTimestamp[timestamp] ?? [];
+    const ownTrades: Record<ProsperitySymbol, Trade[]> = {};
+    const marketTrades: Record<ProsperitySymbol, Trade[]> = {};
+
+    for (const trade of timestampTrades) {
+      const target = trade.buyer === 'SUBMISSION' || trade.seller === 'SUBMISSION' ? ownTrades : marketTrades;
+      if (target[trade.symbol] === undefined) {
+        target[trade.symbol] = [];
+      }
+      target[trade.symbol].push(convertOfficialTrade(trade));
+    }
+
+    return {
+      state: {
+        timestamp,
+        traderData: '',
+        listings,
+        orderDepths,
+        ownTrades,
+        marketTrades,
+        position: positionsBeforeTimestamp[timestamp] ?? {},
+        observations: createEmptyObservations(),
+      },
+      orders: {},
+      conversions: 0,
+      traderData: '',
+      algorithmLogs: summarizeOfficialRowTrades(timestampTrades),
+      sandboxLogs: logRowsByTimestamp[timestamp]?.sandboxLog?.trim?.() ?? '',
+    };
+  });
+
+  return {
+    summary,
+    sourceFormat: 'official',
+    activityLogs,
+    data,
+  };
+}
+
 function getAlgorithmData(logLines: string[]): AlgorithmDataRow[] {
   const headerIndex = logLines.indexOf('Sandbox logs:');
   if (headerIndex === -1) {
@@ -251,7 +463,18 @@ function getAlgorithmData(logLines: string[]): AlgorithmDataRow[] {
 }
 
 export function parseAlgorithmLogs(logs: string, summary?: AlgorithmSummary): Algorithm {
-  const logLines = logs.trim().split(/\r?\n/);
+  const trimmed = logs.trim();
+
+  try {
+    const parsed = JSON.parse(trimmed) as OfficialPayload;
+    if (parsed.activitiesLog !== undefined) {
+      return parseOfficialAlgorithm(parsed, summary);
+    }
+  } catch {
+    // Fall through to logger-style parsing.
+  }
+
+  const logLines = trimmed.split(/\r?\n/);
 
   const activityLogs = getActivityLogs(logLines);
   const data = getAlgorithmData(logLines);
@@ -276,6 +499,7 @@ export function parseAlgorithmLogs(logs: string, summary?: AlgorithmSummary): Al
 
   return {
     summary,
+    sourceFormat: 'logger',
     activityLogs,
     data,
   };

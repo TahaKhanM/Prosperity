@@ -99,6 +99,7 @@ export interface AlgorithmDataRow {
 
 export interface Algorithm {
   summary?: AlgorithmSummary;
+  sourceFormat?: 'logger' | 'official';
   activityLogs: ActivityLogRow[];
   data: AlgorithmDataRow[];
 }

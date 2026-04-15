@@ -1,29 +1,39 @@
 # AGENTS.md
 
 ## Repository overview
-This repository is for developing, backtesting, and iterating IMC Prosperity 4 trading strategies.
+This repository is for developing, backtesting, analyzing, and iterating IMC Prosperity 4 trading strategies.
 
-There are two main areas:
-- `prosperity_rust_backtester/` is the active workspace for current strategy development, local backtesting, and run artifacts.
+The main top-level areas are:
+- `prosperity_rust_backtester/` active strategy-development workspace
+- `prosperity-research/` structured research notes, reports, and validation writeups
+- `Prosperity Context/` official context files and prompt aids
+- `IMC Backtester Official Logs/` downloaded official hosted backtester bundles
+- `Data/` local datasets and snapshots
+- `Round1AnalysisV1/` earlier exported analysis artifacts
+- `imc-prosperity-4-backtester/` older Python backtester reference
+- `imc-prosperity-4-visualizer/` separate visualization app
 
 ## Instruction layering
-- Follow this repo-root `AGENTS.md` for repository-wide routing and guardrails.
+- Follow this repo-root `AGENTS.md` for repository-wide routing and cleanup rules.
 - When working inside `prosperity_rust_backtester/`, also follow `prosperity_rust_backtester/AGENTS.md`. The more specific file takes precedence for that subtree.
 - Use the `prosperity-4-strategy-engineer` skill for reusable Prosperity strategy reasoning, market-type classification, and backtest diagnosis. Do not duplicate skill logic here.
 
 ## Source hierarchy
 Use sources in this order:
 1. Official Prosperity 4 round briefings and syntax/interface docs for current competition facts.
-2. This repository's backtester docs, datasets, and run artifacts for local workflow and evidence.
+2. This repository's backtester docs, datasets, run artifacts, and official hosted logs for local workflow and evidence.
 3. Older public Prosperity repos only for strategy ideas, code architecture ideas, and diagnostics patterns.
 
 Never treat older public repos as authority on current Prosperity 4 products, rules, or hidden mechanics.
 
-## Default working locations
-- Active trader files: `prosperity_rust_backtester/traders/`
+## Working map
+- Active default trader entrypoint: `prosperity_rust_backtester/traders/latest_trader.py`
+- Active structured traders: `prosperity_rust_backtester/traders/Round1/`
+- Historical trader archive: `prosperity_rust_backtester/trader_archive/`
 - Active datasets: `prosperity_rust_backtester/datasets/`
-- Active run outputs: `prosperity_rust_backtester/runs/`
+- Generated run outputs: `prosperity_rust_backtester/runs/`
 - Backtester docs and commands: `prosperity_rust_backtester/README.md` and `prosperity_rust_backtester/Makefile`
+- Non-code research outputs: `prosperity-research/`
 
 ## Legacy area
 `Trader1/` contains an old Python backtester and older trader code. Treat it as reference only.
@@ -32,16 +42,33 @@ Do not:
 - use `Trader1/backtest.py` as the default validation path
 - overwrite legacy files unless explicitly asked
 
+## Cleanup policy
+Safe-to-remove generated clutter includes:
+- `**/.DS_Store`
+- `**/.Rhistory`
+- `**/__pycache__/`
+- `**/*.pyc`
+- `**/*.egg-info/`
+- `output/`
+- `imc-prosperity-4-visualizer/node_modules/`
+- `imc-prosperity-4-visualizer/dist/`
+- `prosperity_rust_backtester/target/`
+- `prosperity_rust_backtester/runs/*` except `.gitkeep`
+
+Do not delete or rewrite downloaded official logs, datasets, or research notes unless explicitly asked.
+When cleaning strategy history, prefer archiving superseded experiments into the round-specific archive area instead of deleting them.
+
 ## Repo-wide constraints
 - Preserve valid Prosperity submission syntax in trader code.
 - Prefer small, testable strategy changes over large rewrites.
-- Prefer creating a new trader variant in `prosperity_rust_backtester/traders/` rather than overwriting the current best file unless explicitly asked to replace it.
+- Keep `prosperity_rust_backtester/traders/` minimal so AI tools see only the default trader and active structured subdirectories first.
+- Prefer creating a new trader variant in the round-specific work area or, for historical/reference-only code, in `prosperity_rust_backtester/trader_archive/`, rather than the root of `prosperity_rust_backtester/traders/`, unless explicitly asked otherwise.
 - Do not add unsupported libraries to submission code.
 - Do not rely on globals or class state persisting across `run()` calls.
 - Keep `traderData` compact and purposeful.
 - Do not optimize to one lucky backtest day while degrading the full tutorial bundle.
 - Do not edit datasets unless explicitly asked.
-- Do not delete old experiment files unless explicitly asked.
+- Do not delete experiment history when archiving it is sufficient.
 
 ## Default task workflow
 For normal strategy tasks:

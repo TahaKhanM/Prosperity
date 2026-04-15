@@ -14,7 +14,13 @@ Help build higher-performing Prosperity 4 traders through:
 - evidence-based comparisons between trader variants.
 
 ## Key directories
-- `traders/` active trader files
+- `traders/latest_trader.py` default active trader entrypoint
+- `traders/Round1/active/` named active Round 1 milestone traders
+- `traders/Round1/work/` staging area for future Round 1 experiments before promotion
+- `trader_archive/Round1/archive/` superseded Round 1 trader variants
+- `trader_archive/Round1/probes/` market-mechanics probe traders
+- `trader_archive/Round1/research/` research-only parameter sweep or diagnostics traders
+- `trader_archive/Tutorial/archive/` archived tutorial-round traders and historical variants
 - `datasets/` tutorial and round-organized data
 - `runs/` generated backtest artifacts
 - `README.md` local workflow documentation
@@ -23,8 +29,13 @@ Help build higher-performing Prosperity 4 traders through:
 
 ## Trader file policy
 - Treat `traders/latest_trader.py` as the default current working baseline unless the user names another file.
-- Other important variants may include files like `improved_final_trader.py`, `final_combined_trader.py`, `prosperity_best_variant.py`, and `research_param_trader.py`.
-- Prefer creating a clearly named new variant when testing a meaningful strategic change, for example `traders/tutorial_mm_v2.py` or `traders/tomatoes_dynamic_fair_v1.py`.
+- Keep the root of `traders/` minimal: `latest_trader.py`, a small number of readmes, and structured round/tutorial subdirectories.
+- Put named active Round 1 milestone traders under `traders/Round1/active/`.
+- Archive superseded Round 1 variants under `trader_archive/Round1/archive/` instead of leaving them in the active namespace.
+- Put probe traders under `trader_archive/Round1/probes/`.
+- Put research-only sweep or diagnostics traders under `trader_archive/Round1/research/`.
+- Use `traders/Round1/work/` for new Round 1 experiments until they are either promoted to top-level milestones or archived.
+- Keep old tutorial traders under `trader_archive/Tutorial/archive/`; do not leave large tutorial file piles in `traders/`.
 - Do not overwrite a benchmark trader unless explicitly asked.
 - Do not edit `__pycache__/` contents.
 
@@ -117,6 +128,11 @@ If a full run is too expensive for the immediate task, still specify the exact c
 - Do not add complexity unless it is tied to a diagnosed issue or a clear market hypothesis.
 - Do not treat older Prosperity repos as the source of truth for current rounds.
 - Do not sacrifice submission correctness for backtester-specific convenience.
+
+## Workspace hygiene
+- `runs/`, `target/`, `__pycache__/`, and similar build or cache artifacts are disposable.
+- Preserve milestone traders and research outputs; archive them instead of deleting them unless they are clearly generated clutter.
+- When promoting a trader to a primary default, keep `traders/latest_trader.py` as the single clear top-level path and archive the rest outside the active `traders/` namespace.
 
 ## Tutorial-round defaults
 Use these only as starting hypotheses, not as immutable truths.

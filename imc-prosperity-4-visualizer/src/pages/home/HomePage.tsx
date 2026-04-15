@@ -172,10 +172,10 @@ class Trader:
 
         <HomeCard title="Prerequisites">
           <Text>
-            IMC Prosperity 4 Visualizer assumes your algorithm logs in a certain format. Algorithms that use a different
-            logging format may cause unexpected errors when opening them in the visualizer. Please use the following
-            boilerplate for your algorithm (or adapt your algorithm to use the logger from this code) and use{' '}
-            <Code>logger.print()</Code> where you would normally use <Code>print()</Code>:
+            IMC Prosperity 4 Visualizer supports two inputs:
+            official IMC payload files extracted from a submission zip, and logger-style local backtester logs.
+            For local runs, please use the following boilerplate (or adapt your algorithm to use the logger from this
+            code) and use <Code>logger.print()</Code> where you would normally use <Code>print()</Code>:
           </Text>
           <ScrollableCodeHighlight code={exampleCode} language="python" />
         </HomeCard>
