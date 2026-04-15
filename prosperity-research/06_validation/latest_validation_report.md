@@ -2,6 +2,11 @@
 
 Date: 2026-04-14
 
+Path note:
+- trader files referenced below were written before the trader cleanup pass
+- active trader files now live under `prosperity_rust_backtester/traders/`
+- historical Round 1 trader files now live under `prosperity_rust_backtester/trader_archive/Round1/`
+
 Named baseline:
 - `prosperity_rust_backtester/traders/round1_baseline_v1.py`
 
