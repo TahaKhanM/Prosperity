@@ -107,6 +107,7 @@ def best_thresholds(final_sell_price, cases, fee):
     
     return (max_profit, max_profit_settle, max_profit_vol)
 
+# cases determined by manually calculating settle amounts off of static order book
 cases = [(53000, 19), (40000, 19), (50000, 18), (35000, 18), (20000, 17), (10000, 16), (1000, 15)]
 print('mushrooms', best_thresholds(20, cases, 0.1)) # profit, volume and price to buy mushrooms at for max profit
 # shorting already deemed unprofitable
