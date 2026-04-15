@@ -1,1 +1,15 @@
 .DS_Store
+.Rhistory
+
+**/.DS_Store
+**/.Rhistory
+**/__pycache__/
+**/*.py[cod]
+**/*.egg-info/
+**/node_modules/
+**/dist/
+**/target/
+
+output/
+prosperity_rust_backtester/runs/*
+!prosperity_rust_backtester/runs/.gitkeep

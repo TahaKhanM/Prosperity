@@ -20,6 +20,30 @@ export function ProductPriceChart({ symbol }: ProductPriceChartProps): ReactNode
     { type: 'line', name: 'Ask 1', color: getAskColor(1.0), marker: { symbol: 'triangle-down' }, data: [] },
     { type: 'line', name: 'Ask 2', color: getAskColor(0.75), marker: { symbol: 'circle' }, data: [] },
     { type: 'line', name: 'Ask 3', color: getAskColor(0.5), marker: { symbol: 'square' }, data: [] },
+    {
+      type: 'scatter',
+      name: 'Submission buys',
+      color: getBidColor(1.0),
+      marker: { symbol: 'triangle', radius: 4 },
+      data: [],
+      tooltip: { pointFormat: '<span style="color:{point.color}">●</span> Submission buy @ <b>{point.y}</b><br/>' },
+    },
+    {
+      type: 'scatter',
+      name: 'Submission sells',
+      color: getAskColor(1.0),
+      marker: { symbol: 'triangle-down', radius: 4 },
+      data: [],
+      tooltip: { pointFormat: '<span style="color:{point.color}">●</span> Submission sell @ <b>{point.y}</b><br/>' },
+    },
+    {
+      type: 'scatter',
+      name: 'External trades',
+      color: '#c0c0c0',
+      marker: { symbol: 'diamond', radius: 3 },
+      data: [],
+      tooltip: { pointFormat: '<span style="color:{point.color}">●</span> External trade @ <b>{point.y}</b><br/>' },
+    },
   ];
 
   for (const row of algorithm.activityLogs) {
@@ -35,6 +59,22 @@ export function ProductPriceChart({ symbol }: ProductPriceChartProps): ReactNode
 
     for (let i = 0; i < row.askPrices.length; i++) {
       (series[i + 4] as any).data.push([row.timestamp, row.askPrices[i]]);
+    }
+  }
+
+  for (const row of algorithm.data) {
+    const ownTrades = row.state.ownTrades[symbol] ?? [];
+    for (const trade of ownTrades) {
+      if (trade.buyer === 'SUBMISSION') {
+        (series[7] as any).data.push([trade.timestamp, trade.price]);
+      } else if (trade.seller === 'SUBMISSION') {
+        (series[8] as any).data.push([trade.timestamp, trade.price]);
+      }
+    }
+
+    const marketTrades = row.state.marketTrades[symbol] ?? [];
+    for (const trade of marketTrades) {
+      (series[9] as any).data.push([trade.timestamp, trade.price]);
     }
   }
 
