@@ -10,6 +10,8 @@ function getLimit(algorithm: Algorithm, symbol: ProsperitySymbol): number {
   const knownLimits: Record<string, number> = {
     EMERALDS: 80,
     TOMATOES: 80,
+    ASH_COATED_OSMIUM: 80,
+    INTARIAN_PEPPER_ROOT: 80,
     // Future round products will be added here as announced.
     // If a product is not in this list, the limit is inferred from the algorithm's positions.
   };
