@@ -1,0 +1,437 @@
+{
+  "external_trade_summary": {
+    "ASH_COATED_OSMIUM": {
+      "counts": {
+        "sell": 1
+      },
+      "metrics": {
+        "sell.markout_h1": -6.0,
+        "sell.markout_h10": -2.0,
+        "sell.markout_h20": 3.5,
+        "sell.markout_h5": -2.0,
+        "sell.next_mid_move_h1": 0.5,
+        "sell.next_mid_move_h10": 4.5,
+        "sell.next_mid_move_h20": 10.0,
+        "sell.next_mid_move_h5": 4.5
+      }
+    },
+    "INTARIAN_PEPPER_ROOT": {
+      "counts": {
+        "buy": 12,
+        "sell": 10
+      },
+      "metrics": {
+        "buy.markout_h1": -3.0,
+        "buy.markout_h10": -1.0,
+        "buy.markout_h20": -0.75,
+        "buy.markout_h5": -1.292,
+        "buy.next_mid_move_h1": 1.792,
+        "buy.next_mid_move_h10": 3.792,
+        "buy.next_mid_move_h20": 4.042,
+        "buy.next_mid_move_h5": 3.5,
+        "sell.markout_h1": -5.9,
+        "sell.markout_h10": -6.667,
+        "sell.markout_h20": -7.833,
+        "sell.markout_h5": -6.889,
+        "sell.next_mid_move_h1": 0.8,
+        "sell.next_mid_move_h10": 0.056,
+        "sell.next_mid_move_h20": -1.111,
+        "sell.next_mid_move_h5": -0.167
+      }
+    }
+  },
+  "final_product_pnl": {
+    "ASH_COATED_OSMIUM": 3205.5,
+    "INTARIAN_PEPPER_ROOT": 7450.0
+  },
+  "graph": [],
+  "label": "177116",
+  "positions": [],
+  "profit": null,
+  "replay": {
+    "fill_summary": {
+      "ASH_COATED_OSMIUM": {
+        "other_buy": {
+          "attempt_count": 83,
+          "attempt_qty": 1034,
+          "count_fill_rate": 0.0602,
+          "fill_count": 5,
+          "fill_qty": 30,
+          "qty_fill_rate": 0.029
+        },
+        "other_sell": {
+          "attempt_count": 83,
+          "attempt_qty": 963,
+          "count_fill_rate": 0.012,
+          "fill_count": 1,
+          "fill_qty": 7,
+          "qty_fill_rate": 0.0073
+        },
+        "passive_inside_buy": {
+          "attempt_count": 879,
+          "attempt_qty": 11995,
+          "count_fill_rate": 0.0319,
+          "fill_count": 28,
+          "fill_qty": 156,
+          "qty_fill_rate": 0.013
+        },
+        "passive_inside_sell": {
+          "attempt_count": 878,
+          "attempt_qty": 11226,
+          "count_fill_rate": 0.0319,
+          "fill_count": 28,
+          "fill_qty": 162,
+          "qty_fill_rate": 0.0144
+        },
+        "passive_join_buy": {
+          "attempt_count": 38,
+          "attempt_qty": 366,
+          "count_fill_rate": 0.0263,
+          "fill_count": 1,
+          "fill_qty": 6,
+          "qty_fill_rate": 0.0164
+        },
+        "passive_join_sell": {
+          "attempt_count": 39,
+          "attempt_qty": 394,
+          "count_fill_rate": 0.0,
+          "fill_count": 0,
+          "fill_qty": 0,
+          "qty_fill_rate": 0.0
+        },
+        "take_a1": {
+          "attempt_count": 14,
+          "attempt_qty": 86,
+          "count_fill_rate": 0.9286,
+          "fill_count": 13,
+          "fill_qty": 81,
+          "qty_fill_rate": 0.9419
+        },
+        "take_b1": {
+          "attempt_count": 16,
+          "attempt_qty": 110,
+          "count_fill_rate": 0.8125,
+          "fill_count": 13,
+          "fill_qty": 88,
+          "qty_fill_rate": 0.8
+        }
+      },
+      "INTARIAN_PEPPER_ROOT": {
+        "other_buy": {
+          "attempt_count": 56,
+          "attempt_qty": 820,
+          "count_fill_rate": 0.0,
+          "fill_count": 0,
+          "fill_qty": 0,
+          "qty_fill_rate": 0.0
+        },
+        "other_sell": {
+          "attempt_count": 4,
+          "attempt_qty": 4,
+          "count_fill_rate": 0.0,
+          "fill_count": 0,
+          "fill_qty": 0,
+          "qty_fill_rate": 0.0
+        },
+        "passive_inside_buy": {
+          "attempt_count": 796,
+          "attempt_qty": 11640,
+          "count_fill_rate": 0.0025,
+          "fill_count": 2,
+          "fill_qty": 6,
+          "qty_fill_rate": 0.0005
+        },
+        "passive_inside_sell": {
+          "attempt_count": 6,
+          "attempt_qty": 16,
+          "count_fill_rate": 0.0,
+          "fill_count": 0,
+          "fill_qty": 0,
+          "qty_fill_rate": 0.0
+        },
+        "passive_join_buy": {
+          "attempt_count": 2,
+          "attempt_qty": 28,
+          "count_fill_rate": 0.0,
+          "fill_count": 0,
+          "fill_qty": 0,
+          "qty_fill_rate": 0.0
+        },
+        "passive_join_sell": {
+          "attempt_count": 94,
+          "attempt_qty": 472,
+          "count_fill_rate": 0.0,
+          "fill_count": 0,
+          "fill_qty": 0,
+          "qty_fill_rate": 0.0
+        },
+        "take_a1": {
+          "attempt_count": 162,
+          "attempt_qty": 1466,
+          "count_fill_rate": 0.1235,
+          "fill_count": 20,
+          "fill_qty": 141,
+          "qty_fill_rate": 0.0962
+        },
+        "take_b1": {
+          "attempt_count": 10,
+          "attempt_qty": 60,
+          "count_fill_rate": 1.0,
+          "fill_count": 10,
+          "fill_qty": 60,
+          "qty_fill_rate": 1.0
+        }
+      }
+    },
+    "trader": "prosperity_rust_backtester/traders/Round1/work/pepper_carry/unvalidated/round1_pepper_dual_carry_v29.py"
+  },
+  "source": "IMC Backtester Official Logs/177116/177116.log",
+  "status": null,
+  "submission_trade_summary": {
+    "ASH_COATED_OSMIUM": {
+      "class_metrics": {
+        "other_buy": {
+          "immediate_edge": 4.6,
+          "markout_h1": 6.2,
+          "markout_h10": 6.8,
+          "markout_h20": 8.4,
+          "markout_h5": 5.2,
+          "next_mid_move_h1": 1.6,
+          "next_mid_move_h10": 2.2,
+          "next_mid_move_h20": 3.8,
+          "next_mid_move_h5": 0.6,
+          "opp_side_move_h1": 1.0,
+          "opp_side_move_h10": 0.667,
+          "opp_side_move_h20": 0.0,
+          "opp_side_move_h5": 0.333,
+          "same_side_move_h1": -4.0,
+          "same_side_move_h10": 0.5,
+          "same_side_move_h20": 1.0,
+          "same_side_move_h5": 1.5
+        },
+        "other_sell": {
+          "immediate_edge": 12.0,
+          "markout_h1": 4.0,
+          "markout_h10": 12.0,
+          "markout_h20": 1.0,
+          "markout_h5": 4.0,
+          "next_mid_move_h1": -8.0,
+          "next_mid_move_h10": 0.0,
+          "next_mid_move_h20": -11.0,
+          "next_mid_move_h5": -8.0,
+          "same_side_move_h1": 0.0,
+          "same_side_move_h10": 0.0,
+          "same_side_move_h20": -2.0,
+          "same_side_move_h5": 0.0
+        },
+        "passive_inside_buy": {
+          "immediate_edge": 7.411,
+          "markout_h1": 7.179,
+          "markout_h10": 7.143,
+          "markout_h20": 7.018,
+          "markout_h5": 7.554,
+          "next_mid_move_h1": -0.232,
+          "next_mid_move_h10": -0.268,
+          "next_mid_move_h20": -0.393,
+          "next_mid_move_h5": 0.143,
+          "opp_side_move_h1": -0.074,
+          "opp_side_move_h10": -0.37,
+          "opp_side_move_h20": 0.259,
+          "opp_side_move_h5": 0.926,
+          "same_side_move_h1": -0.964,
+          "same_side_move_h10": -0.111,
+          "same_side_move_h20": -1.0,
+          "same_side_move_h5": 0.0
+        },
+        "passive_inside_sell": {
+          "immediate_edge": 7.357,
+          "markout_h1": 7.0,
+          "markout_h10": 7.536,
+          "markout_h20": 6.911,
+          "markout_h5": 7.464,
+          "next_mid_move_h1": -0.357,
+          "next_mid_move_h10": 0.179,
+          "next_mid_move_h20": -0.446,
+          "next_mid_move_h5": 0.107,
+          "opp_side_move_h1": 0.148,
+          "opp_side_move_h10": -0.48,
+          "opp_side_move_h20": 0.444,
+          "opp_side_move_h5": -0.074,
+          "same_side_move_h1": -0.038,
+          "same_side_move_h10": -0.778,
+          "same_side_move_h20": -0.04,
+          "same_side_move_h5": -0.286
+        },
+        "passive_join_buy": {
+          "immediate_edge": 11.0,
+          "markout_h1": 9.0,
+          "markout_h10": 10.0,
+          "markout_h20": 9.0,
+          "markout_h5": 9.0,
+          "next_mid_move_h1": -2.0,
+          "next_mid_move_h10": -1.0,
+          "next_mid_move_h20": -2.0,
+          "next_mid_move_h5": -2.0,
+          "opp_side_move_h1": -10.0,
+          "opp_side_move_h10": -9.0,
+          "opp_side_move_h20": -10.0,
+          "opp_side_move_h5": -10.0
+        },
+        "take_a1": {
+          "immediate_edge": -2.885,
+          "markout_h1": 3.0,
+          "markout_h10": 1.692,
+          "markout_h20": 2.808,
+          "markout_h5": 1.692,
+          "next_mid_move_h1": 5.885,
+          "next_mid_move_h10": 4.577,
+          "next_mid_move_h20": 5.692,
+          "next_mid_move_h5": 4.577,
+          "opp_side_move_h1": -1.0,
+          "opp_side_move_h10": 0.0,
+          "opp_side_move_h20": 0.769,
+          "opp_side_move_h5": -0.462,
+          "same_side_move_h1": 9.923,
+          "same_side_move_h10": 10.5,
+          "same_side_move_h20": 10.615,
+          "same_side_move_h5": 9.615
+        },
+        "take_b1": {
+          "immediate_edge": -3.038,
+          "markout_h1": 0.885,
+          "markout_h10": 0.731,
+          "markout_h20": 1.625,
+          "markout_h5": 0.615,
+          "next_mid_move_h1": 3.923,
+          "next_mid_move_h10": 3.769,
+          "next_mid_move_h20": 4.917,
+          "next_mid_move_h5": 3.654,
+          "opp_side_move_h1": -0.091,
+          "opp_side_move_h10": -0.636,
+          "opp_side_move_h20": -0.8,
+          "opp_side_move_h5": -0.364,
+          "same_side_move_h1": 8.846,
+          "same_side_move_h10": 9.231,
+          "same_side_move_h20": 9.417,
+          "same_side_move_h5": 8.615
+        }
+      },
+      "submission_qty_by_side": {
+        "buy": 273,
+        "sell": 257
+      },
+      "trade_counts": {
+        "other_buy": 5,
+        "other_sell": 1,
+        "passive_inside_buy": 28,
+        "passive_inside_sell": 28,
+        "passive_join_buy": 1,
+        "take_a1": 13,
+        "take_b1": 13
+      },
+      "trade_qty": {
+        "other_buy": 30,
+        "other_sell": 7,
+        "passive_inside_buy": 156,
+        "passive_inside_sell": 162,
+        "passive_join_buy": 6,
+        "take_a1": 81,
+        "take_b1": 88
+      }
+    },
+    "INTARIAN_PEPPER_ROOT": {
+      "class_metrics": {
+        "passive_inside_buy": {
+          "immediate_edge": 7.25,
+          "markout_h1": 6.75,
+          "markout_h10": -1.5,
+          "markout_h20": 7.75,
+          "markout_h5": 6.75,
+          "next_mid_move_h1": -0.5,
+          "next_mid_move_h10": -8.75,
+          "next_mid_move_h20": 0.5,
+          "next_mid_move_h5": -0.5,
+          "opp_side_move_h1": 0.5,
+          "opp_side_move_h10": -0.5,
+          "opp_side_move_h20": 0.5,
+          "opp_side_move_h5": 0.5,
+          "same_side_move_h1": -1.5,
+          "same_side_move_h20": 0.5,
+          "same_side_move_h5": -1.5
+        },
+        "passive_inside_sell": {
+          "immediate_edge": 7.0,
+          "markout_h1": 8.5,
+          "markout_h10": 7.5,
+          "markout_h20": -3.0,
+          "markout_h5": 10.5,
+          "next_mid_move_h1": 1.5,
+          "next_mid_move_h10": 0.5,
+          "next_mid_move_h20": -10.0,
+          "next_mid_move_h5": 3.5,
+          "opp_side_move_h1": 3.0,
+          "opp_side_move_h10": 2.0,
+          "opp_side_move_h20": -2.0,
+          "opp_side_move_h5": 7.0,
+          "same_side_move_h1": 0.0,
+          "same_side_move_h10": -1.0,
+          "same_side_move_h5": 0.0
+        },
+        "take_a1": {
+          "immediate_edge": -6.05,
+          "markout_h1": -4.2,
+          "markout_h10": -3.625,
+          "markout_h20": -2.875,
+          "markout_h5": -3.55,
+          "next_mid_move_h1": 1.85,
+          "next_mid_move_h10": 2.425,
+          "next_mid_move_h20": 3.175,
+          "next_mid_move_h5": 2.5,
+          "opp_side_move_h1": 1.167,
+          "opp_side_move_h10": 1.7,
+          "opp_side_move_h20": 2.25,
+          "opp_side_move_h5": 1.947,
+          "same_side_move_h1": 2.889,
+          "same_side_move_h10": 3.947,
+          "same_side_move_h20": 4.1,
+          "same_side_move_h5": 3.444
+        },
+        "take_b1": {
+          "immediate_edge": -1.75,
+          "markout_h1": 2.8,
+          "markout_h10": 2.15,
+          "markout_h20": 0.75,
+          "markout_h5": 3.85,
+          "next_mid_move_h1": 4.55,
+          "next_mid_move_h10": 3.9,
+          "next_mid_move_h20": 2.5,
+          "next_mid_move_h5": 5.6,
+          "opp_side_move_h1": -0.333,
+          "opp_side_move_h10": 0.222,
+          "opp_side_move_h20": -2.333,
+          "opp_side_move_h5": 0.429,
+          "same_side_move_h1": 8.7,
+          "same_side_move_h10": 8.1,
+          "same_side_move_h20": 7.7,
+          "same_side_move_h5": 9.889
+        }
+      },
+      "submission_qty_by_side": {
+        "buy": 147,
+        "sell": 67
+      },
+      "trade_counts": {
+        "passive_inside_buy": 2,
+        "passive_inside_sell": 1,
+        "take_a1": 20,
+        "take_b1": 10
+      },
+      "trade_qty": {
+        "passive_inside_buy": 6,
+        "passive_inside_sell": 7,
+        "take_a1": 141,
+        "take_b1": 60
+      }
+    }
+  }
+}

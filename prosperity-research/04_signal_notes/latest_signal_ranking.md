@@ -1,261 +1,385 @@
-# Round 1 Signal Ranking
+# Round 1 Ash Signal Ranking
 
-Date: 2026-04-14
+Date: 2026-04-16
 
-Scope: deeper Round 1 research after the `v10` plateau, with emphasis on finding a second robust edge that could help both stressed local validation and official IMC backtester performance.
+Scope: `ASH_COATED_OSMIUM` only. This memo re-derives the Ash edge from the current `v29` baseline code, the hosted `177116` official log bundle, the local Round 1 datasets, and local `v29` run artifacts. It does not assume earlier Ash notes were correct.
 
-## Source Status
+## Official And Source Boundaries
 
-### Confirmed by official docs
+### Verified official facts
+
+Verified in [current_assumptions.md](/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity-research/01_assumptions/current_assumptions.md):
 
 - Round 1 products are `ASH_COATED_OSMIUM` and `INTARIAN_PEPPER_ROOT`.
-- Both limits are `80`.
-- The continuous-book trader interface remains `Trader.run(self, state)`.
-- Narrative hints are clues, not rules.
+- Both Round 1 position limits are `80`.
+- The submission interface is `Trader.run(self, state)` returning `(result, conversions, traderData)`.
+- `bid()` is not used for Round 1 continuous trading.
+- Order-limit enforcement is worst-case per side.
 
-### Supported by local data
+### Direct evidence used here
 
-- Ash is anchored and book-driven.
-- Pepper follows an extremely repeatable rising session path in the local bundle.
-- Pepper’s visible book mostly reveals local residual state around the template.
-- Ash default-vs-`none` behavior shows that fill-quality assumptions matter much more for Ash than for Pepper.
-- A tighter Ash maker/taker sleeve can improve PnL in default, `worse`, `none`, and queue stress without changing Pepper.
+- Baseline trader: [round1_pepper_dual_carry_v29.py](/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/traders/Round1/work/pepper_carry/unvalidated/round1_pepper_dual_carry_v29.py)
+- Hosted execution trace: [177116.log](/Users/tahakhan/Documents/Work/Projects/Prosperity/IMC Backtester Official Logs/177116/177116.log)
+- Hosted trader file: [177116.py](/Users/tahakhan/Documents/Work/Projects/Prosperity/IMC Backtester Official Logs/177116/177116.py)
+- Hosted summary: [177116.json](/Users/tahakhan/Documents/Work/Projects/Prosperity/IMC Backtester Official Logs/177116/177116.json)
+- Local Round 1 data:
+  - [prices_round_1_day_-2.csv](/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/datasets/round1/prices_round_1_day_-2.csv)
+  - [prices_round_1_day_-1.csv](/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/datasets/round1/prices_round_1_day_-1.csv)
+  - [prices_round_1_day_0.csv](/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/datasets/round1/prices_round_1_day_0.csv)
+  - matching `trades_round_1_day_*.csv`
+- Local persisted reference run: [persist-v29-default-20260416](/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/runs/persist-v29-default-20260416)
 
-### Supported only by public-repo analogy
+### Important fact about the hosted bundle
 
-- Formula-first fair objects are better than tactical branching without a clean state object.
-- Product-specific engines and explicit `alpha / inventory / execution / risk` separation remain the right workflow.
-- Counterfactual testing and ablation are the right way to decide whether a strategy family is real.
+`177116.py` is byte-for-byte identical to local `round1_pepper_dual_carry_v29.py`. So the hosted `177116` Ash trace is an official execution trace for the exact local `v29` baseline Ash logic.
 
-### Still unproven
+## Baseline Ash Read
 
-- Whether the official backtester preserves the exact Pepper template or only the broader generator family.
-- Whether Ash has another robust edge beyond the improved `v22` sleeve.
-- Whether a more ambitious Pepper recycle layer can still add real PnL without overfitting.
+### What `v29` is actually doing
 
-## Updated Goods Understanding
+The Ash sleeve in `v29` is:
 
-## `ASH_COATED_OSMIUM`
+- anchored around `10000`,
+- blended with always-on dynamic fair drift from `mm10_mid`, `wall_mid`, `microprice`, and `ret1`,
+- one passive layer only,
+- symmetric inside-quote preference when spread is wide enough,
+- limited aggressive taking and limited recycler logic.
 
-Current best read:
-- anchored fair around `10000`,
-- replenishing-maker microstructure,
-- strong short-horizon top-of-book information,
-- but fragile translation if that information is pushed too directionally.
+Inferred diagnosis from code alone:
 
-Key new conclusion:
-- Ash was not solved.
-- The old `v10` Ash sleeve was too passive and too dependent on default-mode matching.
-- The robust improvement came from changing execution, not from inventing a new hidden Ash generator.
+- it is not a pure anchor maker,
+- it is not a pure directional follower,
+- it is a blended anchored-maker with mild tactical drift.
 
-## `INTARIAN_PEPPER_ROOT`
+The rest of this memo tests whether that blend matches the data.
 
-Current best read:
-- template-plus-residual good,
-- with the template still dominating every tested fair object,
-- and the main remaining opportunity still in carry-versus-recycle policy.
+## Evidence Summary By Hypothesis
 
-Key new conclusion:
-- Pepper remains the main engine, but it no longer looks like the only path to improvement.
-- Recent plateau-breaking gain came from Ash, not Pepper.
+## 1. Neutral anchor around `10000`
 
-## Public-Repo Transfer Map
+### Evidence
 
-### Mark Brezina
+Across the full local Round 1 bundle, simple-mid deviation from `10000` has stable mean-reverting power at 10 ticks:
 
-Transferable:
-- treat the trader as `alpha + risk + inventory + execution + portfolio`, not just “a signal”.
-- competition-first willingness to exploit repeatable structure.
+- `corr(anchor_dev, future_mid_10 - mid) = -0.215`
+- cheap large-deviation states (`mid <= 9996`) had positive 10-tick drift on all three days:
+  - day `-2`: `+0.429`
+  - day `-1`: `+1.044`
+  - day `0`: `+0.655`
+- rich large-deviation states (`mid >= 10004`) had negative 10-tick drift on all three days:
+  - day `-2`: `-0.573`
+  - day `-1`: `-0.704`
+  - day `0`: `-0.515`
 
-Not transferable:
-- old product analogies and old round-specific assumptions.
+### Inference
 
-Round 1 use:
-- motivated the search for a second monetization layer instead of endlessly refining the Pepper curve.
+The neutral anchor is real and robust. It should remain the base Ash market hypothesis. But it is not the strongest standalone alpha in the data.
 
-### Timo Diehm
+## 2. Short-horizon mean reversion
 
-Transferable:
-- formula-first fair objects,
-- normalized diagnostics,
-- `take -> clear -> make`.
+### Evidence
 
-Not transferable:
-- Prosperity 3 product truths and bot truths.
+One-step Ash returns are strongly mean-reverting:
 
-Round 1 use:
-- kept Pepper generator work compact and made the Ash ablation attributable.
+- `corr(ret1, future_mid_10 - mid) = -0.415`
+- `corr(ret1, future_mid_5 - mid) = -0.441`
 
-### CarterT27
+Large one-step moves are especially strong:
 
-Transferable:
-- deeper-liquidity fair proxies,
-- explicit per-product engines,
-- use simple fair objects where the market type supports it.
+- `ret1 <= -3`:
+  - day `-2`: `+2.200` future 10-tick drift
+  - day `-1`: `+2.364`
+  - day `0`: `+2.370`
+- `ret1 >= +3`:
+  - day `-2`: `-1.912`
+  - day `-1`: `-1.766`
+  - day `0`: `-1.830`
 
-Not transferable:
-- their round-specific parameter values.
+### Inference
 
-Round 1 use:
-- reinforced the view that Ash should remain an anchored-maker engine while Pepper remains product-specific and separate.
+This is a stronger and cleaner edge than raw anchor deviation. Ash is not just “anchored around 10000.” It is also a fast mean-reverter around that anchor.
 
-## Candidate-Family Comparison
+## 3. Post-spike reversion
 
-| Family | Core idea | Why it could work | Why it could fail | Outcome |
-| --- | --- | --- | --- | --- |
-| `v10` reference | Pepper carry plus template-anchored recycle | current best prior ship | still too dependent on old Ash sleeve | benchmark |
-| `v11` regularized Pepper control | smoother Pepper generator | more plausible official generalization | loses `none` | control only |
-| `v12` Ash directional-execution redesign | add Ash signal state, flow, and directional quote engine | attacks the official/local bottleneck directly | too invasive, default deterioration | rejected |
-| `v13` conservative Ash upgrade | same anchored Ash family, more assertive takes and tighter quotes | cleaner fill-quality improvement | may still be too small | strong |
-| `v14` assertive Ash maker/taker | push the same `v13` idea further while keeping Pepper unchanged | adds a real second edge and improves all required modes | could still depend too much on local Ash matching | prior ship |
-| `v15` Ash safe-regime directional skew | add small Ash quote lean only in normal two-sided states | tests the report’s regime-gated execution idea without rewriting Ash | local uplift too small and slightly worse than `v14` | rejected |
-| `v16` Pepper recycle–reacquire | add a recent-recycle reacquire state on top of `v14` | tests the report’s symmetric recycle hypothesis in residual space | local benefit is too small and unstable across days | rejected |
-| `v17` Ash book-aware quoting | replace fixed Ash passive offsets with join/undercut logic anchored to the live book | exploits the same anchored Ash edge with cleaner order placement | default-heavy if it does not also free capacity | strong |
-| `v18` Ash signal-aware taking | add imbalance/micro-bias asymmetry on top of `v17` | could improve `none` by selecting better aggressive Ash takes | the directional layer may still be too noisy | rejected |
-| `v19` Ash wide-spread sizing | scale Ash passive size more aggressively when spread states are richer | monetizes the strongest passive edge states without changing the fair story | can add inventory without freeing enough capacity | strong but inferior to later branch |
-| `v20` Ash fair-based clearing | recycle large Ash inventory against current fair instead of the hard anchor | frees capacity earlier and helps both passive and aggressive Ash monetization | could over-trade if the anchored fair is too noisy | strong |
-| `v21` Ash execution stack | combine `v20` fair-based clearing with `v19` spread-state sizing | attacks quote quality and capacity release together | may still be too anchored on local spread mix | strong |
-| `v22` full-fair Ash clearing | push the same execution stack and clear large Ash inventory directly against current fair | strongest clean Ash monetization yet, still within the same market hypothesis | official Ash may fill less generously than the local bundle | chosen |
+### Evidence
 
-## Why `v12` Lost
+Multi-tick spikes mean-revert even more cleanly:
 
-- It tried to turn Ash into a more explicit directional state machine.
-- That changed too much at once:
-  - fair object,
-  - take logic,
-  - passive quoting.
-- Result:
-  - the Ash signal was real,
-  - but the execution translation was too opinionated.
+- `ret3 <= -4` had about `+2.82` average 10-tick drift
+- `ret3 >= +4` had about `-2.13` average 10-tick drift
 
-## Why `v13` Worked
+This was not a one-day accident. The one-step spike-fade states above stayed strong on all three local days.
 
-- It stayed inside the old Ash market hypothesis.
-- It only changed:
-  - take aggressiveness,
-  - passive quote offsets,
-  - and modest Ash inventory usage.
-- That was enough to improve all required modes.
+### Inference
 
-## Why `v14` Won
+Post-spike fade is a first-tier Ash alpha. It deserves an explicit regime, not just a small continuous fair adjustment.
 
-- `v14` is the best balance of:
-  - stronger Ash monetization,
-  - unchanged Pepper engine,
-  - improved default and stress results,
-  - and cleaner economic logic than the rejected `v12` branch.
-- The gain is entirely Ash:
-  - Pepper totals are unchanged,
-  - Ash PnL rises in every required mode.
+## 4. Microprice / best-level imbalance
 
-## Why `v15` Lost
+### Evidence
 
-- The safe-regime Ash skew was a valid research hypothesis from the deep report.
-- But the extra directional lean did not add enough over the simpler `v14` Ash execution upgrade.
-- That means the current Ash edge looks more like better translation of anchored value into orders than like a hidden directional regime model.
+Best-level pressure is real:
 
-## Why `v16` Lost
+- `corr(micro_bias, future_mid_10 - mid) = +0.439`
+- `corr(level1_imbalance, future_mid_10 - mid) = +0.518`
 
-- The report’s recycle–reacquire idea is economically coherent.
-- But the local artifact check showed the symmetric rebuy opportunity was not clean enough to justify a broader Pepper state machine yet.
-- The small reacquire controller produced only a near-tie and did not beat `v14`.
+Per-day 10-tick drift:
 
-## Why `v17` Worked
+- `micro_up` states:
+  - day `-2`: `+1.883`
+  - day `-1`: `+1.813`
+  - day `0`: `+1.829`
+- `micro_down` states:
+  - day `-2`: `-1.766`
+  - day `-1`: `-1.814`
+  - day `0`: `-1.755`
 
-- The local Ash edge was not only about tighter static offsets.
-- A cleaner join/undercut engine around the live book improved Ash without changing:
-  - the anchored fair object,
-  - the Pepper engine,
-  - or the basic take thresholds.
-- That validated the public-repo pattern of:
-  - fair first,
-  - then quote around the live book with explicit positive-edge guards.
+### Inference
 
-## Why `v18` Lost
+Microprice and best-level imbalance have real short-horizon predictive value. But they should be treated as tactical state or regime confirmation, not as permission for an always-on directional fair drift.
 
-- The Ash imbalance and micro-bias signals are real in the data.
-- But pushing them directly into more asymmetric Ash taking still added less than the simpler execution improvements.
-- That is more evidence that the missing Ash money is mostly execution and recycling, not a new directional Ash model.
+## 5. Persistence or non-persistence of directional pressure
 
-## Why `v20` and `v21` Worked
+### Evidence
 
-- `v20` found the next actual Ash bottleneck:
-  - inventory was still being cleared against the hard anchor instead of current fair.
-- Clearing large inventory against current fair released capacity sooner and improved Ash on all three local days.
-- `v21` added spread-state sizing on top of that and improved further, showing that:
-  - quote quality,
-  - quote size,
-  - and capacity release
-  all mattered together.
+The strongest states are not “pressure only” states. They are mixed states where recent move and current pressure define the regime:
 
-## Why `v22` Won
+- `ret1 <= -2` and `micro_bias >= +0.5`:
+  - normal spread: `+4.081` average 10-tick drift
+  - wide spread: `+1.237`
+- `ret1 >= +2` and `micro_bias <= -0.5`:
+  - normal spread: `-3.541`
+  - wide spread: `-1.212`
 
-- `v22` pushed the same logic one step further:
-  - when Ash inventory is already large, clear directly against current fair, not a partially anchored hybrid.
-- That produced the strongest clean improvement over `v14` in:
-  - default,
-  - `worse`,
-  - `none`,
-  - and queue stress.
-- The gain is still fully attributable:
-  - Pepper is unchanged,
-  - all uplift is Ash,
-  - and the market hypothesis is still the same anchored-maker Ash story.
+Flat wide states with pressure also have signal, but smaller:
 
-## Current Ranking
+- wide, flat, `micro_up`: `+1.165`
+- wide, flat, `micro_down`: `-1.214`
 
-1. `round1_overhaul_v22.py`
-2. `round1_overhaul_v21.py`
-3. `round1_overhaul_v20.py`
-4. `round1_overhaul_v19.py`
-5. `round1_overhaul_v17.py`
-6. `round1_overhaul_v14.py`
-7. `round1_overhaul_v13.py`
-8. `round1_overhaul_v10.py`
-9. `round1_overhaul_v16.py`
-10. `round1_overhaul_v11.py`
-11. `round1_overhaul_v8.py`
-12. `round1_overhaul_v15.py`
-13. `round1_overhaul_v6.py`
-14. `round1_overhaul_v3.py`
-15. `round1_candidate_v2.py`
-16. `round1_baseline_v1.py`
+### Inference
 
-## Explicit Formula and Policy Objects Now Favored
+Pressure is persistent enough to matter, but the best Ash use is regime-specific:
 
-### Ash fair object
+- spike-fade with pressure confirmation,
+- or wide passive quoting with pressure-aware side preference.
 
-- Base fair remains:
-  - `fair_ash = 10000 + 0.65 * clamp(mm10_mid - 10000, -3, 3) + 0.25 * clamp(microprice - mid, -1.5, 1.5) + 0.35 * clamp(-0.45 * ret1, -1.5, 1.5)`
+This argues against a permanent blended directional tilt.
 
-### Ash execution stack in `v22`
+## 6. Spread-regime effects
 
-- Better take threshold:
-  - keep the `v14` style take logic:
-  - `take_edge = 2.0` in normal states,
-  - `1.5` in shock states,
-  - plus extra caution only when Ash is already far from the anchor.
-- Better passive placement:
-  - quote around the live book using positive-edge join/undercut logic,
-  - not just fixed passive offsets from fair.
-- Better spread-state sizing:
-  - when spread widens to `18+`, increase first and second quote sizes rather than inventing a new signal.
-- Better inventory recycling:
-  - when Ash inventory is already large, clear directly against current fair rather than waiting for the hard anchor.
+### Evidence
 
-### Pepper generator
+Wide spread is common:
 
-- Unchanged from `v10`:
-  - 81-knot session template,
-  - same recycle logic,
-  - still the best balanced Pepper engine currently shipped.
+- average spread across the local Round 1 bundle: `16.18`
+- share with spread `>= 18`: `27.6%`
 
-## Best Current Hypotheses
+But wide spread alone is not directional:
 
-1. The official/local gap is no longer best understood as only a Pepper-template problem.
-2. Ash fill quality and Ash order translation were a genuine bottleneck.
-3. The strongest current Round 1 trader is now a hybrid:
-   - competition-specific Pepper carry/recycle,
-   - plus a more realistic anchored Ash maker/taker sleeve with cleaner recycling.
-4. The returned deep research report did surface real ideas, but the biggest practical unlock after `v14` was still inside Ash execution rather than a new Pepper state machine.
-5. The next evidence-backed frontier is more likely official-generalization work on the Pepper generator family than another Ash directional-complexity increase.
+- official day `0` wide-state future 10-tick drift: only `+0.050`
+
+What wide spread does improve is passive economics:
+
+- official `177116` Ash trades:
+  - passive average 10-tick markout: `+6.875`
+  - aggressive average 10-tick markout: `+1.540`
+  - wide-trade average 10-tick markout: `+7.808`
+  - narrow-trade average 10-tick markout: `+4.617`
+
+### Inference
+
+Wide spread is an execution regime, not a directional alpha by itself. The money is in better passive capture and better side selection, not in blindly following wide-spread moves.
+
+## 7. Inventory drag vs turnover
+
+### Evidence
+
+Official `177116` Ash finished at `3205.5` PnL with only `89` own Ash trades and a max Ash position of `66`.
+
+The position path was asymmetric:
+
+- time with Ash position `>= +20`: `31700`
+- time with Ash position `<= -20`: `13600`
+- time with Ash position `>= +40`: `16300`
+- time with Ash position `<= -40`: `0`
+
+Sell execution while already long was weak:
+
+- official flat-state sells: `+5.194` average 10-tick markout
+- official sells while already `+20` or more: `+1.583`
+
+By contrast, buy-side markouts did not degrade as severely.
+
+### Inference
+
+The hosted `v29` Ash trace carries long inventory too comfortably and monetizes rich / sell-side states too weakly. Inventory drag is not the only issue, but it is real and asymmetric.
+
+## 8. Multi-level taking opportunities
+
+### Evidence
+
+I explicitly tested aggressive taking markouts in spike-fade and wide-spread states by asking whether buying visible ask levels or selling visible bid levels had positive 10-tick markout.
+
+Result:
+
+- level-1 aggressive buys in spike-fade buy states were negative on average
+- level-2 aggressive buys were even worse
+- symmetric sell-side aggressive levels were also negative
+
+### Inference
+
+There is no strong evidence that the missed Ash money is “start sweeping deeper levels.” Multi-level taking looks weak and should rank low.
+
+## 9. Second passive layer capture on wide spreads
+
+### Evidence
+
+If a second passive layer fills, its conditional markout is attractive:
+
+- wide-spread passive level-1 buy markout: about `+9.36`
+- wide-spread passive level-2 buy markout: about `+10.53`
+- wide-spread passive level-1 sell markout: about `+9.36`
+- wide-spread passive level-2 sell markout: about `+10.53`
+
+But the fill proxy is tiny when checked against the Round 1 trade tape:
+
+- wide-state second-bid fill proxy: about `0.47%`
+- wide-state second-ask fill proxy: about `0.18%`
+
+### Inference
+
+A second passive layer is not dead, but it is not the main missing alpha. It is a secondary refinement with low expected fill frequency, not the first architecture change to prioritize.
+
+## Official `v29` Capture Versus Raw Opportunity
+
+## What `177116` captured well
+
+### Evidence
+
+- official Ash passive fills were good: `+6.875` average 10-tick markout
+- official spike-fade buys were monetized reasonably well:
+  - raw official-day spike-fade-buy states: `46` states, `+2.174` average 10-tick drift
+  - official buys in those states: `9` fills, `+3.063` average 10-tick markout
+
+### Inference
+
+The buy-side fade logic is not the main failure.
+
+## What `177116` under-captured
+
+### Evidence
+
+Sell-side fade and rich-state monetization were weaker:
+
+- raw official-day spike-fade-sell states:
+  - `52` states
+  - `-2.740` average 10-tick drift
+- official sells in those states:
+  - `7` fills
+  - only `+0.417` average 10-tick markout
+
+Rich-side anchor states showed the same pattern:
+
+- raw official-day rich-big states (`mid >= 10004`):
+  - `28` states
+  - `-3.571` average 10-tick drift
+- official sells in those states:
+  - `11` fills
+  - only `+0.773` average 10-tick markout
+
+### Inference
+
+The likely missed alpha in `v29` is not “more generic Ash direction.” It is better explicit sell-side regime handling:
+
+- stronger rich-state fade,
+- earlier flatten-only selling when already long,
+- pressure-confirmed spike-fade sells,
+- less reliance on a single blended fair for those states.
+
+## Ranked Ash Edges By Robustness
+
+1. Short-horizon spike-fade / mean reversion.
+2. Pressure-confirmed regime states using microprice or best-level imbalance.
+3. Neutral anchor making around `10000`.
+4. Wide-spread first-layer passive capture.
+5. Earlier sell-side flatten / recycler behavior when long in rich states.
+6. Second passive layer on wide spreads.
+7. Multi-level aggressive taking.
+
+## Bottom Line
+
+### Evidence-backed conclusion
+
+The current `v29` Ash sleeve is leaving money on the table, but not because it lacks a fair anchor. The stronger missed alpha is:
+
+- explicit regime-specific spike fade,
+- especially on the sell side,
+- plus earlier long-inventory flattening in rich or pressure-down states.
+
+The data does not support “Ash wants a stronger always-on directional fair.” It supports:
+
+- anchored maker by default,
+- pressure-aware gating,
+- explicit spike-fade overrides,
+- and stronger recycler behavior when already long.
+
+### Recommended next Ash strategy direction
+
+The strongest next Ash family to build is:
+
+- keep the `10000` anchor-maker base,
+- replace the current always-on blended directional drift with explicit regimes,
+- add a sell-side fade / flatten mode for `ret1 up + micro_down` and rich-long states,
+- keep multi-level taking low priority,
+- keep second passive layer as a secondary experiment only after the regime split is tested.
+
+## 2026-04-16 Follow-Up Update
+
+### New evidence from Ash-only variants `v41` to `v46`
+
+Additional local and hosted diagnostics after the role-driven Ash pass sharpened the ranking:
+
+- Ash passive inside fills remain good on both surfaces.
+- The cleanest still-open donor bucket is not passive inside participation itself.
+- The cleanest donor bucket is medium-spread aggressive taking and recycler clearing.
+
+### Medium-spread taker quality
+
+From local `v29` persisted runs:
+
+- `take_a1` is strong at spreads `5`, `6`, and `8`, weak at `9`, and clearly bad at `10` and `12`.
+- `take_b1` is strong at spreads `6`, `7`, and `9`, and clearly bad at `10`, `11`, and `13`.
+
+From hosted `177116`:
+
+- `take_b1` at spread `10` is also negative.
+- hosted narrow takers remain acceptable, which means the bad region is not “all takers,” but a specific spread-conditioned tactical state.
+
+### What this changes
+
+The signal ranking now becomes:
+
+1. Narrow-spread taker / recycle states with real edge.
+2. Post-spike fade with pressure confirmation.
+3. Wide-spread passive inside capture.
+4. Medium-spread taker suppression and recycler gating.
+5. Microprice / imbalance as tactical confirmation.
+
+### Family verdicts from `v41` to `v46`
+
+- Medium-spread taker gating is real and transfer-shaped.
+  - `v41`, `v42`, and `v44` all improved conservative modes.
+- The family appears incremental rather than breakout.
+  - best result `v44` improved Ash in all local modes, but only modestly.
+- Anchor-extreme passive fade overlays without a richer state model were not enough.
+  - `v45` and `v46` regressed `default`, `queue05`, and `worse`.
+- Conservative fade-side second-layer quoting is not currently supported by evidence.
+  - `v46` collapsed outside `none`, so the second-layer extension is not presently a credible transfer path.
+
+### Updated bottleneck
+
+The remaining Ash bottleneck is no longer “find another simple signal.” The remaining bottleneck is an action-state mapping gap:
+
+- which medium-spread states should be `hold` instead of `take`,
+- which rich / cheap states deserve passive one-sided leaning instead of symmetric quoting,
+- and how to approximate those decisions without the current hand-built rules becoming too blunt.
