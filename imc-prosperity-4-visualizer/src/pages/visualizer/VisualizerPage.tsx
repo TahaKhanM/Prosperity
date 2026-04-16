@@ -6,11 +6,16 @@ import { formatNumber } from '../../utils/format.ts';
 import { AlgorithmSummaryCard } from './AlgorithmSummaryCard.tsx';
 import { ConversionPriceChart } from './ConversionPriceChart.tsx';
 import { EnvironmentChart } from './EnvironmentChart.tsx';
+import { FillQualityChart } from './FillQualityChart.tsx';
+import { MicrostructureChart } from './MicrostructureChart.tsx';
+import { OrderBookImbalanceChart } from './OrderBookImbalanceChart.tsx';
 import { PlainValueObservationChart } from './PlainValueObservationChart.tsx';
 import { PositionChart } from './PositionChart.tsx';
 import { ProductPriceChart } from './ProductPriceChart.tsx';
 import { ProfitLossChart } from './ProfitLossChart.tsx';
+import { SpreadChart } from './SpreadChart.tsx';
 import { TimestampsCard } from './TimestampsCard.tsx';
+import { TradeFlowChart } from './TradeFlowChart.tsx';
 import { TransportChart } from './TransportChart.tsx';
 import { VisualizerCard } from './VisualizerCard.tsx';
 import { VolumeChart } from './VolumeChart.tsx';
@@ -68,6 +73,39 @@ export function VisualizerPage(): ReactNode {
         <VolumeChart symbol={symbol} />
       </Grid.Col>,
     );
+
+    symbolColumns.push(
+      <Grid.Col key={`${symbol} - spread`} span={{ xs: 12, sm: 6 }}>
+        <SpreadChart symbol={symbol} />
+      </Grid.Col>,
+    );
+
+    symbolColumns.push(
+      <Grid.Col key={`${symbol} - order book imbalance`} span={{ xs: 12, sm: 6 }}>
+        <OrderBookImbalanceChart symbol={symbol} />
+      </Grid.Col>,
+    );
+
+    symbolColumns.push(
+      <Grid.Col key={`${symbol} - microstructure`} span={{ xs: 12, sm: 6 }}>
+        <MicrostructureChart symbol={symbol} />
+      </Grid.Col>,
+    );
+
+    symbolColumns.push(
+      <Grid.Col key={`${symbol} - trade flow`} span={{ xs: 12, sm: 6 }}>
+        <TradeFlowChart symbol={symbol} />
+      </Grid.Col>,
+    );
+
+    symbolColumns.push(
+      <Grid.Col key={`${symbol} - fill quality`} span={{ xs: 12, sm: 6 }}>
+        <FillQualityChart symbol={symbol} />
+      </Grid.Col>,
+    );
+
+    // Empty spacer to keep grid alignment when odd number of analysis charts
+    symbolColumns.push(<Grid.Col key={`${symbol} - analysis spacer`} span={{ xs: 12, sm: 6 }} />);
 
     if (!conversionProducts.has(symbol)) {
       return;

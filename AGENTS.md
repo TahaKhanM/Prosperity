@@ -12,6 +12,8 @@ The main top-level areas are:
 - `Round1AnalysisV1/` earlier exported analysis artifacts
 - `imc-prosperity-4-backtester/` older Python backtester reference
 - `imc-prosperity-4-visualizer/` separate visualization app
+- `scripts/` repo-level helper scripts outside the Rust workspace
+- `.agents/`, `.codex/`, and `.claude/` local agent tooling and prompt/config areas; touch only when the task is about repository tooling or agent behavior
 
 ## Instruction layering
 - Follow this repo-root `AGENTS.md` for repository-wide routing and cleanup rules.
@@ -27,13 +29,23 @@ Use sources in this order:
 Never treat older public repos as authority on current Prosperity 4 products, rules, or hidden mechanics.
 
 ## Working map
+- Repo-level orientation docs: `README.md` and `RESOURCES.md`
+- Repo-level helper scripts: `scripts/`
 - Active default trader entrypoint: `prosperity_rust_backtester/traders/latest_trader.py`
-- Active structured traders: `prosperity_rust_backtester/traders/Round1/`
+- Active structured traders: `prosperity_rust_backtester/traders/Round1/` and `prosperity_rust_backtester/traders/Tutorial/`
 - Historical trader archive: `prosperity_rust_backtester/trader_archive/`
-- Active datasets: `prosperity_rust_backtester/datasets/`
+- Active datasets: `prosperity_rust_backtester/datasets/` with `tutorial/` plus round-organized folders such as `round1/` through `round8/`
 - Generated run outputs: `prosperity_rust_backtester/runs/`
-- Backtester docs and commands: `prosperity_rust_backtester/README.md` and `prosperity_rust_backtester/Makefile`
-- Non-code research outputs: `prosperity-research/`
+- Generated backtest console logs: `prosperity_rust_backtester/backtests/`
+- Backtester docs and commands: `prosperity_rust_backtester/README.md`, `prosperity_rust_backtester/Makefile`, `prosperity_rust_backtester/docs/`, and `prosperity_rust_backtester/scripts/`
+- Official-log replay and comparison tooling: `prosperity_rust_backtester/official_log_analyzer/` and `prosperity_rust_backtester/scripts/analyze_official_logs.py`
+- Non-code research outputs live under `prosperity-research/`, especially:
+  - `01_assumptions/` current verified assumptions
+  - `04_signal_notes/` signal and alpha notes
+  - `05_execution_risk/` fill, inventory, and robustness diagnostics
+  - `06_validation/` benchmark and ship or reject decisions
+  - `09_master_reports/` longer-form research reports
+  - `10_experiment_logs/` working notes and iteration logs
 
 ## Legacy area
 `Trader1/` contains an old Python backtester and older trader code. Treat it as reference only.
@@ -52,6 +64,7 @@ Safe-to-remove generated clutter includes:
 - `output/`
 - `imc-prosperity-4-visualizer/node_modules/`
 - `imc-prosperity-4-visualizer/dist/`
+- `prosperity_rust_backtester/backtests/*`
 - `prosperity_rust_backtester/target/`
 - `prosperity_rust_backtester/runs/*` except `.gitkeep`
 
@@ -118,7 +131,7 @@ This repository uses project-scoped custom agents and role skills.
 ### Non-negotiable rules
 - Do all current strategy work in `prosperity_rust_backtester/`.
 - Treat `Trader1/` as legacy reference only.
-- Non-code role outputs must be written under `prosperity-research/`.
+- Non-code role outputs must be written under `prosperity-research/`, typically in the matching structured area such as `01_assumptions/`, `04_signal_notes/`, `05_execution_risk/`, `06_validation/`, or `10_experiment_logs/`.
 - Implementation changes must be narrow, attributable, and submission-compatible.
 - One strategy iteration equals one dominant change.
 - No role except `strategy_engineer` may edit files under `prosperity_rust_backtester/traders/`.
