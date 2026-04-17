@@ -1,0 +1,1131 @@
+import json
+import math
+from typing import Dict, List, Optional, Tuple
+
+from datamodel import Order, OrderDepth, Trade, TradingState
+
+
+ASH = "ASH_COATED_OSMIUM"
+PEPPER = "INTARIAN_PEPPER_ROOT"
+
+LIMITS = {
+    ASH: 80,
+    PEPPER: 80,
+}
+
+ASH_ANCHOR = 10000.0
+ASH_SIGNAL_DEV_COEF = -0.020
+ASH_SIGNAL_IMB_COEF = 8.00
+ASH_SIGNAL_MICRO_COEF = -0.60
+ASH_SIGNAL_RET_COEF = -0.16
+ASH_SIGNAL_CLAMP = 6.0
+ASH_FAIR_SCORE_COEF = 0.35
+ASH_FAIR_SCORE_CLAMP = 1.5
+ASH_ACTIVE_POS_LIMIT = 68
+ASH_EMERGENCY_POS = 65
+ASH_TAKER_POS_GUARD = 50
+ASH_PASSIVE_BASE_SIZE = 15
+ASH_PASSIVE_DEEP_SIZE = 10
+
+PEPPER_TEMPLATE_OFFSETS = [
+    0.0,
+    13.5,
+    25.5,
+    39.0,
+    50.3,
+    64.0,
+    76.8,
+    88.8,
+    103.2,
+    114.0,
+    126.0,
+    138.0,
+    151.3,
+    163.8,
+    176.5,
+    189.0,
+    201.5,
+    214.0,
+    226.0,
+    239.0,
+    251.0,
+    264.0,
+    276.5,
+    288.5,
+    301.5,
+    314.0,
+    326.5,
+    339.5,
+    350.5,
+    364.0,
+    376.2,
+    391.7,
+    399.8,
+    414.0,
+    426.8,
+    439.0,
+    451.5,
+    464.0,
+    474.3,
+    489.0,
+    501.2,
+    513.5,
+    526.3,
+    538.5,
+    551.0,
+    564.5,
+    576.5,
+    588.3,
+    602.0,
+    613.5,
+    626.5,
+    639.0,
+    651.0,
+    663.5,
+    677.0,
+    688.8,
+    701.0,
+    714.0,
+    725.5,
+    739.5,
+    751.0,
+    762.8,
+    776.3,
+    789.0,
+    803.5,
+    813.7,
+    826.3,
+    838.7,
+    851.8,
+    864.7,
+    876.3,
+    888.7,
+    900.8,
+    912.5,
+    927.3,
+    940.5,
+    951.3,
+    963.7,
+    975.8,
+    988.2,
+    1001.3,
+]
+
+PEPPER_WIDE_MIN_SPREAD = 11
+PEPPER_WIDE_MIN_POS = 60
+PEPPER_WIDE_RESID_LOW = -2.4
+PEPPER_WIDE_RESID_HIGH = 1.8
+PEPPER_WIDE_PROGRESS_START = 0.10
+PEPPER_WIDE_PROGRESS_END = 0.93
+PEPPER_WIDE_CARRY_LEFT = 90.0
+PEPPER_MILD_RECYCLE_RESID = 3.4
+PEPPER_MILD_RECYCLE_OFFSET = 4
+PEPPER_FLOW_POSITIVE = 4.0
+PEPPER_FLOW_NEGATIVE = -4.0
+PEPPER_WIDE_BASE_BUY = 12
+PEPPER_WIDE_BIG_BUY = 20
+PEPPER_WIDE_BASE_SELL = 4
+PEPPER_WIDE_BIG_SELL = 8
+PEPPER_WIDE_LOW_POS = 66
+PEPPER_BOOK_LEAN_POSITIVE = 0.15
+PEPPER_BOOK_LEAN_NEGATIVE = -0.15
+PEPPER_LEANED_RECYCLE_SHIFT = 1.4
+PEPPER_HAZARD_MIN_SPREAD = 12
+PEPPER_HAZARD_HIGH_POS = 78
+PEPPER_HAZARD_PROGRESS_START = 0.12
+PEPPER_HAZARD_PROGRESS_END = 0.95
+PEPPER_HAZARD_MIN_CARRY_LEFT = 180.0
+PEPPER_HAZARD_MAX_RESID = 0.6
+PEPPER_HAZARD_MIN_FLOW = 6.0
+PEPPER_HAZARD_STRONG_LEAN = 0.28
+PEPPER_STALL_GUARD_POS = 76
+
+
+def clamp(value: float, low: float, high: float) -> float:
+    return max(low, min(high, value))
+
+
+def best_bid(depth: OrderDepth) -> Optional[int]:
+    return max(depth.buy_orders) if depth.buy_orders else None
+
+
+def best_ask(depth: OrderDepth) -> Optional[int]:
+    return min(depth.sell_orders) if depth.sell_orders else None
+
+
+def simple_mid(depth: OrderDepth) -> Optional[float]:
+    bid = best_bid(depth)
+    ask = best_ask(depth)
+    if bid is None or ask is None:
+        return None
+    return (bid + ask) / 2.0
+
+
+def microprice(depth: OrderDepth) -> Optional[float]:
+    bid = best_bid(depth)
+    ask = best_ask(depth)
+    if bid is None or ask is None:
+        return None
+    bid_volume = depth.buy_orders[bid]
+    ask_volume = -depth.sell_orders[ask]
+    total = bid_volume + ask_volume
+    if total <= 0:
+        return (bid + ask) / 2.0
+    return (bid * ask_volume + ask * bid_volume) / total
+
+
+def wall_mid(depth: OrderDepth) -> Optional[float]:
+    if not depth.buy_orders or not depth.sell_orders:
+        return simple_mid(depth)
+
+    wall_bid = max(depth.buy_orders.items(), key=lambda item: (item[1], item[0]))[0]
+    wall_ask = min(
+        depth.sell_orders.items(),
+        key=lambda item: (item[1], -item[0]),
+    )[0]
+    return (wall_bid + wall_ask) / 2.0
+
+
+def mm10_mid(depth: OrderDepth) -> Optional[float]:
+    if not depth.buy_orders or not depth.sell_orders:
+        return simple_mid(depth)
+
+    bid = next(
+        (price for price, volume in sorted(depth.buy_orders.items(), reverse=True) if volume >= 10),
+        None,
+    )
+    ask = next(
+        (price for price, volume in sorted(depth.sell_orders.items()) if -volume >= 10),
+        None,
+    )
+    if bid is None or ask is None:
+        return wall_mid(depth)
+    return (bid + ask) / 2.0
+
+
+def market_trade_flow_score(
+    market_trades: List[Trade],
+    prev_bid: Optional[int],
+    prev_ask: Optional[int],
+) -> int:
+    score = 0
+    for trade in market_trades:
+        price = int(trade.price)
+        quantity = int(trade.quantity)
+        if prev_ask is not None and price >= prev_ask:
+            score += quantity
+        elif prev_bid is not None and price <= prev_bid:
+            score -= quantity
+        elif prev_bid is not None and prev_ask is not None:
+            ask_gap = abs(price - prev_ask)
+            bid_gap = abs(price - prev_bid)
+            if ask_gap < bid_gap:
+                score += quantity
+            elif bid_gap < ask_gap:
+                score -= quantity
+    return score
+
+
+def interp_template_offset(progress: float) -> float:
+    progress = clamp(progress, 0.0, 1.0)
+    scaled = progress * (len(PEPPER_TEMPLATE_OFFSETS) - 1)
+    lo = int(math.floor(scaled))
+    hi = min(len(PEPPER_TEMPLATE_OFFSETS) - 1, lo + 1)
+    frac = scaled - lo
+    return PEPPER_TEMPLATE_OFFSETS[lo] + frac * (
+        PEPPER_TEMPLATE_OFFSETS[hi] - PEPPER_TEMPLATE_OFFSETS[lo]
+    )
+
+
+def add_buy(
+    orders: List[Order],
+    product: str,
+    price: int,
+    quantity: int,
+    budget: int,
+) -> int:
+    size = min(quantity, budget)
+    if size > 0:
+        orders.append(Order(product, int(price), int(size)))
+        budget -= size
+    return budget
+
+
+def add_sell(
+    orders: List[Order],
+    product: str,
+    price: int,
+    quantity: int,
+    budget: int,
+) -> int:
+    size = min(quantity, budget)
+    if size > 0:
+        orders.append(Order(product, int(price), -int(size)))
+        budget -= size
+    return budget
+
+
+def ash_inventory_cap(progress: float) -> int:
+    if progress >= 0.985:
+        return 12
+    if progress >= 0.96:
+        return 20
+    if progress >= 0.92:
+        return 32
+    if progress >= 0.86:
+        return 44
+    return ASH_ACTIVE_POS_LIMIT
+
+
+def ash_flatten_target(progress: float) -> int:
+    if progress >= 0.985:
+        return 5
+    if progress >= 0.96:
+        return 10
+    if progress >= 0.92:
+        return 18
+    if progress >= 0.86:
+        return 28
+    return 42
+
+
+def ash_fair_and_state(
+    depth: OrderDepth,
+    ash_state: Dict[str, float],
+) -> Tuple[float, Dict[str, float], Dict[str, float]]:
+    bid = best_bid(depth)
+    ask = best_ask(depth)
+    current_mid = simple_mid(depth)
+    book_mid = mm10_mid(depth) or wall_mid(depth) or current_mid or ASH_ANCHOR
+    current_mid = current_mid if current_mid is not None else book_mid
+    current_micro = microprice(depth) or current_mid
+
+    top_bid_volume = int(depth.buy_orders[bid]) if bid is not None else 0
+    top_ask_volume = int(-depth.sell_orders[ask]) if ask is not None else 0
+    top_total = top_bid_volume + top_ask_volume
+    imb = (top_bid_volume - top_ask_volume) / top_total if top_total > 0 else 0.0
+
+    last_mid = float(ash_state.get("last_mid", current_mid))
+    prev_ret1 = clamp(current_mid - last_mid, -ASH_SIGNAL_CLAMP, ASH_SIGNAL_CLAMP)
+    dev = clamp(book_mid - ASH_ANCHOR, -10.0, 10.0)
+    micro_gap = clamp(current_micro - current_mid, -6.0, 6.0)
+    spread = (ask - bid) if bid is not None and ask is not None else 16
+
+    score = clamp(
+        ASH_SIGNAL_DEV_COEF * dev
+        + ASH_SIGNAL_IMB_COEF * imb
+        + ASH_SIGNAL_MICRO_COEF * micro_gap
+        + ASH_SIGNAL_RET_COEF * prev_ret1,
+        -ASH_SIGNAL_CLAMP,
+        ASH_SIGNAL_CLAMP,
+    )
+    fair = ASH_ANCHOR + clamp(ASH_FAIR_SCORE_COEF * score, -ASH_FAIR_SCORE_CLAMP, ASH_FAIR_SCORE_CLAMP)
+    quote_fair = ASH_ANCHOR + clamp(0.20 * score, -1.0, 1.0)
+    abs_score = abs(score)
+
+    if abs_score < 0.4:
+        conviction = "weak"
+        direction = 0
+    elif abs_score < 1.0:
+        conviction = "moderate"
+        direction = 1 if score > 0 else -1
+    elif abs_score < 2.0:
+        conviction = "strong"
+        direction = 1 if score > 0 else -1
+    else:
+        conviction = "very_strong"
+        direction = 1 if score > 0 else -1
+
+    shock = abs(prev_ret1) >= 3.0 or abs(dev) >= 6.0
+
+    ash_state["last_mid"] = current_mid
+    ash_state["last_fair"] = fair
+    ash_state["last_score"] = score
+    ash_state["last_imb"] = imb
+
+    diagnostics = {
+        "mid": current_mid,
+        "book_mid": book_mid,
+        "micro": current_micro,
+        "quote_fair": quote_fair,
+        "ret1": prev_ret1,
+        "dev": dev,
+        "imb": imb,
+        "micro_gap": micro_gap,
+        "score": score,
+        "abs_score": abs_score,
+        "conviction": conviction,
+        "direction": direction,
+        "spread": spread,
+        "shock": 1.0 if shock else 0.0,
+    }
+    return fair, ash_state, diagnostics
+
+
+def trade_ash(
+    depth: OrderDepth,
+    position: int,
+    ash_state: Dict[str, float],
+    timestamp: int,
+) -> Tuple[List[Order], Dict[str, float]]:
+    fair, ash_state, diag = ash_fair_and_state(depth, ash_state)
+    bid = best_bid(depth)
+    ask = best_ask(depth)
+    if bid is None or ask is None:
+        return [], ash_state
+
+    current_mid = float(diag["mid"])
+    score = float(diag["score"])
+    conviction = str(diag["conviction"])
+    direction = int(diag["direction"])
+    spread = int(diag["spread"])
+    progress = clamp(timestamp / 999900.0, 0.0, 1.0)
+    active_cap = ash_inventory_cap(progress)
+    flatten_target = ash_flatten_target(progress)
+
+    buy_budget = max(0, min(LIMITS[ASH], active_cap) - position)
+    sell_budget = max(0, position + min(LIMITS[ASH], active_cap))
+    temp_position = position
+    orders: List[Order] = []
+    used_taker = False
+
+    if temp_position > active_cap and (conviction == "weak" or progress >= 0.92):
+        emergency_qty = min(
+            int(depth.buy_orders[bid]),
+            max(0, temp_position - flatten_target),
+            sell_budget,
+            18 if progress >= 0.92 else 12,
+        )
+        if emergency_qty > 0:
+            sell_budget = add_sell(orders, ASH, bid, emergency_qty, sell_budget)
+            temp_position -= emergency_qty
+            used_taker = True
+    elif temp_position < -active_cap and (conviction == "weak" or progress >= 0.92):
+        emergency_qty = min(
+            int(-depth.sell_orders[ask]),
+            max(0, -flatten_target - temp_position),
+            buy_budget,
+            18 if progress >= 0.92 else 12,
+        )
+        if emergency_qty > 0:
+            buy_budget = add_buy(orders, ASH, ask, emergency_qty, buy_budget)
+            temp_position += emergency_qty
+            used_taker = True
+
+    take_edge_buy = fair - ask
+    take_edge_sell = bid - fair
+    if direction > 0 and conviction in {"strong", "very_strong"} and temp_position < ASH_TAKER_POS_GUARD:
+        if (spread <= 13 and take_edge_buy >= 1.0) or (spread >= 14 and conviction == "very_strong" and take_edge_buy >= 3.0):
+            take_size = 6 if spread <= 13 else 10
+            take_qty = min(take_size, int(-depth.sell_orders[ask]), buy_budget)
+            if take_qty > 0:
+                buy_budget = add_buy(orders, ASH, ask, take_qty, buy_budget)
+                temp_position += take_qty
+                used_taker = True
+    elif direction < 0 and conviction in {"strong", "very_strong"} and temp_position > -ASH_TAKER_POS_GUARD:
+        if (spread <= 13 and take_edge_sell >= 1.0) or (spread >= 14 and conviction == "very_strong" and take_edge_sell >= 3.0):
+            take_size = 6 if spread <= 13 else 10
+            take_qty = min(take_size, int(depth.buy_orders[bid]), sell_budget)
+            if take_qty > 0:
+                sell_budget = add_sell(orders, ASH, bid, take_qty, sell_budget)
+                temp_position -= take_qty
+                used_taker = True
+
+    my_bid = bid
+    my_ask = ask
+    if spread >= 18:
+        my_bid = min(bid + 1, ask - 1)
+        my_ask = max(ask - 1, bid + 1)
+    elif spread <= 7:
+        my_bid = bid - 1
+        my_ask = ask + 1
+
+    bid_size = ASH_PASSIVE_BASE_SIZE
+    ask_size = ASH_PASSIVE_BASE_SIZE
+    if conviction == "moderate":
+        if score > 0:
+            bid_size, ask_size = 22, 8
+        else:
+            bid_size, ask_size = 8, 22
+    elif conviction == "strong":
+        if score > 0:
+            bid_size, ask_size = 28, 5
+        else:
+            bid_size, ask_size = 5, 28
+    elif conviction == "very_strong":
+        if score > 0:
+            bid_size, ask_size = 35, 0
+        else:
+            bid_size, ask_size = 0, 35
+
+    if temp_position >= 30:
+        ask_size = max(ask_size, 20)
+        bid_size = min(bid_size, 8)
+        my_ask -= 1
+    if temp_position >= 50:
+        ask_size = 30
+        bid_size = 0
+        my_ask -= 2
+    if temp_position >= ASH_EMERGENCY_POS:
+        ask_size = 40
+        bid_size = 0
+        my_ask = min(my_ask, int(math.floor(current_mid)))
+
+    if temp_position <= -30:
+        bid_size = max(bid_size, 20)
+        ask_size = min(ask_size, 8)
+        my_bid += 1
+    if temp_position <= -50:
+        bid_size = 30
+        ask_size = 0
+        my_bid += 2
+    if temp_position <= -ASH_EMERGENCY_POS:
+        bid_size = 40
+        ask_size = 0
+        my_bid = max(my_bid, int(math.ceil(current_mid)))
+
+    # Late in the day, prioritize finishing close to flat over pressing the signal.
+    if temp_position >= flatten_target:
+        ask_size = max(ask_size, 24 if progress < 0.92 else 30)
+        bid_size = min(bid_size, 6 if progress < 0.92 else 0)
+        my_ask -= 1 if progress < 0.92 else 2
+    if temp_position <= -flatten_target:
+        bid_size = max(bid_size, 24 if progress < 0.92 else 30)
+        ask_size = min(ask_size, 6 if progress < 0.92 else 0)
+        my_bid += 1 if progress < 0.92 else 2
+    if progress >= 0.96 and temp_position >= 12:
+        ask_size = max(ask_size, 34)
+        bid_size = 0
+        my_ask = min(my_ask, bid + 1)
+    if progress >= 0.96 and temp_position <= -12:
+        bid_size = max(bid_size, 34)
+        ask_size = 0
+        my_bid = max(my_bid, ask - 1)
+
+    my_bid = min(my_bid, ask - 1)
+    my_ask = max(my_ask, bid + 1)
+
+    deep_bid = my_bid - 2
+    deep_ask = my_ask + 2
+    deep_bid_size = ASH_PASSIVE_DEEP_SIZE if bid_size > 0 else 0
+    deep_ask_size = ASH_PASSIVE_DEEP_SIZE if ask_size > 0 else 0
+
+    if used_taker:
+        deep_bid_size = 0
+        deep_ask_size = 0
+
+    if temp_position >= active_cap:
+        bid_size = 0
+        deep_bid_size = 0
+    if temp_position <= -active_cap:
+        ask_size = 0
+        deep_ask_size = 0
+
+    if bid_size > 0 and buy_budget > 0:
+        buy_budget = add_buy(orders, ASH, my_bid, bid_size, buy_budget)
+    if ask_size > 0 and sell_budget > 0:
+        sell_budget = add_sell(orders, ASH, my_ask, ask_size, sell_budget)
+    if deep_bid_size > 0 and buy_budget > 0 and deep_bid < my_bid:
+        buy_budget = add_buy(orders, ASH, deep_bid, deep_bid_size, buy_budget)
+    if deep_ask_size > 0 and sell_budget > 0 and deep_ask > my_ask:
+        sell_budget = add_sell(orders, ASH, deep_ask, deep_ask_size, sell_budget)
+
+    return orders, ash_state
+
+
+def pepper_state_and_fair(
+    depth: OrderDepth,
+    pepper_state: Dict[str, float],
+    market_trades: List[Trade],
+    timestamp: int,
+) -> Tuple[float, str, Dict[str, float], Dict[str, float]]:
+    current_wall = wall_mid(depth)
+    current_mm = mm10_mid(depth) or current_wall
+    current_mid = simple_mid(depth)
+    current_micro = microprice(depth)
+
+    last_ts = int(pepper_state.get("last_ts", -1))
+    if not pepper_state or timestamp < last_ts:
+        reset_level = current_mm or current_mid or float(pepper_state.get("last_fair", 11000.0))
+        pepper_state = {
+            "open_mid": reset_level,
+            "last_fair": reset_level,
+            "last_mid": current_mid or reset_level,
+            "trade_ema": 0.0,
+        }
+
+    fallback = float(pepper_state.get("last_fair", 11000.0))
+    if current_mm is None:
+        current_mm = current_mid or current_wall or fallback
+    if current_wall is None:
+        current_wall = current_mm
+    if current_mid is None:
+        current_mid = current_mm
+    if current_micro is None:
+        current_micro = current_mid
+
+    prev_bid = pepper_state.get("prev_bid")
+    prev_ask = pepper_state.get("prev_ask")
+    flow_now = market_trade_flow_score(
+        market_trades,
+        int(prev_bid) if prev_bid is not None else None,
+        int(prev_ask) if prev_ask is not None else None,
+    )
+    trade_ema = 0.86 * float(pepper_state.get("trade_ema", 0.0)) + flow_now
+
+    progress = clamp(timestamp / 999900.0, 0.0, 1.0)
+    template_fair = float(pepper_state.get("open_mid", current_mid)) + interp_template_offset(progress)
+    close_estimate = float(pepper_state.get("open_mid", current_mid)) + PEPPER_TEMPLATE_OFFSETS[-1]
+
+    micro_bias = clamp((current_micro - current_mid) * 0.35, -1.0, 1.0)
+    book_fair = current_mm + 0.20 * micro_bias
+    residual = current_mid - template_fair
+    flow_bias = clamp(trade_ema / 18.0, -0.7, 0.7)
+    fair = max(template_fair - 0.35 + 0.10 * max(flow_bias, 0.0), book_fair, fallback - 0.12)
+
+    pepper_state["last_mid"] = current_mid
+    pepper_state["trade_ema"] = trade_ema
+
+    if progress < 0.020 and residual < 2.5:
+        mode = "opening"
+    elif residual < -2.0:
+        mode = "discount"
+    elif residual > 5.5:
+        mode = "overheated"
+    else:
+        mode = "carry"
+
+    pepper_state["last_fair"] = fair
+    pepper_state["last_ts"] = timestamp
+    pepper_state["prev_bid"] = best_bid(depth)
+    pepper_state["prev_ask"] = best_ask(depth)
+
+    diagnostics = {
+        "mid": current_mid,
+        "template": template_fair,
+        "residual": residual,
+        "progress": progress,
+        "carry_left": max(0.0, close_estimate - current_mid),
+        "trade_ema": trade_ema,
+        "flow_now": float(flow_now),
+        "bid_move": (
+            0.0
+            if prev_bid is None or best_bid(depth) is None
+            else float(best_bid(depth) - int(prev_bid))
+        ),
+        "ask_move": (
+            0.0
+            if prev_ask is None or best_ask(depth) is None
+            else float(best_ask(depth) - int(prev_ask))
+        ),
+    }
+    return fair, mode, pepper_state, diagnostics
+
+
+def pepper_caps_and_edges(mode: str) -> Dict[str, float]:
+    if mode == "opening":
+        return {
+            "long_cap": 80,
+            "short_cap": 4,
+            "target_long": 78,
+            "buy_edge": 1.2,
+            "sell_edge": 8.0,
+            "sweep_pad": 8.5,
+            "bid_edge": 1.6,
+            "ask_edge": 8.5,
+            "bid_size": 18,
+            "ask_size": 1,
+        }
+    if mode == "discount":
+        return {
+            "long_cap": 80,
+            "short_cap": 4,
+            "target_long": 80,
+            "buy_edge": 1.0,
+            "sell_edge": 8.5,
+            "sweep_pad": 7.0,
+            "bid_edge": 1.4,
+            "ask_edge": 8.5,
+            "bid_size": 16,
+            "ask_size": 1,
+        }
+    if mode == "overheated":
+        return {
+            "long_cap": 78,
+            "short_cap": 10,
+            "target_long": 76,
+            "buy_edge": 2.4,
+            "sell_edge": 5.0,
+            "sweep_pad": 2.0,
+            "bid_edge": 2.8,
+            "ask_edge": 6.2,
+            "bid_size": 10,
+            "ask_size": 2,
+        }
+    return {
+        "long_cap": 78,
+        "short_cap": 6,
+        "target_long": 78,
+        "buy_edge": 1.6,
+        "sell_edge": 8.0,
+        "sweep_pad": 3.2,
+        "bid_edge": 2.0,
+        "ask_edge": 8.0,
+        "bid_size": 14,
+        "ask_size": 1,
+    }
+
+
+def trade_pepper(
+    depth: OrderDepth,
+    position: int,
+    pepper_state: Dict[str, float],
+    market_trades: List[Trade],
+    timestamp: int,
+) -> Tuple[List[Order], Dict[str, float]]:
+    fair, mode, pepper_state, diagnostics = pepper_state_and_fair(
+        depth,
+        pepper_state,
+        market_trades,
+        timestamp,
+    )
+    cfg = pepper_caps_and_edges(mode)
+    residual = diagnostics["residual"]
+    progress = diagnostics["progress"]
+    carry_left = diagnostics["carry_left"]
+    template_fair = diagnostics["template"]
+    trade_ema = diagnostics["trade_ema"]
+    bid_move = diagnostics["bid_move"]
+    ask_move = diagnostics["ask_move"]
+    buyflow = trade_ema >= 6.0
+    sellflow = trade_ema <= -6.0
+    bid = best_bid(depth)
+    ask = best_ask(depth)
+    spread = (ask - bid) if bid is not None and ask is not None else 0
+    top_imbalance = 0.0
+    if bid is not None and ask is not None:
+        bid_volume = int(depth.buy_orders[bid])
+        ask_volume = int(-depth.sell_orders[ask])
+        total_top = bid_volume + ask_volume
+        if total_top > 0:
+            top_imbalance = (bid_volume - ask_volume) / total_top
+
+    long_cap = int(cfg["long_cap"])
+    short_cap = int(cfg["short_cap"])
+    target_long = int(cfg["target_long"])
+    buy_edge = float(cfg["buy_edge"])
+    sell_edge = float(cfg["sell_edge"])
+    sweep_pad = float(cfg["sweep_pad"])
+    bid_edge = float(cfg["bid_edge"])
+    ask_edge = float(cfg["ask_edge"])
+    bid_size = int(cfg["bid_size"])
+    ask_size = int(cfg["ask_size"])
+    carry_buy_pressure = (
+        spread >= PEPPER_WIDE_MIN_SPREAD
+        and PEPPER_WIDE_PROGRESS_START <= progress <= PEPPER_WIDE_PROGRESS_END
+        and carry_left >= PEPPER_WIDE_CARRY_LEFT
+        and PEPPER_WIDE_RESID_LOW <= residual <= PEPPER_WIDE_RESID_HIGH
+        and position >= PEPPER_WIDE_MIN_POS
+        and top_imbalance >= PEPPER_BOOK_LEAN_POSITIVE
+    )
+    carry_sell_pressure = (
+        spread >= PEPPER_WIDE_MIN_SPREAD
+        and PEPPER_WIDE_PROGRESS_START <= progress <= PEPPER_WIDE_PROGRESS_END
+        and position >= 70
+        and top_imbalance <= PEPPER_BOOK_LEAN_NEGATIVE
+        and (
+            PEPPER_WIDE_RESID_LOW <= residual <= PEPPER_WIDE_RESID_HIGH
+            or residual >= 2.0
+        )
+    )
+
+    # New monetization layer: when Pepper is already full and moderately overheated,
+    # the local data support recycling inventory rather than only waiting for the
+    # coarse overheated mode. Make this most aggressive in the middle of the session,
+    # when the observed recycle edge is strongest.
+    recycle_mode = (
+        position >= 76
+        and 4.0 <= residual < 6.5
+        and 0.08 <= progress <= 0.92
+        and not buyflow
+    )
+    strong_recycle = recycle_mode and (0.33 <= progress <= 0.75 or carry_left < 220.0)
+    if recycle_mode:
+        if 0.33 <= progress <= 0.75:
+            target_long = 72
+            ask_size = max(ask_size, 5)
+        else:
+            target_long = 74
+            ask_size = max(ask_size, 4)
+        if carry_left < 260.0:
+            target_long = min(target_long, 72)
+        buy_edge += 0.55
+        sell_edge = min(sell_edge, 4.2)
+        sweep_pad = min(sweep_pad, 2.2)
+        bid_edge += 0.45
+        ask_edge = min(ask_edge, 5.0)
+        bid_size = max(6, bid_size - 4)
+
+    if carry_buy_pressure:
+        long_cap = LIMITS[PEPPER]
+        target_long = max(target_long, 80)
+        buy_edge = max(0.7, buy_edge - 0.45)
+        sweep_pad += 0.6
+        bid_edge = max(0.9, bid_edge - 0.35)
+        bid_size += 3
+        if not sellflow:
+            ask_size = max(1, ask_size - 1)
+    elif carry_sell_pressure and not buyflow:
+        target_long = max(72, target_long - (6 if residual >= 2.0 else 3))
+        buy_edge += 0.25
+        sweep_pad = max(1.8, sweep_pad - 0.6)
+        sell_edge = max(3.2, sell_edge - 0.8)
+        ask_edge = max(4.5, ask_edge - 0.75)
+        bid_size = max(6, bid_size - 3)
+        ask_size += 3
+
+    if buyflow:
+        target_long = min(long_cap, target_long + 2)
+        buy_edge = max(0.8, buy_edge - 0.25)
+        sell_edge += 1.4
+        sweep_pad += 1.0
+        bid_edge = max(1.0, bid_edge - 0.2)
+        ask_edge += 0.8
+        bid_size += 2
+        ask_size = max(1, ask_size - 1)
+    elif sellflow:
+        target_long = max(72, target_long - (4 if residual > 1.5 else 2))
+        buy_edge += 0.35
+        sell_edge = max(3.6, sell_edge - 1.1)
+        sweep_pad = max(1.5, sweep_pad - 0.8)
+        bid_edge += 0.2
+        ask_edge = max(5.0, ask_edge - 0.8)
+        bid_size = max(8, bid_size - 2)
+        ask_size += 2
+
+    if residual <= -2.5 and buyflow:
+        long_cap = 80
+        target_long = 80
+        buy_edge = max(0.7, buy_edge - 0.15)
+        sweep_pad += 1.2
+        bid_size += 2
+    if residual >= 4.0 and sellflow:
+        target_long = max(70, target_long - 2)
+        sell_edge = max(3.4, sell_edge - 0.4)
+        ask_size += 1
+
+    target_surface = float(target_long)
+    if progress >= 0.45:
+        target_surface -= 1.0
+    if progress >= 0.65:
+        target_surface -= 2.0
+    if progress >= 0.80:
+        target_surface -= 1.0
+    if carry_left < 260.0:
+        target_surface -= 1.0
+    if carry_left < 220.0:
+        target_surface -= 1.0
+    if carry_left < 180.0:
+        target_surface -= 2.0
+    if trade_ema <= -2.0:
+        target_surface -= 1.0
+    if trade_ema <= -5.0:
+        target_surface -= 1.0
+    if residual >= 2.5:
+        target_surface -= 1.0
+    if residual >= 4.5:
+        target_surface -= 1.0
+    if top_imbalance <= PEPPER_BOOK_LEAN_NEGATIVE:
+        target_surface -= 1.0
+    if trade_ema >= 4.0 and carry_left >= 220.0 and residual <= 1.0:
+        target_surface += 1.0
+    if trade_ema >= 6.0 and carry_left >= 220.0 and residual <= 0.0:
+        target_surface += 1.0
+    if top_imbalance >= PEPPER_BOOK_LEAN_POSITIVE and carry_left >= 180.0 and residual <= 0.5:
+        target_surface += 1.0
+    target_long = max(70, min(long_cap, int(round(target_surface))))
+
+    # v24 hazard gate: once Pepper is already very long, the remaining bad local
+    # fills cluster in wider-spread buy actions. Only keep buying there when the
+    # carry state is unusually strong instead of treating every wide book as good.
+    high_inventory_buy_hazard = (
+        spread >= PEPPER_HAZARD_MIN_SPREAD
+        and PEPPER_HAZARD_PROGRESS_START <= progress <= PEPPER_HAZARD_PROGRESS_END
+        and position >= PEPPER_HAZARD_HIGH_POS
+    )
+    allow_high_inventory_buy = (
+        carry_buy_pressure
+        or (
+            trade_ema >= PEPPER_HAZARD_MIN_FLOW
+            and carry_left >= PEPPER_HAZARD_MIN_CARRY_LEFT
+            and residual <= PEPPER_HAZARD_MAX_RESID
+            and top_imbalance >= PEPPER_HAZARD_STRONG_LEAN
+        )
+    )
+    stalled_wide_book = (
+        spread >= PEPPER_HAZARD_MIN_SPREAD
+        and ask_move <= 0.0
+        and bid_move <= 0.0
+    )
+    spread_intent_buy_hazard = (
+        stalled_wide_book
+        and PEPPER_HAZARD_PROGRESS_START <= progress <= PEPPER_HAZARD_PROGRESS_END
+        and position >= PEPPER_STALL_GUARD_POS
+    )
+    suppress_high_inventory_buy = high_inventory_buy_hazard or (
+        spread_intent_buy_hazard and not carry_buy_pressure
+    )
+
+    soft_cap = max(44, target_long - 2)
+
+    buy_budget = max(0, min(LIMITS[PEPPER], long_cap) - position)
+    sell_budget = max(0, position + min(LIMITS[PEPPER], short_cap))
+    temp_position = position
+    orders: List[Order] = []
+
+    sweep_ceiling = diagnostics["template"] + sweep_pad
+    best_ask_level = best_ask(depth)
+    if best_ask_level is not None:
+        buy_ceiling = fair - buy_edge
+        if temp_position < target_long:
+            buy_ceiling = max(buy_ceiling, sweep_ceiling)
+        if best_ask_level <= buy_ceiling and not suppress_high_inventory_buy:
+            before = buy_budget
+            buy_budget = add_buy(
+                orders,
+                PEPPER,
+                best_ask_level,
+                -depth.sell_orders[best_ask_level],
+                buy_budget,
+            )
+            temp_position += before - buy_budget
+
+    recycle_trigger = 3.8 if 0.33 <= progress <= 0.75 else 4.1
+    if carry_left < 220.0:
+        recycle_trigger -= 0.3
+    if stalled_wide_book and temp_position >= PEPPER_STALL_GUARD_POS:
+        recycle_trigger -= 0.5
+    mild_recycle_resid = PEPPER_MILD_RECYCLE_RESID
+    if carry_sell_pressure and not buyflow:
+        mild_recycle_resid -= PEPPER_LEANED_RECYCLE_SHIFT
+    if stalled_wide_book and temp_position >= PEPPER_STALL_GUARD_POS:
+        mild_recycle_resid -= 0.5
+    mild_recycle = (
+        temp_position >= 70
+        and 0.12 <= progress <= 0.92
+        and residual >= mild_recycle_resid
+        and not (buyflow and carry_left < 160.0)
+    )
+    recycle_floor = target_long
+    best_bid_level = best_bid(depth)
+    if best_bid_level is not None:
+        sell_threshold = fair + sell_edge
+        if strong_recycle:
+            sell_threshold = min(sell_threshold, template_fair + recycle_trigger)
+        if temp_position > recycle_floor and best_bid_level >= sell_threshold:
+            before = sell_budget
+            sell_budget = add_sell(
+                orders,
+                PEPPER,
+                best_bid_level,
+                depth.buy_orders[best_bid_level],
+                sell_budget,
+            )
+            temp_position -= before - sell_budget
+
+    clear_edge = 0.35
+    if temp_position > long_cap:
+        for bid in sorted(depth.buy_orders, reverse=True):
+            if bid < fair - clear_edge:
+                break
+            before = sell_budget
+            sell_budget = add_sell(orders, PEPPER, bid, depth.buy_orders[bid], sell_budget)
+            temp_position -= before - sell_budget
+            if temp_position <= long_cap:
+                break
+
+    if temp_position < -short_cap + 8:
+        for ask in sorted(depth.sell_orders):
+            if ask > fair + clear_edge:
+                break
+            before = buy_budget
+            buy_budget = add_buy(orders, PEPPER, ask, -depth.sell_orders[ask], buy_budget)
+            temp_position += before - buy_budget
+            if temp_position >= -short_cap + 8:
+                break
+
+    bid = best_bid(depth)
+    ask = best_ask(depth)
+    spread = (ask - bid) if bid is not None and ask is not None else 0
+    skew = clamp((temp_position - target_long) * 0.03, -1.5, 1.5)
+    if residual < -2.0:
+        skew -= 0.6
+    elif residual > 5.0:
+        skew += 0.8
+    if buyflow:
+        skew -= 0.3
+    elif sellflow:
+        skew += 0.3
+
+    quote_fair = fair - skew
+    if strong_recycle:
+        quote_fair = min(quote_fair, template_fair + 1.1)
+    buy_prices = [
+        math.floor(quote_fair - bid_edge),
+        math.floor(quote_fair - (bid_edge + 1.8)),
+    ]
+    sell_prices = [
+        math.ceil(quote_fair + ask_edge),
+        math.ceil(quote_fair + (ask_edge + 1.8)),
+    ]
+    buy_sizes = [bid_size, max(3, bid_size - 3)]
+    sell_sizes = [ask_size, max(2, ask_size - 2)]
+    wide_carry_mode = (
+        bid is not None
+        and ask is not None
+        and spread >= PEPPER_WIDE_MIN_SPREAD
+        and PEPPER_WIDE_PROGRESS_START <= progress <= PEPPER_WIDE_PROGRESS_END
+        and carry_left >= PEPPER_WIDE_CARRY_LEFT
+        and PEPPER_WIDE_RESID_LOW <= residual <= PEPPER_WIDE_RESID_HIGH
+        and temp_position >= PEPPER_WIDE_MIN_POS
+    )
+    quote_buy_hazard = (
+        spread >= PEPPER_HAZARD_MIN_SPREAD
+        and PEPPER_HAZARD_PROGRESS_START <= progress <= PEPPER_HAZARD_PROGRESS_END
+        and temp_position >= PEPPER_HAZARD_HIGH_POS
+    ) or (
+        stalled_wide_book
+        and PEPPER_HAZARD_PROGRESS_START <= progress <= PEPPER_HAZARD_PROGRESS_END
+        and temp_position >= PEPPER_STALL_GUARD_POS
+        and not carry_buy_pressure
+    )
+    if wide_carry_mode:
+        buy_prices[0] = bid + 1
+        sell_prices[0] = ask - 1
+        if trade_ema >= PEPPER_FLOW_POSITIVE:
+            buy_sizes[0] = max(
+                buy_sizes[0],
+                PEPPER_WIDE_BIG_BUY if temp_position <= 72 else PEPPER_WIDE_BASE_BUY,
+            )
+            sell_sizes[0] = max(sell_sizes[0], PEPPER_WIDE_BIG_SELL)
+        elif trade_ema <= PEPPER_FLOW_NEGATIVE:
+            buy_sizes[0] = max(
+                buy_sizes[0],
+                PEPPER_WIDE_BASE_BUY if temp_position <= 72 else max(8, PEPPER_WIDE_BASE_BUY - 4),
+            )
+            sell_sizes[0] = max(
+                sell_sizes[0],
+                PEPPER_WIDE_BASE_SELL if temp_position < 74 else PEPPER_WIDE_BIG_SELL,
+            )
+        else:
+            buy_sizes[0] = max(
+                buy_sizes[0],
+                PEPPER_WIDE_BASE_BUY if temp_position <= 72 else max(8, PEPPER_WIDE_BASE_BUY - 4),
+            )
+            sell_sizes[0] = max(
+                sell_sizes[0],
+                PEPPER_WIDE_BASE_SELL if temp_position < 74 else PEPPER_WIDE_BIG_SELL,
+            )
+        if temp_position <= PEPPER_WIDE_LOW_POS and carry_left >= 180.0:
+            buy_sizes[0] = max(buy_sizes[0], max(PEPPER_WIDE_BASE_BUY, 16))
+        if temp_position >= 76:
+            sell_sizes[0] = max(sell_sizes[0], PEPPER_WIDE_BIG_SELL)
+        if carry_buy_pressure:
+            buy_sizes[0] = max(
+                buy_sizes[0],
+                16 if temp_position <= 72 else PEPPER_WIDE_BASE_BUY,
+            )
+            if not sellflow:
+                sell_sizes[0] = max(1, min(sell_sizes[0], PEPPER_WIDE_BASE_SELL))
+        elif carry_sell_pressure:
+            buy_sizes[0] = max(6, buy_sizes[0] - 4)
+            sell_sizes[0] = max(
+                sell_sizes[0],
+                PEPPER_WIDE_BIG_SELL if temp_position >= 76 else PEPPER_WIDE_BASE_SELL + 2,
+            )
+    if quote_buy_hazard:
+        bid_edge += 1.0
+        buy_sizes[0] = min(buy_sizes[0], 4)
+        buy_sizes[1] = min(buy_sizes[1], 2)
+    if stalled_wide_book and temp_position >= PEPPER_STALL_GUARD_POS:
+        sell_sizes[0] = max(
+            sell_sizes[0],
+            PEPPER_WIDE_BIG_SELL if temp_position >= 78 else PEPPER_WIDE_BASE_SELL + 2,
+        )
+    suppress_passive_buy = quote_buy_hazard and not allow_high_inventory_buy
+
+    seen = set()
+    buy_plan = [] if suppress_passive_buy else list(zip(buy_prices, buy_sizes))[:1]
+    for idx, (price, size) in enumerate(buy_plan):
+        if bid is not None and idx == 0:
+            price = min(price, bid + 1)
+        if ask is not None and price >= ask:
+            price = ask - 1
+        if price in seen or (ask is not None and price >= ask) or fair - price < 0.8:
+            continue
+        seen.add(price)
+        buy_budget = add_buy(orders, PEPPER, price, size, buy_budget)
+
+    if (
+        temp_position > target_long
+        or recycle_mode
+        or mild_recycle
+        or wide_carry_mode
+        or (mode == "overheated" and not buyflow)
+        or sellflow
+    ):
+        seen.clear()
+        sell_plan = list(zip(sell_prices, sell_sizes))[:1]
+        for idx, (price, size) in enumerate(sell_plan):
+            if ask is not None and idx == 0:
+                price = max(price, ask - 1)
+            if bid is not None and price <= bid:
+                price = bid + 1
+            if price in seen or (bid is not None and price <= bid) or price - fair < 0.8:
+                continue
+            seen.add(price)
+            sell_budget = add_sell(orders, PEPPER, price, size, sell_budget)
+
+    return orders, pepper_state
+
+
+class Trader:
+    def run(self, state: TradingState):
+        raw_state: Dict[str, Dict[str, float]] = {}
+        if state.traderData:
+            try:
+                decoded = json.loads(state.traderData)
+                if isinstance(decoded, dict):
+                    raw_state = decoded
+            except Exception:
+                raw_state = {}
+
+        ash_state = raw_state.get("ash", {})
+        pepper_state = raw_state.get("pepper", {})
+
+        result: Dict[str, List[Order]] = {}
+
+        if ASH in state.order_depths:
+            result[ASH], ash_state = trade_ash(
+                state.order_depths[ASH],
+                int(state.position.get(ASH, 0)),
+                ash_state,
+                int(state.timestamp),
+            )
+
+        if PEPPER in state.order_depths:
+            result[PEPPER], pepper_state = trade_pepper(
+                state.order_depths[PEPPER],
+                int(state.position.get(PEPPER, 0)),
+                pepper_state,
+                list(state.market_trades.get(PEPPER, [])),
+                int(state.timestamp),
+            )
+
+        trader_data = json.dumps(
+            {
+                "ash": ash_state,
+                "pepper": pepper_state,
+            }
+        )
+        return result, 0, trader_data
