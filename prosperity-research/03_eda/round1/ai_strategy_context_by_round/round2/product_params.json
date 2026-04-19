@@ -1,0 +1,613 @@
+{
+  "round": 2,
+  "generated": "2026-04-19T03:23:52",
+  "schema_version": 2,
+  "context_window_notes": {
+    "purpose": "curated handoff for Claude/Codex/ChatGPT; notebook in analysis.ipynb is exhaustive.",
+    "consume_order": [
+      "strategy_brief.md",
+      "product_params.json",
+      "metric_summary.csv",
+      "visual_index.md",
+      "plots/"
+    ]
+  },
+  "products": {
+    "ASH_COATED_OSMIUM": {
+      "position_limit": 80,
+      "classification": "STABLE",
+      "archetype": {
+        "primary": "fixed_fair_mm",
+        "secondary": [
+          "spike_reversion"
+        ],
+        "confidence": 0.92,
+        "confidence_label": "high",
+        "reasons": [
+          "within-day CV small, anchored mid"
+        ]
+      },
+      "fair_value": {
+        "best": "wall_mid",
+        "stds": {
+          "simple_mid": 4.5899,
+          "microprice": 4.5763,
+          "wall_mid": 4.4631,
+          "mm_mid": 4.4644
+        },
+        "mm_size_threshold": 10
+      },
+      "spread": {
+        "mean": 16.234,
+        "p25": 16.0,
+        "p50": 16.0,
+        "p75": 18.0,
+        "take_edge": 4.0,
+        "passive_edge": 5.33,
+        "mean_bps": 16.233
+      },
+      "microstructure": {
+        "imb_l1_std": 0.2317,
+        "imb_total_std": 0.2692,
+        "ofi_std": 10.885,
+        "depth_conc_bid_mean": 0.542,
+        "depth_conc_ask_mean": 0.539,
+        "quote_change_rate": 0.682,
+        "micro_minus_mid_std": 1.7863
+      },
+      "mean_reversion": {
+        "lag1_acf": -0.4818,
+        "verdict": "MEAN REVERTING",
+        "half_life_by_day": {
+          "-1": {
+            "rho": 0.7444423851545535,
+            "half_life": 2.3486975129141987
+          },
+          "0": {
+            "rho": 0.7863650416817267,
+            "half_life": 2.8840975701109866
+          },
+          "1": {
+            "rho": 0.7907445592361486,
+            "half_life": 2.9523226115665415
+          }
+        }
+      },
+      "best_signal": "wall_delta",
+      "best_signal_corr": 0.5876,
+      "signals": {
+        "ret1": {
+          "corrs": {
+            "1": -0.4818413056550978,
+            "2": -0.4715310624533409,
+            "5": -0.4649916142444102,
+            "10": -0.4243127031381067,
+            "20": -0.38627706839746945
+          },
+          "hit": 0.1252,
+          "corr": -0.4818
+        },
+        "z20": {
+          "corrs": {
+            "1": -0.5374371015224477,
+            "2": -0.5311595432231563,
+            "5": -0.5165015209230309,
+            "10": -0.4824925532748137,
+            "20": -0.43763890784919796
+          },
+          "hit": 0.1999,
+          "corr": -0.5374
+        },
+        "micro_delta": {
+          "corrs": {
+            "1": 0.5033565635542112,
+            "2": 0.4928226660291755,
+            "5": 0.47707868212001764,
+            "10": 0.44503437061095974,
+            "20": 0.4044099854216922
+          },
+          "hit": 0.2952,
+          "corr": 0.5034
+        },
+        "wall_delta": {
+          "corrs": {
+            "1": 0.5876134626917792,
+            "2": 0.5827351073964663,
+            "5": 0.5622929392752714,
+            "10": 0.5235192840141909,
+            "20": 0.4734485952511966
+          },
+          "hit": 0.444,
+          "corr": 0.5876
+        },
+        "mm_delta": {
+          "corrs": {
+            "1": 0.5433279426840527,
+            "2": 0.5457130600769678,
+            "5": 0.5238101954069221,
+            "10": 0.4900739906373538,
+            "20": 0.441439974821711
+          },
+          "hit": 0.0695,
+          "corr": 0.5433
+        },
+        "imbalance": {
+          "corrs": {
+            "1": -0.09167602871009822,
+            "2": -0.08743409650852012,
+            "5": -0.08526442656154544,
+            "10": -0.07655115021282781,
+            "20": -0.07133791177267716
+          },
+          "hit": 0.1348,
+          "corr": -0.0917
+        },
+        "spread_chg": {
+          "corrs": {
+            "1": -0.05404086950964935,
+            "2": -0.06362543303007566,
+            "5": -0.05844274722480246,
+            "10": -0.05332977242108424,
+            "20": -0.04451577996001261
+          },
+          "hit": 0.2167,
+          "corr": -0.054
+        }
+      },
+      "conditional_monotonic": {
+        "imbalance__h1": {
+          "spearman_rho": -0.7999999999999999,
+          "range": 1.7426236541485502
+        },
+        "fair_dev_wall__h1": {
+          "spearman_rho": -0.9999999999999999,
+          "range": 2.6114580912008214
+        },
+        "fair_dev_wall__h5": {
+          "spearman_rho": -0.9999999999999999,
+          "range": 2.6357320673371145
+        },
+        "z20__h1": {
+          "spearman_rho": -0.9999999999999999,
+          "range": 2.544962080173348
+        },
+        "spread__h1": {
+          "spearman_rho": -0.8999999999999998,
+          "range": 1.1756007222165974
+        }
+      },
+      "robustness_per_day": {
+        "imb_l1": {
+          "min": 0.5802358944338526,
+          "max": 0.5923358389695892,
+          "mean": 0.5857180458742856,
+          "stable": true
+        },
+        "imbalance": {
+          "min": -0.09904312300780653,
+          "max": -0.0840533919402217,
+          "mean": -0.09167954268484024,
+          "stable": true
+        },
+        "ofi_5": {
+          "min": 0.002750411417680697,
+          "max": 0.008255905719584468,
+          "mean": 0.005874144897627963,
+          "stable": true
+        },
+        "micro_minus_mid": {
+          "min": 0.49620774584346905,
+          "max": 0.5108243730164654,
+          "mean": 0.5033701335415939,
+          "stable": true
+        },
+        "fair_dev_wall": {
+          "min": -0.5918307714576155,
+          "max": -0.5794223091530909,
+          "mean": -0.5875761834711776,
+          "stable": true
+        },
+        "z20": {
+          "min": -0.54091668753347,
+          "max": -0.5322794199370992,
+          "mean": -0.5374412228097074,
+          "stable": true
+        },
+        "wall_delta": {
+          "min": 0.5794223091530909,
+          "max": 0.5918307714576155,
+          "mean": 0.5875761834711776,
+          "stable": true
+        }
+      },
+      "feature_relevance": {
+        "r2": 0.45167,
+        "top": [
+          {
+            "feature": "fair_dev_wall",
+            "beta": -1.0473
+          },
+          {
+            "feature": "imbalance",
+            "beta": 0.4864
+          },
+          {
+            "feature": "imb_l1",
+            "beta": 0.3336
+          }
+        ]
+      },
+      "execution": {
+        "n_buy_takes": 0,
+        "n_sell_takes": 0,
+        "buy_edge_at_cross": 0.0,
+        "sell_edge_at_cross": 0.0,
+        "buy_markout_h5": 0.0,
+        "sell_markout_h5": 0.0,
+        "adverse_h1": {
+          "buy": 0.5,
+          "sell": 0.5
+        }
+      },
+      "spikes": {
+        "count": 43,
+        "per_10k_ticks": 15.52,
+        "avg_magnitude": 3.942,
+        "reversion_tradeable": true
+      },
+      "simulation": {
+        "max_position": 0,
+        "pct_at_limit": 0.0,
+        "mtm_pnl": 0.0
+      },
+      "regime": {
+        "vol_thresholds": [
+          1.5096182856672888,
+          2.0930649900639926
+        ],
+        "spread_thresholds": [
+          16.0,
+          16.5
+        ]
+      },
+      "daily_stats": [
+        {
+          "day": -1,
+          "open": 9991.0,
+          "close": 10002.0,
+          "low": 9986.5,
+          "high": 10014.5,
+          "mean": 10000.828136840966,
+          "std": 3.8579828601404387
+        },
+        {
+          "day": 0,
+          "open": 10003.0,
+          "close": 10008.0,
+          "low": 9982.0,
+          "high": 10019.5,
+          "mean": 10001.578589175759,
+          "std": 5.218555008412283
+        },
+        {
+          "day": 1,
+          "open": 10008.0,
+          "close": 9993.0,
+          "low": 9985.0,
+          "high": 10014.0,
+          "mean": 10000.150260473192,
+          "std": 4.4780264117493545
+        }
+      ],
+      "recommended_horizons": [
+        1,
+        5
+      ],
+      "suggested_execution_mode": "take/clear/make with tight passive edges",
+      "suggested_inventory_posture": "symmetric around 0, clear at \u00b150% limit"
+    },
+    "INTARIAN_PEPPER_ROOT": {
+      "position_limit": 80,
+      "classification": "DRIFTING",
+      "archetype": {
+        "primary": "drifting_mm",
+        "secondary": [
+          "spike_reversion",
+          "imbalance_follower"
+        ],
+        "confidence": 0.93,
+        "confidence_label": "high",
+        "reasons": [
+          "daily means shift meaningfully"
+        ]
+      },
+      "fair_value": {
+        "best": "mm_mid",
+        "stds": {
+          "simple_mid": 865.8538,
+          "microprice": 865.8549,
+          "wall_mid": 865.8529,
+          "mm_mid": 865.8454
+        },
+        "mm_size_threshold": 10
+      },
+      "spread": {
+        "mean": 14.122,
+        "p25": 13.0,
+        "p50": 14.0,
+        "p75": 15.0,
+        "take_edge": 3.25,
+        "passive_edge": 4.67,
+        "mean_bps": 11.3
+      },
+      "microstructure": {
+        "imb_l1_std": 0.192,
+        "imb_total_std": 0.2696,
+        "ofi_std": 8.864,
+        "depth_conc_bid_mean": 0.551,
+        "depth_conc_ask_mean": 0.553,
+        "quote_change_rate": 0.6287,
+        "micro_minus_mid_std": 1.4844
+      },
+      "mean_reversion": {
+        "lag1_acf": -0.4947,
+        "verdict": "MEAN REVERTING",
+        "half_life_by_day": {
+          "-1": {
+            "rho": 0.25193850758056485,
+            "half_life": 0.5028014975651217
+          },
+          "0": {
+            "rho": 0.2179119168914607,
+            "half_life": 0.4549211780834439
+          },
+          "1": {
+            "rho": 0.20286918656123568,
+            "half_life": 0.4345222086933479
+          }
+        }
+      },
+      "best_signal": "z20",
+      "best_signal_corr": -0.6371,
+      "signals": {
+        "ret1": {
+          "corrs": {
+            "1": -0.4946864164346593,
+            "2": -0.4957352585588199,
+            "5": -0.5005776923156203,
+            "10": -0.4964280991378424,
+            "20": -0.48918254108127296
+          },
+          "hit": 0.0963,
+          "corr": -0.4947
+        },
+        "z20": {
+          "corrs": {
+            "1": -0.6370650618798713,
+            "2": -0.6412270957644178,
+            "5": -0.6444458261647426,
+            "10": -0.6355990926624314,
+            "20": -0.636546805095092
+          },
+          "hit": 0.2312,
+          "corr": -0.6371
+        },
+        "micro_delta": {
+          "corrs": {
+            "1": 0.4639384903203234,
+            "2": 0.4628080217836119,
+            "5": 0.46409390589812255,
+            "10": 0.46662800853459707,
+            "20": 0.4588647936292252
+          },
+          "hit": 0.2682,
+          "corr": 0.4639
+        },
+        "wall_delta": {
+          "corrs": {
+            "1": 0.5728680830768275,
+            "2": 0.5674941541462615,
+            "5": 0.5763025234871504,
+            "10": 0.5705769709522052,
+            "20": 0.5722800054137671
+          },
+          "hit": 0.3209,
+          "corr": 0.5729
+        },
+        "mm_delta": {
+          "corrs": {
+            "1": 0.5383861499049097,
+            "2": 0.5318950988735384,
+            "5": 0.5342701579210603,
+            "10": 0.5322268436343811,
+            "20": 0.532541016127372
+          },
+          "hit": 0.147,
+          "corr": 0.5384
+        },
+        "imbalance": {
+          "corrs": {
+            "1": -0.11735057349741387,
+            "2": -0.10717522504828093,
+            "5": -0.12656048752849303,
+            "10": -0.11426702618972874,
+            "20": -0.11845246339210307
+          },
+          "hit": 0.1154,
+          "corr": -0.1174
+        },
+        "spread_chg": {
+          "corrs": {
+            "1": -0.02209453838943037,
+            "2": -0.01314888063979925,
+            "5": -0.018409697617620777,
+            "10": -0.018378148987646767,
+            "20": -0.026939900182343997
+          },
+          "hit": 0.1877,
+          "corr": -0.0221
+        }
+      },
+      "conditional_monotonic": {
+        "imbalance__h1": {
+          "spearman_rho": -0.7999999999999999,
+          "range": 2.0379527337535666
+        },
+        "fair_dev_wall__h1": {
+          "spearman_rho": -1.0,
+          "range": 3.460418512436462
+        },
+        "fair_dev_wall__h5": {
+          "spearman_rho": -1.0,
+          "range": 3.627051905638093
+        },
+        "z20__h1": {
+          "spearman_rho": -0.9999999999999999,
+          "range": 3.021025085724599
+        }
+      },
+      "robustness_per_day": {
+        "imb_l1": {
+          "min": 0.5525715627114448,
+          "max": 0.5819058873428903,
+          "mean": 0.5699841971726057,
+          "stable": true
+        },
+        "imbalance": {
+          "min": -0.1259463975577573,
+          "max": -0.11099356323026492,
+          "mean": -0.11724955423758283,
+          "stable": true
+        },
+        "ofi_5": {
+          "min": -0.011776330598226047,
+          "max": 0.006013828447979508,
+          "mean": -0.0015840102467982325,
+          "stable": false
+        },
+        "micro_minus_mid": {
+          "min": 0.44177699358737044,
+          "max": 0.4760374495016979,
+          "mean": 0.4625961859477266,
+          "stable": true
+        },
+        "fair_dev_wall": {
+          "min": -0.5753730194584631,
+          "max": -0.5692895852153508,
+          "mean": -0.5726908878711973,
+          "stable": true
+        },
+        "z20": {
+          "min": -0.6434367053966596,
+          "max": -0.6336714223884374,
+          "mean": -0.6382372390548482,
+          "stable": true
+        },
+        "wall_delta": {
+          "min": 0.5692895852153508,
+          "max": 0.5753730194584631,
+          "mean": 0.5726908878711973,
+          "stable": true
+        }
+      },
+      "feature_relevance": {
+        "r2": 0.47731,
+        "top": [
+          {
+            "feature": "fair_dev_wall",
+            "beta": -1.075
+          },
+          {
+            "feature": "imbalance",
+            "beta": 0.5841
+          },
+          {
+            "feature": "imb_l1",
+            "beta": 0.3645
+          }
+        ]
+      },
+      "execution": {
+        "n_buy_takes": 363,
+        "n_sell_takes": 225,
+        "buy_edge_at_cross": 4.49,
+        "sell_edge_at_cross": 3.929,
+        "buy_markout_h5": 4.694,
+        "sell_markout_h5": 2.978,
+        "adverse_h1": {
+          "buy": 0.003,
+          "sell": 0.022
+        }
+      },
+      "spikes": {
+        "count": 118,
+        "per_10k_ticks": 42.56,
+        "avg_magnitude": 2.992,
+        "reversion_tradeable": true
+      },
+      "simulation": {
+        "max_position": 80,
+        "pct_at_limit": 7.37,
+        "mtm_pnl": 142519.0
+      },
+      "regime": {
+        "vol_thresholds": [
+          1.352142549320981,
+          2.106381282024501
+        ],
+        "spread_thresholds": [
+          13.55,
+          14.65
+        ]
+      },
+      "daily_stats": [
+        {
+          "day": -1,
+          "open": 11001.5,
+          "close": 11999.5,
+          "low": 10998.0,
+          "high": 12001.5,
+          "mean": 11501.158609128272,
+          "std": 288.2706572629285
+        },
+        {
+          "day": 0,
+          "open": 11998.5,
+          "close": 13000.0,
+          "low": 11997.5,
+          "high": 13000.5,
+          "mean": 12501.42908992416,
+          "std": 288.46403557473565
+        },
+        {
+          "day": 1,
+          "open": 13000.0,
+          "close": 13999.5,
+          "low": 12997.0,
+          "high": 14001.0,
+          "mean": 13500.109266868512,
+          "std": 289.16294302201777
+        }
+      ],
+      "recommended_horizons": [
+        1,
+        5,
+        20
+      ],
+      "suggested_execution_mode": "rolling-fair take + inventory-skewed quotes",
+      "suggested_inventory_posture": "skew quotes against position, cap soft limit at 60%"
+    }
+  },
+  "cross_product": {
+    "return_correlation": {
+      "ASH_COATED_OSMIUM": {
+        "ASH_COATED_OSMIUM": 1.0,
+        "INTARIAN_PEPPER_ROOT": -0.0004
+      },
+      "INTARIAN_PEPPER_ROOT": {
+        "ASH_COATED_OSMIUM": -0.0004,
+        "INTARIAN_PEPPER_ROOT": 1.0
+      }
+    }
+  }
+}

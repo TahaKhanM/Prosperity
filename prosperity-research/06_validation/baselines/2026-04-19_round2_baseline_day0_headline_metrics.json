@@ -1,0 +1,26 @@
+{
+  "matching_modes": [
+    "all"
+  ],
+  "products": {
+    "ASH_COATED_OSMIUM": {
+      "avg_abs_position": 35.5203,
+      "near_limit_fraction": 0.1756,
+      "pnl": 20583.0
+    },
+    "INTARIAN_PEPPER_ROOT": {
+      "avg_abs_position": 77.4326,
+      "near_limit_fraction": 0.9458,
+      "pnl": 82194.0
+    }
+  },
+  "run_dir": "prosperity_rust_backtester/runs/round2-baseline-day0-day0/candidate",
+  "set_count": 1,
+  "total_drawdown": 1803898.0,
+  "total_own_trades": 912,
+  "total_pnl": 102777.0,
+  "total_tick_count": 10000,
+  "trader_paths": [
+    "traders/Round 2/baseline.py"
+  ]
+}
