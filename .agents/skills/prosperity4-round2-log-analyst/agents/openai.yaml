@@ -1,0 +1,6 @@
+interface:
+  display_name: "Prosperity 4 Round 2 Log Analyst"
+  short_description: "Round 2 run and official-log diagnosis with alpha-status updates"
+  default_prompt: "Use the Prosperity 4 Round 2 Log Analyst skill to inspect Round 2 run artifacts and official logs, identify the dominant failure mode, update alpha statuses when the evidence is strong enough, and recommend the next build target."
+policy:
+  allow_implicit_invocation: false

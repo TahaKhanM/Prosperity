@@ -58,8 +58,10 @@ Limits are enforced before orders are matched to order depths. If for a product 
 
 Data for the following rounds is included:
 - Round 0 (Tutorial): prices and anonymized trades data on EMERALDS and TOMATOES.
+- Round 1: prices and trades data on ASH_COATED_OSMIUM and INTARIAN_PEPPER_ROOT.
+- Round 2: prices and trades data on ASH_COATED_OSMIUM and INTARIAN_PEPPER_ROOT.
 
-Data for future rounds will be added as rounds are released. You can also use the `--data` flag to point to a custom data directory, or use the `parse_submission_logs.py` utility to extract data from official submission logs.
+You can also use the `--data` flag to point to a custom data directory, or use the `parse_submission_logs.py` utility to extract data from official submission logs.
 
 ## Adding New Round Data
 
@@ -78,7 +80,7 @@ $ python -m prosperity4bt.parse_submission_logs <log_file> <round_num> <day_num>
 
 Current known Prosperity 4 position limits:
 - Tutorial: EMERALDS = 80, TOMATOES = 80
-- Round 1+: Will be added as they are announced
+- Round 1 and Round 2: ASH_COATED_OSMIUM = 80, INTARIAN_PEPPER_ROOT = 80
 
 If the backtester encounters a product not in the LIMITS dict, it will warn and use a default limit of 50.
 

@@ -1,20 +1,9 @@
-# Prosperity 4 Codex Skill Package
+# Prosperity 4 Round 2 Strategy Engineer
 
-This package is formatted as an OpenAI Codex skill.
+Use this skill for the **strategy-builder chat**.
 
-## Files
-- `SKILL.md`: the actual skill instructions with required metadata.
-- `agents/openai.yaml`: optional UI metadata and default prompt.
+It is responsible for turning Round 2 alpha ideas into trader code, keeping the shared Round 2 alpha registry up to date, and stating exactly what the next validation step should confirm.
 
-## Suggested installation
-Place this folder in one of these locations:
-- `~/.agents/skills/` for personal use
-- `<repo>/.agents/skills/` for repository-local use
-
-Then restart Codex if the skill does not appear immediately.
-
-## Suggested invocation
-Mention the skill explicitly when you want reliability, for example:
-- "Use prosperity-4-strategy-engineer to review this tutorial-round trader."
-- "Use prosperity-4-strategy-engineer to diagnose why TOMATOES is losing money."
-- "Use prosperity-4-strategy-engineer to turn this backtest output into the next strategy revision."
+Suggested invocation:
+- "Use prosperity-4-strategy-engineer to build the next Round 2 ASH alpha from the registry."
+- "Use prosperity-4-strategy-engineer to implement the best unbuilt Round 2 Pepper alpha and update the registry."

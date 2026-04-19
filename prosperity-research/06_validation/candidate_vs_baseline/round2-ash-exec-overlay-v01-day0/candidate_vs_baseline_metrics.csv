@@ -1,0 +1,15 @@
+metric,candidate,baseline,delta
+total_pnl,102726.0,102777.0,-51.0
+total_drawdown,1803898.0,1803898.0,0.0
+total_own_trades,900,912,-12.0
+set_count,1,1,0.0
+aggressive_quantity,1903.0,1940.0,-37.0
+aggressive_edge_h5_avg,1.4212,1.3688,0.0524
+passive_quantity,2750.0,2745.0,5.0
+passive_edge_h5_avg,7.2471,7.2448,0.0023
+ASH_COATED_OSMIUM.pnl,20532.0,20583.0,-51.0
+ASH_COATED_OSMIUM.avg_abs_position,35.3587,35.5203,-0.1616
+ASH_COATED_OSMIUM.near_limit_fraction,0.1732,0.1756,-0.0024
+INTARIAN_PEPPER_ROOT.pnl,82194.0,82194.0,0.0
+INTARIAN_PEPPER_ROOT.avg_abs_position,77.4326,77.4326,0.0
+INTARIAN_PEPPER_ROOT.near_limit_fraction,0.9458,0.9458,0.0

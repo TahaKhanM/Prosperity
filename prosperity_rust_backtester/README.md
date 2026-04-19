@@ -6,7 +6,9 @@ It only supports local backtesting. There is no API surface and no hosted workfl
 
 Everything needed for the default backtest flow now lives inside this directory. The bundled default trader is:
 
-- `traders/latest_trader.py`
+- this checkout does not currently include `traders/latest_trader.py`
+- use an explicit trader path such as `traders/Round1/Ash.py`
+- new candidate scaffolds are generated into `traders/<Round>/candidates/`
 
 ## Setup
 
@@ -82,6 +84,7 @@ The repo is organized by round:
 
 Right now the bundled public data is the raw IMC tutorial day data in `datasets/tutorial/`, plus a sample tutorial `submission.log` produced with the bundled basic trader. The other round folders are there so future round files can be placed in the correct folder instead of being mixed together.
 If you place a portal `submission.log` file into a round folder, the backtester will use it. `submission.log` is also generated for persisted runs.
+Local raw round data is also checked into `datasets/round1/` and `datasets/round2/` in this checkout. Because `round2/` is populated, the `latest` dataset alias now resolves to `round2` by default.
 
 ## CLI
 
@@ -116,7 +119,7 @@ Round-specific shortcuts:
 make tutorial
 ```
 
-Submission and future-round shortcuts are also available once you place a `submission.log`, `submission.json`, or round data into `datasets/round1/`, `datasets/round2/`, and so on.
+Submission and round-specific shortcuts are available for the populated dataset folders under `datasets/`, including `round1` and `round2` in this checkout.
 
 Useful optional variables for any `make` backtest target:
 
@@ -164,7 +167,7 @@ rust_backtester \
 ```bash
 rust_backtester \
   --trader /path/to/trader.py \
-  --dataset datasets/round1
+  --dataset datasets/round2
 ```
 
 Behavior:
@@ -174,7 +177,8 @@ Behavior:
 - `--dataset` accepts either a path or a short alias
 - when `--dataset` points to a directory, every supported dataset in that directory is run
 - `prices_*.csv` files are paired automatically with matching `trades_*.csv` files from the same folder
-- `latest` and `tutorial` run the full bundled tutorial round bundle: day `-2`, day `-1`, and the sample tutorial submission log
+- `tutorial` runs the full bundled tutorial round bundle: day `-2`, day `-1`, and the sample tutorial submission log
+- `latest` resolves to the highest populated round folder under `datasets/`; in this checkout that is `round2`
 - use `--day <n>` to run only the matching day dataset within the round bundle; this excludes submission files
 - `metrics.json` is always written under `runs/<backtest-id>/`
 - default fast runs also write `submission.log` under `runs/<backtest-id>/`
@@ -214,6 +218,69 @@ Artifact modes:
 - `--artifact-mode diagnostic`: write `metrics.json` and `bundle.json` with the PnL series included for diagnostics
 - `--artifact-mode full`: write the full persisted artifact set: `metrics.json`, `bundle.json`, `submission.log`, `activity.csv`, `pnl_by_product.csv`, `combined.log`, and `trades.csv`
 - `--persist` implies `--artifact-mode full` unless you explicitly override `--artifact-mode`
+
+## Workflow Scripts
+
+The active workflow around the moved research analyzer is:
+
+1. refresh analyzer outputs under `../prosperity-research/03_eda/round1/`
+2. run explicit candidate and baseline backtests with `scripts/run_harness.py`
+3. extract a compact diagnosis packet
+4. compare candidate vs baseline
+5. update the durable experiment registry
+
+Explicit run harness:
+
+```bash
+python3 scripts/run_harness.py \
+  --trader traders/Round1/Ash.py \
+  --dataset datasets/round2 \
+  --artifact-mode full
+```
+
+Candidate vs baseline:
+
+```bash
+python3 scripts/run_harness.py \
+  --trader traders/Round1/Ash.py \
+  --baseline traders/Round1/Ash.py \
+  --dataset datasets/round2 \
+  --artifact-mode full
+```
+
+Diagnosis packet:
+
+```bash
+python3 scripts/diagnostics/extract_diagnosis_packet.py \
+  --run runs/<run_label> \
+  --set candidate
+```
+
+Candidate vs baseline report:
+
+```bash
+python3 scripts/diagnostics/candidate_vs_baseline_report.py \
+  --run-root runs/<run_label>
+```
+
+Experiment registry update:
+
+```bash
+python3 scripts/reports/update_experiment_registry.py \
+  --run-root runs/<run_label> \
+  --hypothesis-tag ash_mm \
+  --strategy-family-tag static_fair_value_market_maker \
+  --ship-reject-status reject
+```
+
+Strategy scaffold generator:
+
+```bash
+python3 scripts/generate_strategy_scaffold.py \
+  --family static_fair_value_market_maker \
+  --round round1 \
+  --name ash_candidate_01
+```
 
 Flat layout behavior:
 
@@ -314,7 +381,7 @@ make docker-smoke
 
 This is a local macOS executable-launch issue, not a backtester logic issue.
 
-Additional `round1` to `round8` and `round1-submission` to `round8-submission` targets are included in the `Makefile`. They become usable once those dataset folders contain JSON files.
+Additional `round1` to `round8` and `round1-submission` to `round8-submission` targets are included in the `Makefile`. They become usable once those dataset folders contain raw CSVs and, for submission runs, the expected submission file.
 
 ## Isolated Verification
 
@@ -331,7 +398,8 @@ The Docker image builds the project in a clean container and runs the zero-argum
 - `src/` Rust backtester implementation
 - `traders/latest_trader.py` bundled default trader
 - `datasets/tutorial/` bundled raw IMC tutorial day CSVs and sample submission log
-- `datasets/round1/` ... `datasets/round8/` placeholders for future round data
+- `datasets/round1/` and `datasets/round2/` local raw round CSVs
+- `datasets/round3/` ... `datasets/round8/` placeholders for future round data
 - `runs/` persisted outputs when `--persist` is used
 - `runs/<backtest-id>/` combined bundle for persisted multi-day runs, including `combined.log` and `manifest.json`
 

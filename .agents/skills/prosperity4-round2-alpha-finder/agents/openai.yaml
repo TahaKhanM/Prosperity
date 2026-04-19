@@ -1,0 +1,6 @@
+interface:
+  display_name: "Prosperity 4 Round 2 Alpha Finder"
+  short_description: "Round 2 alpha discovery and deduplicated alpha-registry maintenance"
+  default_prompt: "Use the Prosperity 4 Round 2 Alpha Finder skill to read the existing Round 2 alpha registry, discover only net-new or upgraded alpha ideas, classify them by confidence and monetization path, and update the registry without editing trader code."
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Prosperity 4 Round 2 Autopilot"
+  short_description: "End-to-end Round 2 alpha/build/diagnose loop in one chat"
+  default_prompt: "Use the Prosperity 4 Round 2 Autopilot skill to read the current Round 2 assumptions and alpha registry, choose one high-value unbuilt or under-tested alpha, implement the smallest defensible trader change, analyze the resulting evidence, update the registry, and state the next iteration."
+policy:
+  allow_implicit_invocation: false

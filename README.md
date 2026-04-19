@@ -639,16 +639,19 @@ Subfolder overview:
 - `10_experiment_logs/`
   - experiment notes and logs
 
-### `Analyser/` and `Data/`
+### Round Analyzer and `Data/`
 
-These are older analysis areas that still contain useful raw exploration
-material, especially for the tutorial round:
+The active round analyzer now lives in the research layer:
 
-- `Analyser/analysis.ipynb`
-- `Analyser/analysis.py`
-- copied tutorial CSVs in both `Analyser/` and `Data/TUTORIAL_ROUND_1/`
+- `prosperity-research/03_eda/round1/analysis.ipynb`
+- `prosperity-research/03_eda/round1/analysis.py`
 
-Treat them as supporting references rather than the main active workflow.
+It can target `round1` or `round2` separately against the canonical raw CSVs in
+the Rust dataset tree.
+
+Raw CSVs remain authoritative in the dataset trees used by the local backtesters.
+Older copied tutorial CSVs in `Data/TUTORIAL_ROUND_1/` are supporting reference
+material rather than the main active workflow.
 
 ## Codex / Agent Files
 

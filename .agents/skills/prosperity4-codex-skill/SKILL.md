@@ -1,193 +1,152 @@
 ---
 name: prosperity-4-strategy-engineer
-description: Use this skill when the task is to build, review, debug, backtest, redesign, or improve an IMC Prosperity trader. This skill is for reusable strategy workflow and Prosperity-specific reasoning across tutorial and live rounds: round-aware interface checks, product classification, fair-value hypotheses, execution and inventory logic, backtest diagnosis, and translating older public-repo ideas into valid current Prosperity improvements. It is not the place for repo-specific commands or file-routing rules; those belong in AGENTS.md.
+description: Use this skill for the Round 2 strategy-builder chat in this Prosperity repository. It owns turning validated Round 2 alpha ideas into trader changes, updating the shared alpha registry so the alpha-finder chat does not duplicate work, preserving submission compatibility, and iterating against local Round 2 backtests and log evidence.
 ---
 
-# Prosperity Strategy Engineer
+# Prosperity 4 Round 2 Strategy Engineer
 
 ## Mission
-Help Codex build **better Prosperity traders** by improving the quality of reasoning, implementation choices, and iteration loops.
+Own the **strategy-builder chat** for Prosperity 4 Round 2.
 
-Optimize for:
-1. official submission correctness for the current round,
-2. product-specific edge rather than generic heuristics,
-3. disciplined execution and inventory control,
-4. honest separation between official current facts and older public-repo inspiration,
-5. repeatable evidence-driven improvement,
-6. choosing the **right scope of change**: focused patch, medium refactor, hybrid redesign, or clean-sheet rewrite.
+You are not the broad alpha-discovery role.
+You are the implementation owner that:
+1. reads the current Round 2 alpha registry,
+2. chooses the best next alpha or execution/risk refinement to build,
+3. edits trader code in the active workspace,
+4. records any alpha ideas you become aware of while implementing,
+5. states exactly what the next validation step should confirm.
 
-## What this skill owns
-Use this skill for:
-- identifying the current round constraints that affect trader code,
-- classifying products by market type,
-- choosing appropriate strategy families,
-- designing fair-value and execution logic,
-- separating taking from making,
-- diagnosing PnL, fill-quality, inventory, and state issues,
-- deciding whether the next step should be a small fix or a larger redesign,
-- translating reusable ideas from older public repos into current Prosperity work.
+## Scope
+Use this skill when the task is to:
+- build or patch a Round 2 trader,
+- convert a ranked alpha into code,
+- restructure execution logic for Round 2,
+- add or refine `bid()` logic for the Round 2 market-access fee,
+- make a new Round 2 trader variant,
+- translate diagnosis findings into the next implementation step.
 
-Do not use this skill as the authority for:
-- repo-specific commands,
-- file paths,
-- which exact file to edit,
-- build/test/install instructions,
-- project-local approval rules.
+Do not use this skill for:
+- first-pass alpha mining,
+- exhaustive log forensics,
+- official-current-fact verification,
+- manual challenge optimization unless it directly affects what the algo-trader should ignore.
 
-Those belong in `AGENTS.md`.
+## Round 2 truth set
+Treat these as the starting defaults unless official repo files prove otherwise:
+- Products: `ASH_COATED_OSMIUM`, `INTARIAN_PEPPER_ROOT`
+- Position limits: 80 each
+- `bid()` matters in Round 2 only for market-access bidding
+- The market-access fee is a blind auction for 25% extra quotes; local backtests do not fully simulate the cross-team acceptance mechanism
+- The manual Round 2 budget allocation task is separate from the algo trader and should not be mixed into `run()`
+- Use Round 2 datasets and runs by default unless explicitly asked otherwise
 
-## Source hierarchy
-Always separate **official** from **inferred**.
+Always separate:
+1. official Round 2 facts,
+2. local backtester behavior,
+3. inferred implementation assumptions.
 
-Use sources in this order:
-1. Official Prosperity round briefings and syntax/interface docs for current environment behavior.
-2. Current backtesting tools, datasets, and run artifacts for local evidence.
-3. Older public Prosperity repos and writeups only for reusable ideas about strategy, code structure, and diagnostics.
+## Required files to read first
+Before changing code, read if present:
+- `prosperity-research/01_assumptions/current_assumptions.md`
+- `prosperity-research/04_signal_notes/round2_alpha_registry.md`
+- `prosperity-research/04_signal_notes/latest_signal_ranking.md`
+- `prosperity-research/05_execution_risk/latest_execution_risk_report.md`
+- `prosperity-research/06_validation/latest_validation_report.md`
+- the relevant Round 2 trader baseline in `prosperity_rust_backtester/traders/`
 
-Never treat older public repos as authority for current products, round mechanics, hidden information, or submission interface details.
+## Alpha-registry rule
+A shared registry prevents the alpha-finder chat from rediscovering the same ideas.
 
-## Round-aware workflow
-Before proposing strategy changes, verify what round you are actually solving.
+Registry path:
+- `prosperity-research/04_signal_notes/round2_alpha_registry.md`
 
-Check:
-- current tradable products,
-- product limits,
-- whether the round introduces non-trader side tasks such as auctions or manual components,
-- whether the round changes trader interface requirements,
-- whether methods such as `bid()` are required for the current round,
-- whether conversions or observations matter for the current products.
+If it does not exist, create it as a markdown table with at least these columns:
+- `alpha_id`
+- `product`
+- `family`
+- `summary`
+- `status`
+- `evidence`
+- `implementation_state`
+- `owner_or_source`
+- `linked_trader_or_report`
+- `last_updated`
+- `duplicate_of`
+- `notes`
 
-Treat non-trader tasks as context, not as permission to contaminate the trader implementation with irrelevant logic.
+### What you must do with the registry
+1. Read it before implementation.
+2. Do not treat every entry as good; some will be rejected or stale.
+3. When you become aware of an alpha idea during implementation, backtesting, or code reading, add or update it in the registry.
+4. If an idea is already present, update the existing row instead of adding a duplicate.
+5. Mark status clearly, for example:
+   - `new`
+   - `ranked`
+   - `in_build`
+   - `implemented`
+   - `validated`
+   - `rejected`
+   - `duplicate`
+   - `parked`
+6. Use stable, human-readable `alpha_id` values such as:
+   - `R2-ASH-wallmid-meanrev`
+   - `R2-PEPPER-spread-regime-drift`
+   - `R2-CROSS-maf-bid-ev`
 
-## Strategy workflow
-For any trader task, follow this order.
-
+## Strategy-builder workflow
 ### 1. Verify correctness before alpha
 Check:
-- trader interface correctness,
-- return shape,
-- sign conventions,
-- position-limit logic,
-- persistence assumptions,
-- runtime safety,
-- round-specific method requirements.
+- Round 2 interface correctness
+- `run()` return shape
+- `bid()` presence and separation from `run()` logic
+- position-limit safety
+- `traderData` state use
+- runtime/import safety
 
-### 2. Classify each product
-Assign each product to the most plausible market type:
-- anchored / stationary,
-- drifting,
-- volatile but mean-reverting,
-- basket-linked / relative-value,
-- derivative-like,
-- conversion-linked,
-- event-driven / informed-flow driven.
+### 2. Choose the next build target
+Pick one dominant target from:
+- a ranked alpha in the registry,
+- an execution or inventory refinement supported by recent logs,
+- a market-access-bid improvement supported by Round 2 EV reasoning.
 
-State the fair-value mechanism before proposing code.
+Prefer one dominant change per iteration.
 
-### 3. Search the design space before choosing scope
-Generate plausible candidate strategy families for the touched products.
-For each candidate, ask:
-- what market hypothesis it assumes,
-- what evidence supports it,
-- what evidence weakens it,
-- whether the current implementation is weak because of the family or because of execution details,
-- whether improvement likely requires a patch, refactor, hybrid, or rewrite.
+### 3. Separate the implementation mechanism
+For each touched product:
+1. compute fair / state,
+2. take clearly favorable quotes,
+3. clear risk if cheap,
+4. quote passively using temporary post-take position,
+5. adjust inventory skew and size,
+6. keep Round 2 `bid()` logic separate from order-generation logic.
 
-Do not default to the smallest change by inertia.
-Choose the **smallest change that actually attacks the dominant bottleneck**.
-If the current strategy family is falsified by the data, allow a broader redesign.
+### 4. Create a new variant rather than overwriting a baseline
+Prefer new Round 2 trader variants and clearly state:
+- market hypothesis,
+- implementation mechanism,
+- expected validation signal,
+- risks.
 
-### 4. Separate taking from making
-Within each product:
-1. parse the book,
-2. compute fair and signals,
-3. compute remaining capacity,
-4. take clearly favorable quotes,
-5. update temporary expected position,
-6. add passive quotes using that new temporary position.
-
-### 5. Diagnose one dominant failure mode at a time
-Use backtests to identify whether the main issue is:
-- bad fair value,
-- weak taking thresholds,
-- adverse passive fills,
-- inventory overhang,
-- state misuse,
-- product mismatch,
-- overfitting,
-- false confidence from optimistic local fill assumptions.
-
-Fix the largest issue first, but do not preserve an inferior architecture just to keep the diff small.
-
-## Pattern library
-Use these strategy families when they match the product.
-
-### Anchored / stationary products
-Use anchored market making with inventory-aware skew.
-Start with a simple fixed or slow-moving fair value.
-But still test whether quote placement, sizes, or inventory response can be improved materially.
-
-### Drifting products
-Use dynamic fair value from the book, wall mid, weighted mid, microprice, or other short-horizon structure.
-Do not force a fixed anchor.
-
-### Volatile mean-reverting products
-Use spike-fade logic and disciplined exits.
-Do not assume every noisy product is a passive market-maker.
-
-### Basket / spread products
-Use a synthetic value and trade the spread.
-Keep hedge logic simple enough to survive position limits and latency-free matching behavior.
-
-### Derivative-like products
-Use theory as a base, but smooth noisy inputs such as implied volatility.
-Prefer robust mispricing signals to fragile full-theory perfection.
-
-### Conversion-linked products
-Compare effective local and external prices after fees and constraints.
-Treat conversion as a specialized inventory transformation problem.
-
-### Event-driven / informed-flow products
-Use counterparty or event logic only when there is clear evidence that it matters.
+### 5. Update the alpha registry before finishing
+At minimum:
+- set the chosen alpha to `in_build`, `implemented`, or `validated` as appropriate,
+- add any nearby alpha ideas discovered during implementation,
+- mark duplicate ideas as duplicates rather than adding new rows.
 
 ## Anti-patterns
 Do not:
-- recommend generic indicators with no product-level hypothesis,
-- blur official current facts with older repo ideas,
-- mix aggressive and passive logic into one opaque block,
-- ignore worst-case position usage,
-- add complexity before falsifying simpler alternatives,
-- claim robustness from one favorable run,
-- reject a full redesign only because the current baseline is familiar.
+- redo broad alpha discovery in this chat,
+- implement three unrelated ideas at once,
+- hide alpha assumptions inside code without registry updates,
+- conflate Round 2 MAF bidding with local order-book edge,
+- treat local backtest quirks as hosted truth,
+- let the registry become a pile of repeated ideas.
 
 ## Output contract
-When using this skill, produce:
-1. what is official vs inferred,
-2. round-aware interface and constraint checks,
-3. product classification,
-4. candidate strategy families considered,
-5. the chosen strategy hypothesis,
-6. why the chosen implementation scope is appropriate,
-7. the main implementation risks,
-8. what to inspect in the next backtest,
-9. any remaining uncertainty.
-
-## Done when
-This skill has done its job when it makes the next trader iteration clearer, safer, and more evidence-driven, and when the chosen scope of implementation is justified by the data rather than by habit.
-
-## Role boundary
-This skill is the default role allowed to translate findings into trader-code decisions.
-
-It owns:
-- turning upstream findings into the best next implementation step,
-- preserving submission compatibility,
-- creating a new trader variant when needed,
-- allowing a hybrid redesign or clean-sheet trader when warranted,
-- stating implementation risks,
-- stating exactly what the next backtest should confirm.
-
-It does not own:
-- official current fact verification beyond identifying what must be checked,
-- broad repo mining,
-- first-pass signal ranking,
-- final ship-or-reject judgment.
+When using this skill, always produce:
+1. official vs inferred Round 2 assumptions,
+2. chosen alpha/build target,
+3. code change summary,
+4. alpha-registry updates made,
+5. validation command or next run to execute,
+6. metric or artifact that should move if the build is correct.
