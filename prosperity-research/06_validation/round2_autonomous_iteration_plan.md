@@ -34,13 +34,12 @@ exhausted.
 
 ## Current Best-Known Frontier
 
-Current frontier after the dynamic-fair and carry-shell branches:
+Current frontier after the reopen triggered by hosted evidence:
 
-1. `R2-PEPPER-flow-conditioned-target`
-2. `R2-PEPPER-quote-side-noquote-gate`
-3. narrow Ash execution overlay while Pepper stays fixed
-4. fresh alpha discovery only after the above branches are no longer clearly
-   distinct from baseline
+1. `R2-PEPPER-quote-side-noquote-gate`
+2. narrow patching inside the same late-rich Pepper participation family
+3. only then, if needed, a fresh orthogonal hosted-aware Pepper branch
+4. Ash remains secondary while Pepper is still the clear EV bottleneck
 
 Reason:
 
@@ -123,7 +122,7 @@ Stay in provided-strategy mode when:
 
 Current first branch to exploit:
 
-- `R2-PEPPER-flow-conditioned-target` implemented on top of the baseline Pepper
+- `R2-PEPPER-quote-side-noquote-gate` implemented on top of the baseline Pepper
   shell
 
 ## When To Switch Into Fresh Alpha Discovery
@@ -216,7 +215,14 @@ Update when changed materially:
   - [round2_pepper_opening_wide_gate_v01.py](/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/traders/Round2/candidates/round2_pepper_opening_wide_gate_v01.py)
   - [round2_pepper_gap_state_guard_v01.py](/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/traders/Round2/candidates/round2_pepper_gap_state_guard_v01.py)
   - [round2_pepper_gap_state_guard_v02.py](/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/traders/Round2/candidates/round2_pepper_gap_state_guard_v02.py)
-- final local read:
-  the declared Round 2 local floor is exhausted for official-limit-compliant
+- user-reported official evidence later invalidated the local promotion of
+  `round2_pepper_gap_state_guard_v02.py`, so the frontier was reopened around
+  hosted-aware Pepper execution.
+- reopened live branch:
+  [round2_pepper_quote_gate_v01.py](/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/traders/Round2/candidates/round2_pepper_quote_gate_v01.py)
+  with a `+325.0` gain on the explicit local day `-1/0/1` surface.
+- current read:
+  the frontier is no longer blocked, but the best branch is still far below the
+  requested `>5%` bar and should be patched inside the same family next.
   baseline-beating retunes; the next honest move is off-surface evidence, not
   another local threshold patch.

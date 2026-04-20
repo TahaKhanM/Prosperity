@@ -1,4 +1,4 @@
-"""Round 2 ship: Current_Optimal (I8 base) + bid()=15 for Market Access Fee auction."""
+"""Round 2 ship: Current_Optimal (I8 base) + top-half-targeted Round 2 MAF bid."""
 
 
 import json
@@ -16,6 +16,12 @@ LIMITS = {
     ASH: 80,
     PEPPER: 80,
 }
+
+# Official Round 2 MAF is a blind top-half auction and local backtests ignore
+# bid(). Keep a deliberate acceptance-targeting bid instead of the legacy 15.
+# The only official numeric anchor shown is the 19.5 median example, so use the
+# smallest integer above it rather than pretending local data proves an optimum.
+ROUND2_MAF_BID = 20
 
 ASH_ANCHOR = 10000.0
 ASH_MID_WINDOW = 20
@@ -897,4 +903,4 @@ class Trader:
         return result, 0, trader_data
 
     def bid(self) -> int:
-        return 15
+        return ROUND2_MAF_BID
