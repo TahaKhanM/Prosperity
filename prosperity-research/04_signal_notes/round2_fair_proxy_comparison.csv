@@ -1,0 +1,9 @@
+product,proxy,round1_std,round2_std,round1_rank,round2_rank,round1_best,round2_best
+ASH_COATED_OSMIUM,microprice,4.8483,4.5763,3,3,mm_mid,wall_mid
+ASH_COATED_OSMIUM,mm_mid,4.7523,4.4644,1,2,mm_mid,wall_mid
+ASH_COATED_OSMIUM,simple_mid,4.8582,4.5899,4,4,mm_mid,wall_mid
+ASH_COATED_OSMIUM,wall_mid,4.7538,4.4631,2,1,mm_mid,wall_mid
+INTARIAN_PEPPER_ROOT,microprice,866.1548,865.8549,4,4,wall_mid,mm_mid
+INTARIAN_PEPPER_ROOT,mm_mid,866.1492,865.8454,2,1,wall_mid,mm_mid
+INTARIAN_PEPPER_ROOT,simple_mid,866.1518,865.8538,3,3,wall_mid,mm_mid
+INTARIAN_PEPPER_ROOT,wall_mid,866.1437,865.8529,1,2,wall_mid,mm_mid

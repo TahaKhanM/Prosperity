@@ -1,0 +1,241 @@
+version: "2.0"
+root: prosperity-research
+workflow:
+  - assumptions
+  - eda_analyzer_outputs
+  - signal_notes
+  - trader_implementation
+  - backtest_runs
+  - diagnosis_packets
+  - candidate_vs_baseline_reports
+  - experiment_registry
+  - manual_round_outputs
+authoritative_sources:
+  raw_market_data:
+    authoritative: true
+    locations:
+      - prosperity_rust_backtester/datasets/round1
+      - prosperity_rust_backtester/datasets/round2
+      - imc-prosperity-4-backtester/prosperity4bt/resources/round1
+      - imc-prosperity-4-backtester/prosperity4bt/resources/round2
+    notes: >
+      Raw official CSVs stay in dataset and resource folders. Do not duplicate
+      them into prosperity-research.
+  analyzer_code:
+    authoritative: true
+    location: prosperity-research/03_eda/round1
+    notes: >
+      The moved analyzer package is the preferred first-pass research tool for
+      Round 1. Its outputs are derived handoff artifacts, not canonical data.
+global_rules:
+  - No separate normalization pipeline exists in this repo.
+  - Analyzer outputs are derived from canonical dataset folders.
+  - Local backtest artifacts are derived diagnostic evidence, not source truth.
+  - Compact summaries are preferred over feeding raw logs directly into AI tools.
+stages:
+  assumptions:
+    locations:
+      - prosperity-research/01_assumptions
+    inputs:
+      - official competition docs
+      - repo/tooling caveats
+      - validation findings that change trust assumptions
+    outputs:
+      authoritative:
+        - prosperity-research/01_assumptions/current_assumptions.md
+      derived:
+        - prosperity-research/01_assumptions/YYYY-MM-DD_<topic>.md
+    naming:
+      preferred:
+        - current_assumptions.md
+        - YYYY-MM-DD_<topic>.md
+    notes: >
+      Assumption rollups are the durable trust model for later analysis and
+      implementation chats.
+  eda_analyzer_outputs:
+    locations:
+      - prosperity-research/03_eda/round1
+    inputs:
+      - prosperity_rust_backtester/datasets/round1/*.csv
+      - prosperity_rust_backtester/datasets/round2/*.csv
+      - prosperity-research/01_assumptions/current_assumptions.md
+    outputs:
+      authoritative: []
+      derived:
+        - prosperity-research/03_eda/round1/analysis.py
+        - prosperity-research/03_eda/round1/analysis.ipynb
+        - prosperity-research/03_eda/round1/ai_strategy_context/strategy_brief.md
+        - prosperity-research/03_eda/round1/ai_strategy_context/product_params.json
+        - prosperity-research/03_eda/round1/plots/<round>/*.png
+        - prosperity-research/03_eda/round1/ai_strategy_context_round*/...
+    naming:
+      preferred_handoff:
+        - ai_strategy_context/strategy_brief.md
+        - ai_strategy_context/product_params.json
+        - plots/<round>/*.png
+        - ai_strategy_context/data_samples/*.csv
+      export_runs:
+        - <round>_analysis_export_YYYYMMDD_HHMMSS/
+    notes: >
+      Prefer the stable ai_strategy_context handoff files when they exist.
+      Round-scoped notebook exports are acceptable derived variants.
+  signal_notes:
+    locations:
+      - prosperity-research/04_signal_notes/hypotheses
+      - prosperity-research/04_signal_notes/feature_rankings
+    inputs:
+      - analyzer outputs
+      - current assumptions
+      - prior diagnosis packets
+    outputs:
+      authoritative: []
+      derived:
+        - prosperity-research/04_signal_notes/hypotheses/YYYY-MM-DD_<topic>.md
+        - prosperity-research/04_signal_notes/feature_rankings/YYYY-MM-DD_<topic>.md
+        - prosperity-research/04_signal_notes/latest_signal_ranking.md
+    naming:
+      preferred:
+        - YYYY-MM-DD_<topic>.md
+        - latest_signal_ranking.md
+    notes: >
+      Hypotheses should stay distinct from trader code and should describe one
+      dominant change per iteration.
+  trader_implementation:
+    locations:
+      - prosperity_rust_backtester/traders
+      - prosperity_rust_backtester/scripts
+    inputs:
+      - prosperity-research/04_signal_notes/hypotheses/*.md
+      - prosperity-research/08_playbooks/strategy_templates/*.md
+      - prosperity-research/08_playbooks/runbooks/*.md
+    outputs:
+      authoritative:
+        - prosperity_rust_backtester/traders/<Round>/...
+      derived:
+        - prosperity_rust_backtester/scripts/run_harness.py
+        - prosperity_rust_backtester/scripts/generate_strategy_scaffold.py
+    naming:
+      preferred:
+        - traders/<Round>/candidates/<name>.py
+        - traders/<Round>/work/<family>/<name>.py
+    notes: >
+      Trader code is authoritative for local implementation. This stage should
+      not duplicate analysis artifacts.
+  backtest_runs:
+    locations:
+      - prosperity_rust_backtester/runs
+    inputs:
+      - explicit trader path
+      - explicit dataset path or round/day selection
+      - backtester CLI flags
+    outputs:
+      authoritative: []
+      derived:
+        - prosperity_rust_backtester/runs/<run_label>/run_manifest.json
+        - prosperity_rust_backtester/runs/<run_label>/**/metrics.json
+        - prosperity_rust_backtester/runs/<run_label>/**/bundle.json
+        - prosperity_rust_backtester/runs/<run_label>/**/submission.log
+        - prosperity_rust_backtester/runs/<run_label>/**/combined.log
+        - prosperity_rust_backtester/runs/<run_label>/**/activity.csv
+        - prosperity_rust_backtester/runs/<run_label>/**/pnl_by_product.csv
+        - prosperity_rust_backtester/runs/<run_label>/**/trades.csv
+    naming:
+      preferred:
+        - runs/<timestamp>_<trader>_<dataset>/
+        - run_manifest.json
+    notes: >
+      Runs are local derived evidence. They are useful for diagnosis and model
+      comparison, but they are not ground truth about exchange behavior.
+  diagnosis_packets:
+    locations:
+      - prosperity-research/05_execution_risk/diagnosis_packets
+      - prosperity-research/06_validation/baselines
+    inputs:
+      - prosperity_rust_backtester/runs/<run_label>/
+      - metrics.json
+      - bundle.json when present
+      - combined.log or submission.log
+      - activity.csv
+      - pnl_by_product.csv
+      - trades.csv
+    outputs:
+      authoritative: []
+      derived:
+        - prosperity-research/05_execution_risk/diagnosis_packets/<packet_id>/diagnosis_packet.md
+        - prosperity-research/05_execution_risk/diagnosis_packets/<packet_id>/worst_timestamps.csv
+        - prosperity-research/05_execution_risk/diagnosis_packets/<packet_id>/inventory_summary.csv
+        - prosperity-research/05_execution_risk/diagnosis_packets/<packet_id>/fill_summary.csv
+        - prosperity-research/06_validation/baselines/<packet_id>_run_summary.md
+        - prosperity-research/06_validation/baselines/<packet_id>_headline_metrics.json
+    naming:
+      preferred:
+        - <packet_id>_run_summary.md
+        - <packet_id>_headline_metrics.json
+        - diagnosis_packets/<packet_id>/*
+    notes: >
+      Diagnosis packets should isolate likely failure modes such as fair-value
+      quality, taking thresholds, passive fill quality, inventory control, and
+      state/path handling.
+  candidate_vs_baseline_reports:
+    locations:
+      - prosperity-research/06_validation/candidate_vs_baseline
+    inputs:
+      - two run folders on the same dataset
+      - diagnosis packet summaries when available
+    outputs:
+      authoritative: []
+      derived:
+        - prosperity-research/06_validation/candidate_vs_baseline/<report_id>/candidate_vs_baseline_metrics.csv
+        - prosperity-research/06_validation/candidate_vs_baseline/<report_id>/candidate_vs_baseline_report.md
+    naming:
+      preferred:
+        - YYYY-MM-DD_<candidate>_vs_<baseline>/
+    notes: >
+      Reports should recommend exactly one next change and name the metric that
+      should move if that change is correct.
+  experiment_registry:
+    locations:
+      - prosperity-research/10_experiment_logs
+    inputs:
+      - run manifest metadata
+      - candidate-vs-baseline decisions
+      - hypothesis tags and strategy family tags
+    outputs:
+      authoritative:
+        - prosperity-research/10_experiment_logs/experiment_registry.csv
+      derived:
+        - prosperity-research/10_experiment_logs/latest_experiment_summary.md
+    naming:
+      preferred:
+        - experiment_registry.csv
+        - latest_experiment_summary.md
+    notes: >
+      The registry is the durable experiment ledger outside chat history.
+  manual_round_outputs:
+    locations:
+      - prosperity-research/07_manual_round/round1_auction
+      - prosperity-research/07_manual_round/round2_budget
+    inputs:
+      - Prosperity Context/20_MANUAL_TRADING_CONTEXT.md
+      - frozen order books or scenario files
+      - manual-round assumptions
+    outputs:
+      authoritative: []
+      derived:
+        - prosperity-research/07_manual_round/round1_auction/<run_id>/payoff_grid.csv
+        - prosperity-research/07_manual_round/round1_auction/<run_id>/best_order_recommendations.md
+        - prosperity-research/07_manual_round/round1_auction/<run_id>/sensitivity_notes.md
+        - prosperity-research/07_manual_round/round2_budget/<run_id>/scenario_table.csv
+        - prosperity-research/07_manual_round/round2_budget/<run_id>/recommended_allocations.md
+        - prosperity-research/07_manual_round/round2_budget/<run_id>/assumptions.md
+    naming:
+      preferred:
+        - <run_id>/payoff_grid.csv
+        - <run_id>/best_order_recommendations.md
+        - <run_id>/sensitivity_notes.md
+        - <run_id>/scenario_table.csv
+        - <run_id>/recommended_allocations.md
+        - <run_id>/assumptions.md
+    notes: >
+      Manual-round work remains separate from algo-trader implementation and
+      should not be mixed into backtester datasets.

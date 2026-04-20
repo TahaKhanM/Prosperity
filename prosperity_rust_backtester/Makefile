@@ -44,7 +44,7 @@ install-uv: ## Install the tool with uv from this directory
 install-uv-editable: ## Install the tool with uv in editable mode
 	$(UV) tool install --force --editable .
 
-backtest: ## Run the latest local trader against the bundled latest round
+backtest: ## Run the latest local trader against the latest populated round
 	$(CARGO_CMD) run -- $(RUN_ARGS)
 
 tutorial: ## Run datasets/tutorial; set DAY=-2 or DAY=-1 to narrow it
@@ -101,7 +101,7 @@ round7: ## Run datasets/round7; omit DAY to run all datasets in that round
 round8: ## Run datasets/round8; omit DAY to run all datasets in that round
 	$(CARGO_CMD) run -- $(RUN_ARGS) --dataset round8
 
-run: ## Auto-pick the latest trader and default to the latest bundled dataset
+run: ## Auto-pick the latest trader and default to the latest populated dataset
 	$(CARGO_CMD) run --
 
 run-tutorial: ## Auto-pick the latest trader and run the bundled tutorial datasets
