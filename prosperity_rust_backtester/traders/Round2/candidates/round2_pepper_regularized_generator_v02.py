@@ -954,4 +954,4 @@ class Trader:
         return result, 0, trader_data
 
     def bid(self) -> int:
-        return 15
+        return 20

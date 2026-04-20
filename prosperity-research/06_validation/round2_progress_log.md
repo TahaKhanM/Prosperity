@@ -98,3 +98,52 @@
 - Best validated non-baseline result remains a tie at `0.0` delta:
   - [round2_pepper_carry_shell_v02.py](/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/traders/Round2/candidates/round2_pepper_carry_shell_v02.py)
   - [round2_pepper_gap_state_guard_v02.py](/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/traders/Round2/candidates/round2_pepper_gap_state_guard_v02.py)
+
+## 2026-04-19 Hosted-Aware Reopen
+
+- User-provided official evidence changed the ranking surface:
+  [round2_pepper_gap_state_guard_v02.py](/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/traders/Round2/candidates/round2_pepper_gap_state_guard_v02.py)
+  reportedly loses about `-2.5%` PnL versus
+  [baseline.py](/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/traders/Round%202/baseline.py)
+  on the official backtester despite the local tie.
+- Reopened the strategy frontier around hosted-aware Pepper execution rather
+  than treating local ties as good enough.
+- Benchmarked imported legacy Round 1 / Ash-family traders on Round 2:
+  - `Ash.py`: `-12534.0`
+  - `ash_follow_take_v18.py`: `-11953.0`
+  - `ash_controller_v1.py`: `-22284.0`
+  - `ash_controller_v2.py`: `-54119.0`
+  - `ash_controller_v3.py`: `-41185.0`
+  - `ash_rebuild_v1.py`: `-41501.0`
+- Legacy-shell conclusion:
+  importing earlier shells is not the fastest path to beating the current
+  Round 2 baseline.
+- Implemented hosted-aware calm Pepper execution branch:
+  - [round2_pepper_calm_execution_v01.py](/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/traders/Round2/candidates/round2_pepper_calm_execution_v01.py)
+  - [round2_pepper_calm_execution_v02.py](/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/traders/Round2/candidates/round2_pepper_calm_execution_v02.py)
+- Calm-execution results:
+  - `v01`: `-76.0`
+  - `v02`: `-76.0`
+- Calm-execution conclusion:
+  hosted-aware urgency reduction is directionally better than prior negative
+  branches, but too broad and too small.
+- Ran a dedicated Pepper quote-side / noquote sweep on top of the baseline
+  shell.
+- First positive local family found:
+  a late-rich Pepper passive quote gate that suppresses rebids while already
+  long.
+- Best sweep result:
+  `quote_gate_refine_01` at `+325.0` total on the explicit day `-1/0/1`
+  surface.
+- Materialized that branch as:
+  [round2_pepper_quote_gate_v01.py](/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/traders/Round2/candidates/round2_pepper_quote_gate_v01.py)
+- `round2_pepper_quote_gate_v01.py` results:
+  - full explicit `-1/0/1` local surface: `+325.0`
+  - stricter proxy surfaces on the currently available benchmark matrix:
+    - `default`: `+291.0`
+    - `worse`: `+282.0`
+    - `queue05`: `+64.0`
+    - `none`: `0.0`
+- Current best branch conclusion:
+  the live frontier is now `R2-PEPPER-quote-side-noquote-gate`, but the gain is
+  still far below the requested `>5%` target.

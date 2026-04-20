@@ -49,8 +49,8 @@ Key evidence:
 | `R2-PEPPER-pullback-finish-carry` | `INTARIAN_PEPPER_ROOT` | pullback-finish long carry completion | regime / execution | baseline-like carry completion on benign pullbacks looks distinct from generic fair-value buying | new Round 2 refinement | taking / hybrid | 1-5 ticks | mid-inventory, tight spread, negative slope, non-panicked pullback | buys real reversals if state filter is weak | medium-high | needs validation |
 | `R2-PEPPER-flow-conditioned-target` | `INTARIAN_PEPPER_ROOT` | flow-conditioned inventory target | regime | builder candidate used flow mostly as skew; explicit `round2_pepper_flow_target_v01` retune matched baseline exactly, so the additive local version appears absorbed already | stronger in Round 2 | hybrid | 1-20 ticks | target inventory and edge shift by recent trade-flow state | endogenous local-flow overfit | medium-high | likely redundant |
 | `R2-PEPPER-opening-wide-spread-take-gate` | `INTARIAN_PEPPER_ROOT` | opening wide-spread take suppression | execution | fresh artifact analysis found early opening Pepper aggressive buys with `target_long=45` and spread `12+` had negative `20`-tick edge, but removing them in `round2_pepper_opening_wide_gate_v01` lost too much normal carry | new fresh-alpha refinement | execution / participation gate | immediate to 20 ticks | gate aggressive Pepper buys only in early opening wide-spread states | underbuilds the baseline carry trade | medium-high | rejected |
-| `R2-PEPPER-gap-state-guard` | `INTARIAN_PEPPER_ROOT` | empty-book Pepper recovery guard | execution / robustness | fresh artifact analysis found Pepper empty-book gaps as a real drawdown pocket; broad one-sided `v01` got close at `-23`, while narrowed empty-book-only `v02` matched baseline exactly | new fresh-alpha refinement | state / risk overlay | gap window | only de-risk during empty-book Pepper windows and the immediate recovery | may be robustness-only with no local final-PnL edge | medium | likely redundant |
-| `R2-PEPPER-quote-side-noquote-gate` | `INTARIAN_PEPPER_ROOT` | quote-side / no-quote EV gate | execution | still a live family, but the old `fill-quality gate` bucket was too broad; this should now mean explicit quote/no-quote or one-sided quote selection | weak direct carryover, stronger post-builder | passive / hybrid | immediate to 5 ticks | gate by spread, side, inventory, and residual state | default local surface may underprice extra-quote variants | medium | needs validation |
+| `R2-PEPPER-gap-state-guard` | `INTARIAN_PEPPER_ROOT` | empty-book Pepper recovery guard | execution / robustness | fresh artifact analysis found Pepper empty-book gaps as a real drawdown pocket; broad one-sided `v01` got close at `-23`, while narrowed empty-book-only `v02` matched baseline exactly locally and was later reported by the user as about `-2.5%` on the official backtester | new fresh-alpha refinement | state / risk overlay | gap window | only de-risk during empty-book Pepper windows and the immediate recovery | may be robustness-only with no local final-PnL edge | medium | rejected |
+| `R2-PEPPER-quote-side-noquote-gate` | `INTARIAN_PEPPER_ROOT` | quote-side / no-quote EV gate | execution | late-rich Pepper quote-side gating finally produced the first real positive local branch: suppressing passive rebids while already long improved local total by `+325.0` without changing the fair model or Ash | weak direct carryover, stronger post-builder | passive / hybrid | immediate to 5 ticks | gate by spread, side, inventory, and residual state | default local surface may still underprice hosted-only variants; local edge so far is real but small | medium-high | promising |
 | `R2-PEPPER-spike-fade` | `INTARIAN_PEPPER_ROOT` | spike reversion overlay | spike | tradeable but secondary; should remain an overlay, not a main strategy family | carries over directly | taking / hybrid | 1-5 ticks | event-only entries, not always-on trading | overlaps with the core residual stack if triggers are too loose | medium | needs validation |
 | `R2-MAF-extra-flow-convexity` | `INTARIAN_PEPPER_ROOT` / `ASH_COATED_OSMIUM` | extra-flow convexity strategy selection | Round 2 specific | accepted MAF bids get `25%` more quotes, but local backtests do not model that; quote-intensive strategies can therefore be misranked locally | not applicable | validation / strategy selection | session-scale | separate base-stream and extra-flow candidate classes | locally untestable; fee can dominate | medium | needs validation |
 | `R2-PEPPER-exact-template-hardcode` | `INTARIAN_PEPPER_ROOT` | exact session path hardcoding | rejected | still the cleanest overfit failure mode; baseline statefulness does not justify exact replay templates | does not carry over | taking | session-scale | n/a | one-day / one-template overfit | high | rejected |
@@ -67,13 +67,13 @@ Key evidence:
 | `R2-PEPPER-harvest-refill-guard` | weakened by implementation | richer refill gating and a post-harvest target clamp still produced zero local delta, so the standalone additive overlay looks mostly absorbed by baseline locally | do not bury it inside a generic `fill-quality gate` label |
 | `R2-PEPPER-pullback-finish-carry` | neutral / unresolved | not tested directly; consistent with why the baseline keeps refilling effectively | do not confuse it with generic dip-buying |
 | `R2-PEPPER-flow-conditioned-target` | weakened by implementation | explicit flow-target retune matched baseline exactly, so the additive local target-setting version looks absorbed already | do not revisit as another target-only Pepper retune |
-| `R2-PEPPER-quote-side-noquote-gate` | blocked by local-surface ambiguity | still plausible, but the default local surface is not sufficient to rank it honestly | do not reject it solely on default local PnL |
+| `R2-PEPPER-quote-side-noquote-gate` | confirmed by implementation | narrow late-rich passive quote suppression beat baseline locally and stayed non-regressive on the stricter proxy matrix, but the gain is still far below the `>5%` target | do not revert to broader calm-execution or generic fill-quality gates; patch this exact family next |
 | `R2-MAF-extra-flow-convexity` | blocked by local-surface ambiguity | important Round 2-specific family, but unpriced locally because `bid()` is ignored | do not let the default local surface close this question |
 | `R2-ASH-medium-spread-taker-suppression` | weakened by implementation | Ash-only `v01` / `v02` were distinct but stayed negative, so this looks like helper-level cleanup rather than the main Round 2 dollar | do not expect Ash alone to solve the Round 2 blocker |
 | `R2-ASH-passive-inside-placement` | neutral / unresolved | still a valid Ash execution refinement, not a new Ash predictor family | do not combine it with broad passive suppression |
 | `R2-ASH-quote-state-overlay` | likely redundant | still useful only as a helper around the Ash anchored shell | do not launch a standalone Ash microstructure branch from this |
 | `R2-PEPPER-opening-wide-spread-take-gate` | rejected | the donor bucket is real, but deleting it costs too much local Pepper carry occupancy to win on the declared surface | do not revisit as blanket opening Pepper take suppression |
-| `R2-PEPPER-gap-state-guard` | weakened by implementation | the broad one-sided version nearly tied baseline, but the properly narrowed empty-book version became exact `0.0`, so the local additive EV is too small or already absorbed | do not keep retuning this locally unless the objective changes to robustness or hosted transfer |
+| `R2-PEPPER-gap-state-guard` | rejected | the broad one-sided version nearly tied baseline, but the properly narrowed empty-book version became exact `0.0` locally and the user later reported official regression, so this should not remain a promoted strategy branch | do not keep retuning this locally unless the objective changes to robustness-only investigation |
 | `R2-PEPPER-exact-template-hardcode` | rejected | nothing in the builder feedback rescues this idea | do not revisit |
 
 ## Registry Notes
@@ -138,3 +138,25 @@ Important registry changes from the first-wave inventory:
     too entwined with baseline carry occupancy to extract cleanly
   - the declared local surface should now be treated as a regression floor, not
     the place to keep spinning new local-only retunes
+
+## 2026-04-19 Quote-Gate Update
+
+- Implemented:
+  - [round2_pepper_quote_gate_v01.py](/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/traders/Round2/candidates/round2_pepper_quote_gate_v01.py)
+- Affected alpha:
+  - `R2-PEPPER-quote-side-noquote-gate`
+- Observed monetization result:
+  - explicit local day `-1/0/1` total delta: `+325.0`
+  - product attribution: entirely Pepper
+  - stricter proxy matrix:
+    - `default`: `+291.0`
+    - `worse`: `+282.0`
+    - `queue05`: `+64.0`
+    - `none`: `0.0`
+- Read:
+  - the family is real and finally distinct from the baseline in monetization
+    terms
+  - the useful local version is narrow: late-rich passive rebuy suppression,
+    not broad calm execution
+  - this alpha should remain the active frontier, but its current magnitude is
+    still too small to satisfy the requested `>5%` win bar
