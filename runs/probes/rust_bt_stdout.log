@@ -1,0 +1,15 @@
+trader: probe_v1_matching.py
+dataset: round3
+mode: fast
+artifacts: log-only
+SET             DAY    TICKS  OWN_TRADES    FINAL_PNL  RUN_DIR
+day-2             2    10000          20     -1348.00  /var/folders/cd/bpz21hmx0c7bzng9f4ps0vl80000gn/T/probe_rustbt_XXXX.qvwLhZ8Bgc/probe_v1_matching_round3_day2
+
+PRODUCT                  day-2
+HYDROGEL_PACK         -1318.00
+VEV_6500                -25.00
+VELVETFRUIT_EXTRACT      -5.00
+VEV_4000                  0.00
+VEV_4500                  0.00
+VEV_5000                  0.00
+OTHER(+6)                 0.00

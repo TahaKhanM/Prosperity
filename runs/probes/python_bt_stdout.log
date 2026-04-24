@@ -1,0 +1,61 @@
+Backtesting /Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/traders/Round3/probes/probe_v1_matching.py on round 3 day 2
+PROBE eid=E00_IDLE_A ts=0 product=NONE action=IDLE_MARK
+PROBE eid=E01_CROSS_ASK_TOP ts=1000 product=HYDROGEL_PACK action=BUY orders=10028x1 book=b=10012x14,10010x28|a=10028x14,10031x28 pos_before=0 limit=200 note=cross_top_ask
+PROBE eid=E02_CROSS_BID_TOP ts=1100 product=HYDROGEL_PACK action=SELL orders=10011x-1 book=b=10011x13,10009x28|a=10027x13,10030x28 pos_before=1 limit=200 note=cross_top_bid
+PROBE eid=E03_FLATTEN_H ts=1200 product=HYDROGEL_PACK action=FLAT_NOOP orders=0x0 book=b=10013x12,10010x28|a=10029x12,10031x28 pos_before=0 limit=200 note=already_flat_or_no_book
+PROBE eid=E04_CROSS_ASK_TOP_VE ts=1400 product=VELVETFRUIT_EXTRACT action=BUY orders=5267x1 book=b=5261x50|a=5267x50 pos_before=0 limit=200 note=cross_top_ask
+PROBE eid=E05_FLATTEN_VE ts=1500 product=VELVETFRUIT_EXTRACT action=FLAT_SELL orders=5261x-1 book=b=5262x56|a=5267x16,5268x40 pos_before=1 limit=200 note=target_flat_1
+PROBE eid=E06_WATERFALL_SUM3 ts=2000 product=HYDROGEL_PACK action=BUY orders=10030x35 book=b=10011x13,10009x22|a=10027x13,10030x22 pos_before=0 limit=200 note=waterfall_sum3_vol=35_cap=100
+PROBE eid=E07_WATERFALL_EXCESS ts=2100 product=HYDROGEL_PACK action=BUY orders=10078x57 book=b=10009x12,10007x25|a=10025x12,10028x25 pos_before=35 limit=200 note=waterfall_excess_sum_vol=37_excess=20_cap=100
+PROBE eid=E08_FLATTEN_H ts=2200 product=HYDROGEL_PACK action=FLAT_SELL orders=10008x-72 book=b=10009x10,10007x29|a=10025x10,10028x29 pos_before=72 limit=200 note=target_flat_72
+PROBE eid=E09_RESTING_BELOW_BB ts=3000 product=VELVETFRUIT_EXTRACT action=BUY_RESTING orders=5267x5 book=b=5268x21,5267x32|a=5273x21,5274x32 pos_before=0 limit=200 note=offset_1_below_bb
+PROBE eid=E09_RESTING_BELOW_BB ts=3100 product=VELVETFRUIT_EXTRACT action=BUY_RESTING orders=5269x5 book=b=5270x21,5269x47|a=5275x68 pos_before=0 limit=200 note=offset_1_below_bb
+PROBE eid=E09_RESTING_BELOW_BB ts=3200 product=VELVETFRUIT_EXTRACT action=BUY_RESTING orders=5269x5 book=b=5270x57|a=5276x57 pos_before=0 limit=200 note=offset_1_below_bb
+PROBE eid=E09_RESTING_BELOW_BB ts=3300 product=VELVETFRUIT_EXTRACT action=BUY_RESTING orders=5270x5 book=b=5271x17,5270x35|a=5276x17,5277x35 pos_before=0 limit=200 note=offset_1_below_bb
+PROBE eid=E09_RESTING_BELOW_BB ts=3400 product=VELVETFRUIT_EXTRACT action=BUY_RESTING orders=5271x5 book=b=5272x24,5271x41|a=5277x24,5278x41 pos_before=0 limit=200 note=offset_1_below_bb
+PROBE eid=E10_RESTING_JOIN_BB ts=3500 product=VELVETFRUIT_EXTRACT action=BUY_RESTING orders=5271x5 book=b=5271x25,5270x50|a=5276x75 pos_before=0 limit=200 note=join_best_bid
+PROBE eid=E10_RESTING_JOIN_BB ts=3600 product=VELVETFRUIT_EXTRACT action=BUY_RESTING orders=5271x5 book=b=5271x60|a=5277x60 pos_before=0 limit=200 note=join_best_bid
+PROBE eid=E10_RESTING_JOIN_BB ts=3700 product=VELVETFRUIT_EXTRACT action=BUY_RESTING orders=5271x5 book=b=5271x25,5270x44|a=5276x25,5277x44 pos_before=0 limit=200 note=join_best_bid
+PROBE eid=E10_RESTING_JOIN_BB ts=3800 product=VELVETFRUIT_EXTRACT action=BUY_RESTING orders=5271x5 book=b=5271x54|a=5276x19,5277x35 pos_before=0 limit=200 note=join_best_bid
+PROBE eid=E10_RESTING_JOIN_BB ts=3900 product=VELVETFRUIT_EXTRACT action=BUY_RESTING orders=5271x5 book=b=5271x65|a=5277x65 pos_before=0 limit=200 note=join_best_bid
+PROBE eid=E11_FLATTEN_VE ts=4000 product=VELVETFRUIT_EXTRACT action=FLAT_NOOP orders=0x0 book=b=5270x53|a=5275x23,5276x30 pos_before=0 limit=200 note=already_flat_or_no_book
+PROBE eid=E12_POSLIMIT_OVER1 ts=4200 product=VEV_6500 action=BUY orders=1x301 book=b=0x20|a=1x20 pos_before=0 limit=300 note=over_by_1_room_300
+PROBE eid=E13_POSLIMIT_EXACT ts=4300 product=VEV_6500 action=BUY orders=1x300 book=b=0x17|a=1x17 pos_before=0 limit=300 note=exact_room_300
+PROBE eid=E14_POSLIMIT_AGG ts=4400 product=VEV_6500 action=BUY_DUAL orders=1x144,1x144 book=b=0x17|a=1x17 pos_before=17 limit=300 note=sum=288_room=283
+PROBE eid=E15_FLATTEN_V65 ts=4500 product=VEV_6500 action=FLAT_SELL orders=-1x-17 book=b=0x16|a=1x16 pos_before=17 limit=300 note=target_flat_17
+PROBE eid=E16_SELFCROSS ts=5000 product=VEV_6500 action=SELF_CROSS orders=6x3,-5x-3 book=b=0x17|a=1x17 pos_before=1 limit=300 note=high_buy_low_sell
+PROBE eid=E17_FLATTEN_V65 ts=5100 product=VEV_6500 action=FLAT_SELL orders=-1x-1 book=b=0x11|a=1x11 pos_before=1 limit=300 note=target_flat_1
+PROBE eid=E18_QTY_ZERO ts=5300 product=VEV_6500 action=BUY_ZERO_QTY orders=1x0 book=b=0x13|a=1x13 pos_before=0 limit=300 note=schema_edge
+PROBE eid=E19_DUPLICATE_BUY ts=5400 product=VEV_6500 action=BUY_DUPLICATE orders=1x2,1x2 book=b=0x17|a=1x17 pos_before=0 limit=300 note=same_price_same_side
+PROBE eid=E20_FLATTEN_V65 ts=5500 product=VEV_6500 action=FLAT_SELL orders=-1x-4 book=b=0x15|a=1x15 pos_before=4 limit=300 note=target_flat_4
+PROBE eid=E21_PRICE_ZERO_BUY ts=6000 product=VEV_6500 action=BUY orders=0x1 book=b=0x15|a=1x15 pos_before=0 limit=300 note=explicit_price_0
+PROBE eid=E22_SELL_AT_ZERO ts=6100 product=VEV_6500 action=SELL orders=0x-1 book=b=0x14|a=1x14 pos_before=0 limit=300 note=explicit_price_0
+PROBE eid=E23_FLATTEN_V65 ts=6200 product=VEV_6500 action=FLAT_BUY orders=2x1 book=b=0x16|a=1x16 pos_before=-1 limit=300 note=target_flat_-1
+PROBE eid=E24_RESTING_ABOVE_BA ts=7000 product=VELVETFRUIT_EXTRACT action=SELL_RESTING orders=5272x-5 book=b=5269x70|a=5271x11,5275x70 pos_before=0 limit=200 note=offset_1_above_ba
+PROBE eid=E24_RESTING_ABOVE_BA ts=7100 product=VELVETFRUIT_EXTRACT action=SELL_RESTING orders=5274x-5 book=b=5268x15,5267x47|a=5273x15,5274x47 pos_before=0 limit=200 note=offset_1_above_ba
+PROBE eid=E24_RESTING_ABOVE_BA ts=7200 product=VELVETFRUIT_EXTRACT action=SELL_RESTING orders=5274x-5 book=b=5268x61|a=5273x23,5274x38 pos_before=0 limit=200 note=offset_1_above_ba
+PROBE eid=E24_RESTING_ABOVE_BA ts=7300 product=VELVETFRUIT_EXTRACT action=SELL_RESTING orders=5275x-5 book=b=5268x56|a=5274x56 pos_before=0 limit=200 note=offset_1_above_ba
+PROBE eid=E24_RESTING_ABOVE_BA ts=7400 product=VELVETFRUIT_EXTRACT action=SELL_RESTING orders=5276x-5 book=b=5270x72|a=5275x23,5276x49 pos_before=0 limit=200 note=offset_1_above_ba
+PROBE eid=E25_FLATTEN_VE ts=7500 product=VELVETFRUIT_EXTRACT action=FLAT_NOOP orders=0x0 book=b=5271x69|a=5277x69 pos_before=0 limit=200 note=already_flat_or_no_book
+PROBE eid=E26_WIDE_RESTING_H ts=8000 product=HYDROGEL_PACK action=WIDE_QUOTE orders=9989x3,10035x-3 book=b=10004x15,10001x22|a=10020x15,10022x22 pos_before=62 limit=200 note=offset_15
+PROBE eid=E26_WIDE_RESTING_H ts=8100 product=HYDROGEL_PACK action=WIDE_QUOTE orders=9992x3,10038x-3 book=b=10007x10,10005x30|a=10023x10,10026x30 pos_before=62 limit=200 note=offset_15
+PROBE eid=E26_WIDE_RESTING_H ts=8200 product=HYDROGEL_PACK action=WIDE_QUOTE orders=9991x3,10037x-3 book=b=10006x12,10004x24|a=10022x12,10025x24 pos_before=62 limit=200 note=offset_15
+PROBE eid=E26_WIDE_RESTING_H ts=8300 product=HYDROGEL_PACK action=WIDE_QUOTE orders=9996x3,10042x-3 book=b=10011x15,10008x23|a=10027x15,10029x23 pos_before=62 limit=200 note=offset_15
+PROBE eid=E26_WIDE_RESTING_H ts=8400 product=HYDROGEL_PACK action=WIDE_QUOTE orders=9995x3,10041x-3 book=b=10010x13,10007x23|a=10026x13,10028x23 pos_before=62 limit=200 note=offset_15
+PROBE eid=E27_FLATTEN_H ts=8500 product=HYDROGEL_PACK action=FLAT_SELL orders=10009x-62 book=b=10010x14,10008x21|a=10026x14,10029x21 pos_before=62 limit=200 note=target_flat_62
+PROBE eid=E28_IDLE_END ts=9000 product=NONE action=IDLE_MARK
+HYDROGEL_PACK: -1,318
+VELVETFRUIT_EXTRACT: -5
+VEV_4000: 0
+VEV_4500: 0
+VEV_5000: 0
+VEV_5100: 0
+VEV_5200: 0
+VEV_5300: 0
+VEV_5400: 0
+VEV_5500: 0
+VEV_6000: 0
+VEV_6500: -25
+Total profit: -1,348
+
+Successfully saved backtest results to runs/probes/python_bt_output.json
