@@ -7,16 +7,28 @@ from prosperity4bt.file_reader import FileReader
 # Prosperity 4 position limits per product.
 # Tutorial round products:
 #   EMERALDS: 80, TOMATOES: 80
-# Future round products will be added here as they are announced.
 # If a product is encountered in the data but not in this dict,
 # the backtester will warn and use a default limit of 50.
 LIMITS: dict[str, int] = {
     # Tutorial round
     "EMERALDS": 80,
     "TOMATOES": 80,
-    # Round 1
+    # Round 1 / Round 2 (archived; PnL reset at Round 3 start)
     "ASH_COATED_OSMIUM": 80,
     "INTARIAN_PEPPER_ROOT": 80,
+    # Round 3 (GOAT) — live products
+    "HYDROGEL_PACK": 200,
+    "VELVETFRUIT_EXTRACT": 200,
+    "VEV_4000": 300,
+    "VEV_4500": 300,
+    "VEV_5000": 300,
+    "VEV_5100": 300,
+    "VEV_5200": 300,
+    "VEV_5300": 300,
+    "VEV_5400": 300,
+    "VEV_5500": 300,
+    "VEV_6000": 300,
+    "VEV_6500": 300,
 }
 
 DEFAULT_POSITION_LIMIT = 50

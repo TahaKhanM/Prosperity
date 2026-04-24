@@ -6,13 +6,26 @@ import { Chart } from './Chart.tsx';
 
 function getLimit(algorithm: Algorithm, symbol: ProsperitySymbol): number {
   // Prosperity 4 position limits per product.
-  // Tutorial round products:
   const knownLimits: Record<string, number> = {
+    // Tutorial
     EMERALDS: 80,
     TOMATOES: 80,
+    // Round 1 / Round 2 (archived; PnL reset at Round 3)
     ASH_COATED_OSMIUM: 80,
     INTARIAN_PEPPER_ROOT: 80,
-    // Future round products will be added here as announced.
+    // Round 3 (GOAT) — live products
+    HYDROGEL_PACK: 200,
+    VELVETFRUIT_EXTRACT: 200,
+    VEV_4000: 300,
+    VEV_4500: 300,
+    VEV_5000: 300,
+    VEV_5100: 300,
+    VEV_5200: 300,
+    VEV_5300: 300,
+    VEV_5400: 300,
+    VEV_5500: 300,
+    VEV_6000: 300,
+    VEV_6500: 300,
     // If a product is not in this list, the limit is inferred from the algorithm's positions.
   };
 

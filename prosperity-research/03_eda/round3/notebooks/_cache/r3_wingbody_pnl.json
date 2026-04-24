@@ -1,0 +1,26 @@
+[
+  {
+    "trade": "long_5200_short_5400",
+    "entry_day": 0,
+    "exit_day": 1,
+    "pnl_raw": 0.5,
+    "pnl_net": -1.5,
+    "fly_delta": 0.3849277886360035,
+    "hedge_pnl": 1.9246389431800175,
+    "pnl_hedged_net": 0.4246389431800175,
+    "S_entry": 5250.0,
+    "S_exit": 5245.0
+  },
+  {
+    "trade": "long_5200_short_5400",
+    "entry_day": 1,
+    "exit_day": 2,
+    "pnl_raw": 8.0,
+    "pnl_net": 6.0,
+    "fly_delta": 0.3979860712323414,
+    "hedge_pnl": -8.954686602727682,
+    "pnl_hedged_net": -2.9546866027276817,
+    "S_entry": 5245.0,
+    "S_exit": 5267.5
+  }
+]
