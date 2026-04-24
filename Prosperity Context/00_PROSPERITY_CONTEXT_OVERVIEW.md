@@ -1,183 +1,145 @@
-# Prosperity 4 Context Pack Overview
+# Prosperity 4 Context Pack Overview (GOAT / Round 3+)
 
 ## Purpose
 
-This pack is a compact, high-signal context layer for coding agents working on an
-IMC Prosperity 4 repository. It is designed to be consumed by tools such as
-Codex and Claude Code without wasting always-loaded context on details that are
-only relevant for some tasks.
+This pack is a compact, high-signal context layer for coding agents working on
+the IMC Prosperity 4 repository during the GOAT (Great Orbital Ascension
+Trials) phase starting Round 3. It is designed to be consumed by tools such
+as Codex and Claude Code without wasting always-loaded context on details
+that are only relevant to some tasks.
 
 Use this pack to keep three things separate:
 
 1. **Official competition facts**: rules, interfaces, products, limits, manual
-   challenge mechanics.
-2. **Soft strategic hints**: narrative prompt cards and uplink summaries that
-   may contain useful clues but are not formal rules.
+   challenge mechanics (Round 3 onwards).
+2. **Soft strategic hints**: narrative prompt cards, uplink summaries, and
+   the Round 3 Magritte image hint.
 3. **Repo-local tooling reality**: backtesters, visualizer behavior, skills,
    agents, command surfaces, and caveats.
+
+## GOAT phase context
+
+At the start of Round 3 ("Gloves Off", on Salvinar):
+- All prior PnL is reset to zero.
+- Rounds now last 48 hours instead of 72.
+- Three remaining rounds (3, 4, 5) decide the Trading Champion of the Galaxy.
+- The final submission wins each round; earlier drafts are ignored.
 
 ## Design principles
 
 - Keep always-loaded entry files short.
 - Put broad persistent rules in `AGENTS.md` / `CLAUDE.md`.
 - Put task-specific detail in dedicated markdown files.
-- Preserve source hierarchy and naming collisions explicitly.
-- Preserve every materially useful fact, including “small” caveats that can
+- Preserve every materially useful fact, including small caveats that can
   change agent behavior.
-- Prefer references and reading order over pasting huge blobs into every prompt.
+- Prefer references and reading order over pasting huge blobs into every
+  prompt.
 
 ## File map
 
-- `AGENTS.md`
-  - Thin Codex-facing entry file with durable repo rules.
-- `CLAUDE.md`
-  - Thin Claude Code entry file using `@` imports.
-- `00_PROSPERITY_CONTEXT_OVERVIEW.md`
-  - Shared trust model, cross-round facts, naming collisions, and file routing.
-- `10_ALGO_TRADING_CONTEXT.md`
-  - Algorithmic challenge facts and strategy-relevant hints for Rounds 1 and 2.
-- `20_MANUAL_TRADING_CONTEXT.md`
-  - Manual challenge facts for Round 1 auction and Round 2 investment game.
-- `30_REPO_AND_TOOLING_CONTEXT.md`
-  - Repo/tooling context extracted from uploaded repo-context docs.
-- `README.md`
-  - Human-facing summary of how to use the pack.
+- `AGENTS.md` — thin Codex-facing entry file with durable repo rules.
+- `CLAUDE.md` — thin Claude Code entry file using `@` imports.
+- `00_PROSPERITY_CONTEXT_OVERVIEW.md` (this file) — trust model, cross-round
+  facts, naming collisions, routing.
+- `10_ALGO_TRADING_CONTEXT.md` — algorithmic challenge facts for Round 3
+  (HYDROGEL_PACK, VELVETFRUIT_EXTRACT, 10 VEV vouchers).
+- `20_MANUAL_TRADING_CONTEXT.md` — manual challenge facts (Round 3 Bio-Pods).
+- `30_REPO_AND_TOOLING_CONTEXT.md` — backtester + visualizer + skills context.
+- `New Context/Round 3 Trading round.md` — primary written source for Round 3.
+- `New Context/Video Transcript.pdf` — ARIA uplink transcript for Round 3.
+- `Unrefined Context/` — original uploaded source material (lower priority).
 
 ## Trust model and source hierarchy
 
 When facts conflict, use this order:
 
 1. **Official Prosperity written docs**
-   - `Official Prosperity Context.md`
-   - `Official Prosperity Context Round 1.md`
-   - `Prosperity Round 2.md`
+   - `New Context/Round 3 Trading round.md` (primary for current round)
+   - `Unrefined Context/Official Prosperity Context.md` (general mechanics)
 2. **Repo-context documents that describe local code/tooling**
-   - `RUST_BACKTESTER_CONTEXT_FOR_AI_TOOLS.md`
-   - `PYTHON_BACKTESTER_AND_VISUALIZER_CONTEXT_FOR_AI_TOOLS.md`
-   - `CHATGPT_CONTEXT_FOR_CODEX_PROMPT_ENGINEERING.md`
+   - `Unrefined Context/RUST_BACKTESTER_CONTEXT_FOR_AI_TOOLS.md`
+   - `Unrefined Context/PYTHON_BACKTESTER_AND_VISUALIZER_CONTEXT_FOR_AI_TOOLS.md`
 3. **Narrative / transcript material**
-   - `ARIA Uplink.md`
-   - `Default_A.R.I.A Uplink_ Round 2.txt`
-   - `ROUND1_PROMPT_HINTS_CONTEXT.md`
+   - `New Context/Video Transcript.pdf`
+   - `Unrefined Context/ARIA Uplink.md`
 
 Practical rule:
-- Treat official docs as authoritative for rules, interfaces, position limits,
-  products, submission behavior, and round mechanics.
-- Treat uplinks and prompt hints as clue-bearing but lower-authority.
-- Treat repo-context docs as authoritative only for the local repo state they
-  describe, not for live competition rules.
+- Treat official written docs as authoritative for rules, interfaces, position
+  limits, products, submission behavior, and round mechanics.
+- Treat uplinks and narrative transcripts as clue-bearing but lower-authority.
+- Repo-context docs are authoritative only for local repo behaviour, not for
+  competition rules.
 
-## Important naming collisions and canon choices
+## Round 3 products (live algorithmic)
 
-The uploaded materials are not perfectly aligned on world-building names.
+| Product | Type | Position limit |
+|---|---|---|
+| `HYDROGEL_PACK` | Delta-1 (anchored ~10000) | 200 |
+| `VELVETFRUIT_EXTRACT` (VE) | Delta-1 underlying | 200 |
+| `VEV_4000` .. `VEV_6500` | 10 European call vouchers on VE | 300 each |
 
-Official written docs use:
-- `Intara`
-- `Intarian`
-- `XIREN`
-- `XIRECs`
+Voucher strikes: {4000, 4500, 5000, 5100, 5200, 5300, 5400, 5500, 6000, 6500}.
+Expiry: shared, 7 rounds from the start of Round 1 ⇒ **5 days at start of
+live Round 3**. Historical data days 0/1/2 correspond to TTE = 8/7/6 days.
+Settlement: cash at `max(S_T - K, 0)` at expiry; not exercisable before.
 
-Narrative uplink/transcript summaries use:
-- `Entara`
-- `Entarian`
-- `Zyren`
-- `Zyrex`
+## Round 3 manual task
 
-For agent work:
-- use the **official written docs as canonical** for naming, rules, and
-  competition facts
-- treat the narrative variants as the same setting described through a lower-
-  authority source
+Bio-Pods / Celestial Gardeners:
+- Submit two bids. Each gardener has a hidden reserve price.
+- First bid wins the gardener if `b1 >= r` (pay `b1`).
+- Else, second bid is compared to the **global average of second bids**
+  `μ̄`. Wins with probability that collapses cubically below μ̄ (precedent:
+  `p = ((V - μ̄) / (V - b2))^3` from P3 Round 3).
+- Reserves are "flowering fives apart" — on multiples of 5.
+- Resale value V = 920. Won bio-pods auto-sell.
 
-## What is actually verified in this sandbox
+## Cross-round competition facts
 
-Verified directly in the sandbox:
-- the uploaded markdown/txt files listed above
+- Algorithmic and manual challenges are independent profit sources.
+- `bid()` market-access auction only matters in Round 2 (historical).
+- Outside Round 2, `bid()` is ignored and can safely be omitted.
+- Final submission of the round is the one scored.
+- Hosted container is AWS Lambda — stateless between ticks. Use `traderData`.
+- `traderData` is truncated at 50,000 characters by the hosted framework.
+- `OrderDepth.sell_orders` volumes are negative.
 
-Not verified directly in the sandbox:
-- the actual Prosperity repository tree mentioned by the repo-context files
-- the code files those docs reference by path
-- the presence of the described AGENTS files, skills, agents, datasets, or
-  trader files on disk in this session
+## Naming collisions
 
-Therefore:
-- repo/tooling statements in this pack are **derived from the uploaded
-  repository-context documents**
-- they should be treated as “documented repo reality” unless and until a real
-  checkout is present and can be inspected directly
+Official written docs use: `Intara`, `Intarian`, `XIREN`, `XIRECs`.
+Narrative uplink/transcript variants: `Entara`, `Entarian`, `Zyren`, `Zyrex`,
+"Salvinar", "Solvenar". The variants refer to the same setting through
+lower-authority sources. Prefer the written docs' naming.
 
-## Competition coverage in the uploaded materials
+## Round 3 hint: "Ceci n'est pas une pipe"
 
-This pack covers:
-- official general algorithm interface and exchange mechanics
-- official Round 1
-- official Round 2
-- narrative Round 1 and Round 2 uplinks
-- Round 1 prompt-card strategic hints
-- repo-local backtester / visualizer / prompt-engineering context documents
-
-This pack does **not** claim to cover later rounds beyond the fact that the
-general official interface doc mentions that `bid()` is ignored outside Round 2.
-
-## Cross-round competition facts that matter often
-
-- The mission target in the uploaded official round docs is to reach a net PnL
-  of **200,000 XIRECs or more** before the qualifying phase changes.
-- Algorithmic and manual challenges are separate opportunities; manual results
-  do not alter algorithmic mechanics and vice versa.
-- Rounds last **72 hours** in the uploaded round docs/uplinks.
-- Multiple submissions are allowed during a round, but the **last submitted
-  program** is the one used for official evaluation of that round.
-- The Round 1 and Round 2 algorithmic products in the uploaded official round
-  docs are:
-  - `ASH_COATED_OSMIUM`
-  - `INTARIAN_PEPPER_ROOT`
-- Position limits for both products in both uploaded round docs are:
-  - `ASH_COATED_OSMIUM`: `80`
-  - `INTARIAN_PEPPER_ROOT`: `80`
-
-## General algorithm interface facts from official context
-
-The official interface doc establishes these durable rules:
-
-- Implement a `Trader` class with a `run(self, state)` method.
-- For **Algorithmic Round 2**, the `Trader` class should also define
-  `bid(self)`. It is fine to include `bid()` in all rounds; it is ignored
-  outside Round 2.
-- The official submission-compatible return shape is:
-  `orders, conversions, traderData`
-- The exchange/container is effectively stateless from call to call because the
-  hosted container runs on AWS Lambda, so **do not rely on class or global
-  variables persisting**.
-- Use `traderData` for persistent state. The hosted environment truncates it at
-  **50,000 characters**.
-- Outstanding player quotes that are not traded on by bots are automatically
-  canceled at the end of the iteration.
-- Position-limit enforcement is worst-case on the aggregated buy/sell orders for
-  a product in a single iteration: if the product would breach its limit if all
-  those orders filled, the exchange rejects all orders for that product in that
-  iteration.
-- Official exchange execution is modeled as instantaneous relative to bots: if
-  your order can match immediately, no faster bot gets in front of it.
+The Round 3 `Data/ROUND_3/La_trahison_des_images.png` is Magritte's
+"Treachery of Images". Interpretation guidance:
+- Treat it as a structural warning, not a trading tip.
+- The voucher chain may *look* like a standard option chain but may include
+  structural quirks. Validate with `parity_scan.py` before shipping any
+  option-pricing model. Historical days show deep-ITM vouchers priced
+  extremely close to (sometimes below) intrinsic, which is unusual for a
+  normal option market.
 
 ## Routing rules for agents
 
 If the task is about:
-- algorithm design, signal mining, execution logic, submission compatibility, or
-  Round 2 market-access bidding:
-  - read `10_ALGO_TRADING_CONTEXT.md`
-- manual challenge work, auction reasoning, or the Round 2 investment game:
-  - read `20_MANUAL_TRADING_CONTEXT.md`
-- backtesters, visualizer inputs, command choices, skills, local agents, or
+- algorithm design, signal mining, execution logic, or voucher pricing:
+  read `10_ALGO_TRADING_CONTEXT.md`.
+- manual challenge work (Bio-Pods auction):
+  read `20_MANUAL_TRADING_CONTEXT.md`.
+- backtester, visualizer, command choices, skills, local agents, or
   repo workflow:
-  - read `30_REPO_AND_TOOLING_CONTEXT.md`
+  read `30_REPO_AND_TOOLING_CONTEXT.md`.
 
 ## What not to do
 
-- Do not mix tutorial products such as `EMERALDS` or `TOMATOES` with live Round
-  1 / Round 2 products unless the task explicitly targets tutorial data.
-- Do not treat Round 1 narrative hints as stronger authority than official docs.
-- Do not assume repo paths described in the uploaded repo-context files have
-  been verified in the current sandbox.
-- Do not treat local backtester behavior as official hosted truth when the docs
-  explicitly call out mismatches.
+- Do not mix tutorial products (`EMERALDS`, `TOMATOES`) or the archived Round
+  1/2 products (`ASH_COATED_OSMIUM`, `INTARIAN_PEPPER_ROOT`) with live Round 3
+  products.
+- Do not treat narrative hints as stronger than official docs.
+- Do not assume Black-Scholes applies without validating on the Round 3 data
+  — use the `round3_options/parity_scan.py` and `vol_surface_fit.py` outputs.
+- Do not rely on hosted-only mechanics (conversions, observations) in local
+  backtests; the documented Rust/Python tools do not simulate them faithfully.

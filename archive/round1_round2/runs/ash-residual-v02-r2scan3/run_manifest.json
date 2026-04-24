@@ -1,0 +1,92 @@
+{
+  "artifact_mode": "full",
+  "baseline_path": "prosperity_rust_backtester/traders/Round 2/baseline.py",
+  "carry": false,
+  "created_at": "2026-04-19T18:19:39.905025+00:00",
+  "dataset": {
+    "cli_value": "/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/datasets/round2",
+    "day": null,
+    "label": "round2",
+    "path": "prosperity_rust_backtester/datasets/round2",
+    "round_key": "round2"
+  },
+  "flat": false,
+  "git_commit": "1a14fb349ac95127daee9a2933d39ec01689fd7f",
+  "runs": {
+    "baseline": {
+      "all_inspection_files": [
+        "prosperity_rust_backtester/runs/ash-residual-v02-r2scan3/baseline/combined.log"
+      ],
+      "all_visualizer_files": [],
+      "command": [
+        "/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/scripts/cargo_local.sh",
+        "run",
+        "--",
+        "--trader",
+        "/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/traders/Round 2/baseline.py",
+        "--dataset",
+        "/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/datasets/round2",
+        "--output-root",
+        "/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/runs/ash-residual-v02-r2scan3",
+        "--run-id",
+        "baseline",
+        "--artifact-mode",
+        "full"
+      ],
+      "inspection_file": "prosperity_rust_backtester/runs/ash-residual-v02-r2scan3/baseline/combined.log",
+      "run_dir": "prosperity_rust_backtester/runs/ash-residual-v02-r2scan3/baseline",
+      "run_id": "baseline",
+      "stdout_tail": [
+        "artifacts: saved",
+        "bundle: runs/ash-residual-v02-r2scan3/baseline [manifest+combined logs only; use each RUN_DIR/submission.log for visualization]",
+        "SET             DAY    TICKS  OWN_TRADES    FINAL_PNL  RUN_DIR",
+        "D-1              -1    10000         959    102962.50  runs/ash-residual-v02-r2scan3/baseline-round2-day-1",
+        "day-0             0    10000         912    102777.00  runs/ash-residual-v02-r2scan3/baseline-round2-day-0",
+        "day-1             1    10000         990    104362.00  runs/ash-residual-v02-r2scan3/baseline-round2-day-1",
+        "",
+        "PRODUCT                     D-1      day-0      day-1",
+        "INTARIAN_PEPPER_ROOT   81715.50   82194.00   82540.00",
+        "ASH_COATED_OSMIUM      21247.00   20583.00   21822.00"
+      ],
+      "visualizer_file": null
+    },
+    "candidate": {
+      "all_inspection_files": [
+        "prosperity_rust_backtester/runs/ash-residual-v02-r2scan3/candidate/combined.log"
+      ],
+      "all_visualizer_files": [],
+      "command": [
+        "/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/scripts/cargo_local.sh",
+        "run",
+        "--",
+        "--trader",
+        "/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/traders/Round1/work/ash/ash_residual_v02.py",
+        "--dataset",
+        "/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/datasets/round2",
+        "--output-root",
+        "/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/runs/ash-residual-v02-r2scan3",
+        "--run-id",
+        "candidate",
+        "--artifact-mode",
+        "full"
+      ],
+      "inspection_file": "prosperity_rust_backtester/runs/ash-residual-v02-r2scan3/candidate/combined.log",
+      "run_dir": "prosperity_rust_backtester/runs/ash-residual-v02-r2scan3/candidate",
+      "run_id": "candidate",
+      "stdout_tail": [
+        "artifacts: saved",
+        "bundle: runs/ash-residual-v02-r2scan3/candidate [manifest+combined logs only; use each RUN_DIR/submission.log for visualization]",
+        "SET             DAY    TICKS  OWN_TRADES    FINAL_PNL  RUN_DIR",
+        "D-1              -1    10000         945     99114.50  runs/ash-residual-v02-r2scan3/candidate-round2-day-1",
+        "day-0             0    10000         995     98490.00  runs/ash-residual-v02-r2scan3/candidate-round2-day-0",
+        "day-1             1    10000        1037     99986.00  runs/ash-residual-v02-r2scan3/candidate-round2-day-1",
+        "",
+        "PRODUCT                     D-1      day-0      day-1",
+        "INTARIAN_PEPPER_ROOT   78293.50   78941.00   78950.00",
+        "ASH_COATED_OSMIUM      20821.00   19549.00   21036.00"
+      ],
+      "visualizer_file": null
+    }
+  },
+  "trader_path": "prosperity_rust_backtester/traders/Round1/work/ash/ash_residual_v02.py"
+}

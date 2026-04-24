@@ -1,0 +1,31 @@
+{
+  "run_id": "candidate",
+  "trader": "baseline.py",
+  "dataset": "round2",
+  "results": [
+    {
+      "set": "D-1",
+      "day": -1,
+      "tick_count": 10000,
+      "own_trade_count": 959,
+      "final_pnl_total": 102962.5,
+      "run_dir": "runs/round2-baseline-noncarry/candidate-round2-day-1"
+    },
+    {
+      "set": "day-0",
+      "day": 0,
+      "tick_count": 10000,
+      "own_trade_count": 912,
+      "final_pnl_total": 102777.0,
+      "run_dir": "runs/round2-baseline-noncarry/candidate-round2-day-0"
+    },
+    {
+      "set": "day-1",
+      "day": 1,
+      "tick_count": 10000,
+      "own_trade_count": 990,
+      "final_pnl_total": 104362.0,
+      "run_dir": "runs/round2-baseline-noncarry/candidate-round2-day-1"
+    }
+  ]
+}

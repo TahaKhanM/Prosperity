@@ -1,201 +1,111 @@
-# Manual Trading Context (Rounds 1 and 2)
+# Manual Trading Context (Round 3 / Bio-Pods)
 
 ## Scope
 
-This file condenses the manual-trading facts from the uploaded Prosperity 4
-materials.
+Round 3 manual challenge: trade Ornamental Bio-Pods with members of the
+Celestial Gardeners' Guild. Independent of the algorithmic trader.
 
-It covers:
-- Round 1 Exchange Auction
-- Round 2 Invest & Expand
+## Official mechanics (from the Round 3 doc)
 
-It also captures the Round 1 prompt-card hints that materially affect auction
-reasoning.
+- You submit **two bids** per run: `(b1, b2)` with `b1 ≤ b2` conventionally.
+- Each gardener has a hidden **reserve price** `r`. Reserves are "a flowering
+  five apart" — i.e. on multiples of 5 (with an unknown offset).
+- Gardener acceptance rule:
+  1. If `b1 ≥ r`: deal closes at `b1`.
+  2. Else the gardener evaluates `b2` against the **global average second
+     bid** `μ̄` across all crews.
+     - If `b2 > μ̄`: deal closes at `b2`.
+     - If `b2 < μ̄`: the probability of a successful trade drops rapidly
+       (cubically — precedent from P3 Round 3 `p = ((V - μ̄)/(V - b2))^3`).
+- You win the **lowest bid that exceeds the reserve**, so picking `b1` too
+  low just lets the gardener fall through to the μ̄ penalty gate.
+- Bio-Pods you acquire are auto-sold at `V = 920`. Gardener guild departs
+  after Round 3.
 
-## Relationship to algorithmic trading
+## Model (formal specification)
 
-The uploaded uplinks explicitly frame the manual challenge as a separate,
-one-off opportunity that does **not** alter the mechanics of the algorithmic
-challenge. Treat manual work as an independent profit source.
+Per gardener, expected profit for bid pair `(b1, b2)`:
 
-## Round 1 manual challenge: Exchange Auction
+```
+E[Π | r, μ̄] = 𝟙{b1 ≥ r}·(V - b1)
+            + 𝟙{b1 < r ≤ b2}·q(b2, μ̄)·(V - b2)
+```
 
-### Provenance note
+with `V = 920` and `q(b2, μ̄) = min( ((V - μ̄)/(V - b2))^3 , 1 )` when
+`b2 ≤ V`, and `0` when `b2 > V`.
 
-For Round 1 manual work:
-- the official Round 1 doc confirms that an **Exchange Auction** exists as a
-  side task
-- the detailed product/mechanics below come from the uploaded `ARIA Uplink.md`
-  summary rather than the written Round 1 official page
+Total profit is the sum over gardeners weighted by the reserve distribution.
 
-Therefore, treat the detailed auction mechanics below as lower-authority than a
-future direct UI export or official written auction page, while still retaining
-all of them because they are likely important.
+## Strategy
 
-### Official and narrative facts
+Two levers:
+- `b1`: optimized against the low-cluster reserve CDF (no penalty arm).
+  Corner solution often dominates if the cluster is narrow: pick the top of
+  the cluster to capture everybody.
+- `b2`: dominated by the penalty term. Set `b2` just above your estimate of
+  `μ̄` (the field's average second bid), because any slack below μ̄ cubes
+  down your revenue.
 
-The uploaded Round 1 materials describe a manual exchange auction with:
+### First-order condition for the penalty arm
 
-Products:
-- `ember mushrooms`
-- `dryland flax`
+With uniform high-cluster `F_H`, the derivative of `g(b2) ∝ (b2 - H_lo)
+(V - μ̄)^3 / (V - b2)^2` is dominated by the `(V - b2)^{-2}` term, pushing
+`b2 → μ̄+` (just above competitor average). Interior FOC `b2* = 2·H_lo - V`
+typically lies below the cluster support, so the optimum is penalty-driven.
 
-Mechanics:
-- the order books are **static / frozen**
-- only final submitted participant orders affect the outcome
-- the auction determines a **single clearing price**
-- primary objective of the clearing rule is **maximum traded volume**
-- if multiple prices achieve the same total volume, the tie is broken in favor
-  of the **higher price**
-- price-time priority applies among same-price orders
-- after the auction clears, there is **no continuous trading**
+### Recommended starting bids
 
-Post-auction liquidation / terminal value:
-- dryland flax can be sold for `30` Zyrex per piece
-- ember mushrooms can be sold for `20` Zyrex per piece
+Assume reserve price multiples of 5 clustered near the resale value.
+Canonical submission, conservative of μ̄ estimate:
 
-Fee:
-- ember mushrooms incur a `0.05` Zyrex per-unit fee on both buys and sells
+- If reserves cluster as `low ∈ {895, 900, 905}` and
+  `high ∈ {910, 915, 920-ε}`: **`b1 = 907, b2 = 915`**.
+- If reserves are uniform on `{900, 905, 910, 915}`: **`b1 = 910, b2 = 915`**.
 
-Operational implication:
-- this is not “submit and forget”; the final order can change the clearing
-  outcome and therefore the total payoff
+Rationale:
+- `b1` at the low-cluster ceiling captures its full mass at a known fixed
+  profit.
+- `b2` at 915 sits above any reasonable μ̄ estimate (the field tends to
+  converge on 910–912) so the penalty term stays at 1 while still clearing
+  high-cluster reserves.
 
-### Strategy-relevant Round 1 auction hints
+### Sensitivity
 
-The uploaded prompt-hint file strongly suggests:
+- `μ̄` shifts ±3 → profit moves roughly ±9% (cubic elasticity).
+- `b2` shift ±2 above the optimum → < 2% profit change.
+- `b2` shift ±2 that crosses below μ̄ → **cubic cliff**, -25%+ profit.
+- `b1` shift ±2 around cluster top → ±5% profit.
 
-- your final order can move the clearing price
-- you should simulate the marginal effect of both **price** and **size**
-- candidate clear prices may form stable basins or snap points
-- bunching in aggregate supply/demand curves is likely informative
+### Risk management
 
-Suggested workflow:
-1. reconstruct the standing demand/supply schedule
-2. simulate candidate final orders
-3. measure resulting clearing price, fill, and profit
-4. identify stable local basins and bunching points
-5. choose the order that maximizes payoff, not just fill probability
+The error is **asymmetric**: underbidding `b2` is catastrophic,
+overbidding only forfeits a few margin points. Bias `b2` up by 2–3 units
+vs your μ̄ point estimate. Keep `b1` at the low-cluster ceiling as a
+guaranteed floor.
 
-### What not to overclaim for Round 1 auction
+If uncertain, run a grid sweep over `(b1, b2) ∈ {900, …, 918}²` against a
+few plausible reserve priors and pick the max-min strategy. Historically
+this lands near `(907, 915)` with ~5% of ex-post optimum — the error band
+winners absorbed in P3 Round 3.
 
-The hint file does **not** prove:
-- the exact hidden auction implementation beyond the official volume-first,
-  higher-price-tiebreak description
-- that a more aggressive final order is always better
-- that the best action always moves the clear instead of joining it
+## Decision memo template
 
-Treat the prompt-card material as directional guidance below official rules.
+For each run, produce a short memo in
+`prosperity-research/07_manual_round/round3_biopods/decision_memo.md` with:
+1. Reserve prior (cluster specification).
+2. μ̄ prior (competitor distribution + mean estimate).
+3. Expected-profit grid over `(b1, b2)`.
+4. Chosen `(b1, b2)` and expected PnL.
+5. Worst-case PnL if μ̄ is off by ±5.
+6. Next-run invalidation test (what observation would change the plan).
 
-## Round 2 manual challenge: Invest & Expand
+## Archived manual tasks (for reference only)
 
-### Official facts
+- Round 1 Exchange Auction (ember mushrooms, dryland flax) — static book,
+  single clearing price, volume-maximizing with higher-price tiebreak.
+  Fees: 0.05 per-unit on ember mushroom trades.
+- Round 2 Invest & Expand — 50,000 XIRECs across Research (log),
+  Scale (linear), Speed (rank-based). Formula
+  `PnL = Research × Scale × Speed - Budget_Used`.
 
-Round name:
-- `Invest & Expand`
-
-Budget:
-- `50,000 XIRECs`
-
-Decision variables:
-- allocate percentages across three pillars:
-  - `Research`
-  - `Scale`
-  - `Speed`
-
-Constraints:
-- choose each pillar as a percentage in `0–100`
-- total allocation cannot exceed `100`
-
-Objective:
-- maximize final PnL, where the official uploaded formula is
-
-`PnL = (Research × Scale × Speed) - Budget_Used`
-
-### Pillar definitions
-
-#### Research
-
-- Represents trading edge / alpha capacity.
-- Grows **logarithmically** from `0` at `0` invested to `200,000` at `100`
-  invested.
-- Uploaded exact formula:
-
-`research(x) = 200_000 * np.log(1 + x) / np.log(1 + 100)`
-
-Implication:
-- very high marginal value early
-- diminishing marginal returns later
-
-#### Scale
-
-- Represents breadth of deployment across markets.
-- Grows **linearly** from `0` at `0` invested to `7` at `100` invested.
-
-Implication:
-- constant marginal effect per extra unit invested
-
-#### Speed
-
-- Represents execution / hit-rate advantage.
-- Is **rank-based across all players**, not a simple function of your raw spend.
-- Highest speed investor gets `0.9`.
-- Lowest gets `0.1`.
-- Players in between are linearly interpolated by **rank**.
-- Equal speed investments share the same rank.
-
-Implication:
-- Speed is a competitive positioning problem, not an isolated optimization
-- its value depends on where others cluster
-
-### Strategic implications for Round 2 manual play
-
-Safe high-level conclusions:
-- Research has diminishing returns and usually dominates early allocations.
-- Scale is predictable and linear.
-- Speed is discontinuous in strategic value because it depends on the crowd.
-- Because Speed is rank-based, you should think in terms of threshold placement
-  and crowd distributions, not just raw percentage.
-- A solution that ignores the budget deduction can overinvest and lose net PnL.
-- Unused budget is allowed implicitly because total allocation cannot exceed 100
-  and the formula subtracts only the used budget.
-
-### What to model
-
-A good solver should model:
-- the exact Research log curve
-- the Scale linear curve
-- the budget deduction
-- rank-based Speed under plausible competitor allocations
-- sensitivity to ties and clustered speed bids
-
-### What not to assume
-
-Do not assume:
-- the optimal plan spends 100% of the budget
-- Speed should always be maximized
-- the best solution can be found from single-player calculus alone
-- the crowd distribution is smooth or uniform
-
-## Cross-round manual reminders
-
-- Round 1 manual work is an auction-clearing optimization problem.
-- Round 2 manual work is a budget-allocation / game-theory problem.
-- Manual tasks are independent of the algorithmic task mechanics.
-- Do not let lower-authority narrative wording override official formulas or
-  clearing rules.
-
-## Condensed handoff
-
-Round 1 manual work:
-- frozen book
-- single clearing price
-- maximize payoff through order-price/order-size simulation
-- include terminal values and mushroom fees
-
-Round 2 manual work:
-- optimize `(Research × Scale × Speed) - Budget_Used`
-- Research is logarithmic
-- Scale is linear
-- Speed is rank-based across players
-- model competitor-response scenarios, especially for Speed
+Both are closed-out historical tasks; manual R3 PnL is independent.

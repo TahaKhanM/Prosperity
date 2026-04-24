@@ -1,0 +1,39 @@
+{
+  "run_id": "bench-Ash-default-1776380559463",
+  "trader": "Ash.py",
+  "dataset": "round1",
+  "results": [
+    {
+      "set": "D-2",
+      "day": -2,
+      "tick_count": 10000,
+      "own_trade_count": 955,
+      "final_pnl_total": 96763.0,
+      "run_dir": "runs/bench-Ash-default-1776380559463/round1-day-2-*"
+    },
+    {
+      "set": "D-1",
+      "day": -1,
+      "tick_count": 10000,
+      "own_trade_count": 965,
+      "final_pnl_total": 100954.0,
+      "run_dir": "runs/bench-Ash-default-1776380559463/round1-day-1-*"
+    },
+    {
+      "set": "day-0",
+      "day": 0,
+      "tick_count": 10000,
+      "own_trade_count": 916,
+      "final_pnl_total": 99810.0,
+      "run_dir": "runs/bench-Ash-default-1776380559463/round1-day-0-*"
+    },
+    {
+      "set": "prices-submission",
+      "day": 0,
+      "tick_count": 1000,
+      "own_trade_count": 51,
+      "final_pnl_total": 7825.0,
+      "run_dir": "runs/bench-Ash-default-1776380559463/round1-day-0-*"
+    }
+  ]
+}

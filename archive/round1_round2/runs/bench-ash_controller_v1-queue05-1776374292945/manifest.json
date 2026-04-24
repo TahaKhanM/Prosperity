@@ -1,0 +1,39 @@
+{
+  "run_id": "bench-ash_controller_v1-queue05-1776374292945",
+  "trader": "ash_controller_v1.py",
+  "dataset": "round1",
+  "results": [
+    {
+      "set": "D-2",
+      "day": -2,
+      "tick_count": 10000,
+      "own_trade_count": 762,
+      "final_pnl_total": 87149.5,
+      "run_dir": "runs/bench-ash_controller_v1-queue05-1776374292945/round1-day-2-*"
+    },
+    {
+      "set": "D-1",
+      "day": -1,
+      "tick_count": 10000,
+      "own_trade_count": 725,
+      "final_pnl_total": 88529.0,
+      "run_dir": "runs/bench-ash_controller_v1-queue05-1776374292945/round1-day-1-*"
+    },
+    {
+      "set": "day-0",
+      "day": 0,
+      "tick_count": 10000,
+      "own_trade_count": 746,
+      "final_pnl_total": 89472.0,
+      "run_dir": "runs/bench-ash_controller_v1-queue05-1776374292945/round1-day-0-*"
+    },
+    {
+      "set": "prices-submission",
+      "day": 0,
+      "tick_count": 1000,
+      "own_trade_count": 29,
+      "final_pnl_total": 7314.0,
+      "run_dir": "runs/bench-ash_controller_v1-queue05-1776374292945/round1-day-0-*"
+    }
+  ]
+}

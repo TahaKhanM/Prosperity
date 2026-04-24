@@ -1,0 +1,31 @@
+{
+  "run_id": "bench-baseline-worse-1776623711759",
+  "trader": "baseline.py",
+  "dataset": "round2",
+  "results": [
+    {
+      "set": "D-1",
+      "day": -1,
+      "tick_count": 10000,
+      "own_trade_count": 956,
+      "final_pnl_total": 102969.5,
+      "run_dir": "runs/bench-baseline-worse-1776623711759/round2-day-1-*"
+    },
+    {
+      "set": "day-0",
+      "day": 0,
+      "tick_count": 10000,
+      "own_trade_count": 912,
+      "final_pnl_total": 102773.0,
+      "run_dir": "runs/bench-baseline-worse-1776623711759/round2-day-0-*"
+    },
+    {
+      "set": "day-1",
+      "day": 1,
+      "tick_count": 10000,
+      "own_trade_count": 986,
+      "final_pnl_total": 104307.0,
+      "run_dir": "runs/bench-baseline-worse-1776623711759/round2-day-1-*"
+    }
+  ]
+}

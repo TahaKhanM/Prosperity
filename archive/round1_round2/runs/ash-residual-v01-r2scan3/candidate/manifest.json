@@ -1,0 +1,31 @@
+{
+  "run_id": "candidate",
+  "trader": "ash_residual_v01.py",
+  "dataset": "round2",
+  "results": [
+    {
+      "set": "D-1",
+      "day": -1,
+      "tick_count": 10000,
+      "own_trade_count": 945,
+      "final_pnl_total": 99114.5,
+      "run_dir": "runs/ash-residual-v01-r2scan3/candidate-round2-day-1"
+    },
+    {
+      "set": "day-0",
+      "day": 0,
+      "tick_count": 10000,
+      "own_trade_count": 995,
+      "final_pnl_total": 98477.0,
+      "run_dir": "runs/ash-residual-v01-r2scan3/candidate-round2-day-0"
+    },
+    {
+      "set": "day-1",
+      "day": 1,
+      "tick_count": 10000,
+      "own_trade_count": 1038,
+      "final_pnl_total": 99976.0,
+      "run_dir": "runs/ash-residual-v01-r2scan3/candidate-round2-day-1"
+    }
+  ]
+}

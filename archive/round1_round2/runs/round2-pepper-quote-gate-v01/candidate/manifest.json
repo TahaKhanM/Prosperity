@@ -1,0 +1,31 @@
+{
+  "run_id": "candidate",
+  "trader": "round2_pepper_quote_gate_v01.py",
+  "dataset": "round2",
+  "results": [
+    {
+      "set": "D-1",
+      "day": -1,
+      "tick_count": 10000,
+      "own_trade_count": 962,
+      "final_pnl_total": 102996.5,
+      "run_dir": "runs/round2-pepper-quote-gate-v01/candidate-round2-day-1"
+    },
+    {
+      "set": "day-0",
+      "day": 0,
+      "tick_count": 10000,
+      "own_trade_count": 914,
+      "final_pnl_total": 102751.0,
+      "run_dir": "runs/round2-pepper-quote-gate-v01/candidate-round2-day-0"
+    },
+    {
+      "set": "day-1",
+      "day": 1,
+      "tick_count": 10000,
+      "own_trade_count": 997,
+      "final_pnl_total": 104679.0,
+      "run_dir": "runs/round2-pepper-quote-gate-v01/candidate-round2-day-1"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "run_id": "bench-ash_follow_take_v01-default-1776380550645",
+  "trader": "ash_follow_take_v01.py",
+  "dataset": "round1",
+  "results": [
+    {
+      "set": "D-2",
+      "day": -2,
+      "tick_count": 10000,
+      "own_trade_count": 972,
+      "final_pnl_total": 96936.0,
+      "run_dir": "runs/bench-ash_follow_take_v01-default-1776380550645/round1-day-2-*"
+    },
+    {
+      "set": "D-1",
+      "day": -1,
+      "tick_count": 10000,
+      "own_trade_count": 975,
+      "final_pnl_total": 100861.0,
+      "run_dir": "runs/bench-ash_follow_take_v01-default-1776380550645/round1-day-1-*"
+    },
+    {
+      "set": "day-0",
+      "day": 0,
+      "tick_count": 10000,
+      "own_trade_count": 931,
+      "final_pnl_total": 99982.0,
+      "run_dir": "runs/bench-ash_follow_take_v01-default-1776380550645/round1-day-0-*"
+    },
+    {
+      "set": "prices-submission",
+      "day": 0,
+      "tick_count": 1000,
+      "own_trade_count": 52,
+      "final_pnl_total": 7837.0,
+      "run_dir": "runs/bench-ash_follow_take_v01-default-1776380550645/round1-day-0-*"
+    }
+  ]
+}

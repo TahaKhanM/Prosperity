@@ -1,0 +1,53 @@
+{
+  "artifact_mode": "diagnostic",
+  "baseline_path": null,
+  "carry": false,
+  "created_at": "2026-04-19T18:28:24.967513+00:00",
+  "dataset": {
+    "cli_value": "/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/datasets/round2",
+    "day": null,
+    "label": "round2",
+    "path": "prosperity_rust_backtester/datasets/round2",
+    "round_key": "round2"
+  },
+  "flat": false,
+  "git_commit": "1a14fb349ac95127daee9a2933d39ec01689fd7f",
+  "runs": {
+    "candidate": {
+      "all_inspection_files": [],
+      "all_visualizer_files": [],
+      "command": [
+        "/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/scripts/cargo_local.sh",
+        "run",
+        "--",
+        "--trader",
+        "/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/traders/Round2/tmp_sweep/quote_gate_zero_03.py",
+        "--dataset",
+        "/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/datasets/round2",
+        "--output-root",
+        "/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/runs/quote-gate-zero-03",
+        "--run-id",
+        "candidate",
+        "--artifact-mode",
+        "diagnostic"
+      ],
+      "inspection_file": null,
+      "run_dir": "prosperity_rust_backtester/runs/quote-gate-zero-03/candidate",
+      "run_id": "candidate",
+      "stdout_tail": [
+        "mode: fast",
+        "artifacts: metrics+pnl-series",
+        "SET             DAY    TICKS  OWN_TRADES    FINAL_PNL  RUN_DIR",
+        "D-1              -1    10000         929    101548.50  runs/quote-gate-zero-03/candidate-round2-day-1",
+        "day-0             0    10000         891    101624.00  runs/quote-gate-zero-03/candidate-round2-day-0",
+        "day-1             1    10000         967    102961.00  runs/quote-gate-zero-03/candidate-round2-day-1",
+        "",
+        "PRODUCT                     D-1      day-0      day-1",
+        "INTARIAN_PEPPER_ROOT   80301.50   81041.00   81139.00",
+        "ASH_COATED_OSMIUM      21247.00   20583.00   21822.00"
+      ],
+      "visualizer_file": null
+    }
+  },
+  "trader_path": "prosperity_rust_backtester/traders/Round2/tmp_sweep/quote_gate_zero_03.py"
+}

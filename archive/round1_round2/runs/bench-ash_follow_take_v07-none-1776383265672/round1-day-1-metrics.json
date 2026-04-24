@@ -1,0 +1,20 @@
+{
+  "dataset_id": "prices_round_1_day_-1",
+  "dataset_path": "datasets/round1/prices_round_1_day_-1.csv",
+  "day": -1,
+  "final_pnl_by_product": {
+    "ASH_COATED_OSMIUM": 4850.0,
+    "INTARIAN_PEPPER_ROOT": 78933.0
+  },
+  "final_pnl_total": 83783.0,
+  "generated_at": "2026-04-16T23:47:46+00:00",
+  "matching": {
+    "price_slippage_bps": 0.0,
+    "queue_penetration": 1.0,
+    "trade_match_mode": "none"
+  },
+  "own_trade_count": 464,
+  "run_id": "bench-ash_follow_take_v07-none-1776383265672-round1-day-1",
+  "tick_count": 10000,
+  "trader_path": "traders/Round1/work/ash/ash_follow_take_v07.py"
+}

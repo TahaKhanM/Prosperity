@@ -1,0 +1,31 @@
+{
+  "run_id": "bench-quote_gate_refine_01-queue05-1776623422860",
+  "trader": "quote_gate_refine_01.py",
+  "dataset": "round2",
+  "results": [
+    {
+      "set": "D-1",
+      "day": -1,
+      "tick_count": 10000,
+      "own_trade_count": 963,
+      "final_pnl_total": 93501.5,
+      "run_dir": "runs/bench-quote_gate_refine_01-queue05-1776623422860/round2-day-1-*"
+    },
+    {
+      "set": "day-0",
+      "day": 0,
+      "tick_count": 10000,
+      "own_trade_count": 919,
+      "final_pnl_total": 93599.0,
+      "run_dir": "runs/bench-quote_gate_refine_01-queue05-1776623422860/round2-day-0-*"
+    },
+    {
+      "set": "day-1",
+      "day": 1,
+      "tick_count": 10000,
+      "own_trade_count": 977,
+      "final_pnl_total": 94537.0,
+      "run_dir": "runs/bench-quote_gate_refine_01-queue05-1776623422860/round2-day-1-*"
+    }
+  ]
+}

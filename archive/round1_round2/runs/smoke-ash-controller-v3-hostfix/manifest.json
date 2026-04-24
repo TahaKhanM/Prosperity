@@ -1,0 +1,39 @@
+{
+  "run_id": "smoke-ash-controller-v3-hostfix",
+  "trader": "ash_controller_v3.py",
+  "dataset": "round1",
+  "results": [
+    {
+      "set": "D-2",
+      "day": -2,
+      "tick_count": 10000,
+      "own_trade_count": 573,
+      "final_pnl_total": 88489.0,
+      "run_dir": "runs/smoke-ash-controller-v3-hostfix/round1-day-2-*"
+    },
+    {
+      "set": "D-1",
+      "day": -1,
+      "tick_count": 10000,
+      "own_trade_count": 559,
+      "final_pnl_total": 91228.0,
+      "run_dir": "runs/smoke-ash-controller-v3-hostfix/round1-day-1-*"
+    },
+    {
+      "set": "day-0",
+      "day": 0,
+      "tick_count": 10000,
+      "own_trade_count": 535,
+      "final_pnl_total": 91327.0,
+      "run_dir": "runs/smoke-ash-controller-v3-hostfix/round1-day-0-*"
+    },
+    {
+      "set": "prices-submission",
+      "day": 0,
+      "tick_count": 1000,
+      "own_trade_count": 29,
+      "final_pnl_total": 7314.0,
+      "run_dir": "runs/smoke-ash-controller-v3-hostfix/round1-day-0-*"
+    }
+  ]
+}

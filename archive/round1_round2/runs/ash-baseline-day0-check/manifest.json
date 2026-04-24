@@ -1,0 +1,23 @@
+{
+  "run_id": "ash-baseline-day0-check",
+  "trader": "Ash.py",
+  "dataset": "round1",
+  "results": [
+    {
+      "set": "day-0",
+      "day": 0,
+      "tick_count": 10000,
+      "own_trade_count": 916,
+      "final_pnl_total": 99810.0,
+      "run_dir": "runs/ash-baseline-day0-check/round1-day-0-*"
+    },
+    {
+      "set": "prices-submission",
+      "day": 0,
+      "tick_count": 1000,
+      "own_trade_count": 51,
+      "final_pnl_total": 7825.0,
+      "run_dir": "runs/ash-baseline-day0-check/round1-day-0-*"
+    }
+  ]
+}

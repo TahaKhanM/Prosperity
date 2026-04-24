@@ -1,0 +1,351 @@
+{
+  "lognormal": {
+    "6000": {
+      "z": 4.71355824568963,
+      "p": 1.217140499631011e-06
+    },
+    "6500": {
+      "z": 7.563079887973175,
+      "p": 1.9681783621657793e-14
+    }
+  },
+  "empirical": {
+    "S0": 5258.0,
+    "BLOCK": 50000,
+    "NSIM": 100000,
+    "mean_ST": 5335.331644849854,
+    "std_ST": 256.7511453426542,
+    "q99": 5959.611543986102,
+    "q999": 6179.832086907405,
+    "p_6000": 0.00679,
+    "p_6500": 1e-05,
+    "cond_mean_6000": 6090.713504604502,
+    "cond_mean_6500": 6540.437274526475,
+    "E_call_6000": 0.6159446962645697,
+    "E_call_6500": 0.0004043727452647545,
+    "tick_mean": 2.686565954447007e-07,
+    "tick_std": 0.0002154601375016649,
+    "n_ticks_pooled": 29997
+  },
+  "depth": [
+    {
+      "day": 0,
+      "product": "VEV_6000",
+      "n_ticks": 10000,
+      "med_bid": 0.0,
+      "med_bid_vol": 22.0,
+      "med_ask": 1.0,
+      "med_ask_vol": 22.0,
+      "med_spread": 1.0,
+      "pct_bid_ge_1": 0.0,
+      "max_bid": 0.0,
+      "min_bid": 0.0,
+      "bid_vol_mean": 22.474,
+      "bid_vol_p75": 25.0,
+      "bid_vol_sum": 224740,
+      "pct_bid_at_1": 0.0,
+      "pct_bid_at_0": 1.0
+    },
+    {
+      "day": 0,
+      "product": "VEV_6500",
+      "n_ticks": 10000,
+      "med_bid": 0.0,
+      "med_bid_vol": 15.0,
+      "med_ask": 1.0,
+      "med_ask_vol": 15.0,
+      "med_spread": 1.0,
+      "pct_bid_ge_1": 0.0,
+      "max_bid": 0.0,
+      "min_bid": 0.0,
+      "bid_vol_mean": 15.4497,
+      "bid_vol_p75": 17.0,
+      "bid_vol_sum": 154497,
+      "pct_bid_at_1": 0.0,
+      "pct_bid_at_0": 1.0
+    },
+    {
+      "day": 1,
+      "product": "VEV_6000",
+      "n_ticks": 10000,
+      "med_bid": 0.0,
+      "med_bid_vol": 22.0,
+      "med_ask": 1.0,
+      "med_ask_vol": 22.0,
+      "med_spread": 1.0,
+      "pct_bid_ge_1": 0.0,
+      "max_bid": 0.0,
+      "min_bid": 0.0,
+      "bid_vol_mean": 22.4434,
+      "bid_vol_p75": 25.0,
+      "bid_vol_sum": 224434,
+      "pct_bid_at_1": 0.0,
+      "pct_bid_at_0": 1.0
+    },
+    {
+      "day": 1,
+      "product": "VEV_6500",
+      "n_ticks": 10000,
+      "med_bid": 0.0,
+      "med_bid_vol": 15.0,
+      "med_ask": 1.0,
+      "med_ask_vol": 15.0,
+      "med_spread": 1.0,
+      "pct_bid_ge_1": 0.0,
+      "max_bid": 0.0,
+      "min_bid": 0.0,
+      "bid_vol_mean": 15.4822,
+      "bid_vol_p75": 17.0,
+      "bid_vol_sum": 154822,
+      "pct_bid_at_1": 0.0,
+      "pct_bid_at_0": 1.0
+    },
+    {
+      "day": 2,
+      "product": "VEV_6000",
+      "n_ticks": 10000,
+      "med_bid": 0.0,
+      "med_bid_vol": 22.0,
+      "med_ask": 1.0,
+      "med_ask_vol": 22.0,
+      "med_spread": 1.0,
+      "pct_bid_ge_1": 0.0,
+      "max_bid": 0.0,
+      "min_bid": 0.0,
+      "bid_vol_mean": 22.5111,
+      "bid_vol_p75": 25.0,
+      "bid_vol_sum": 225111,
+      "pct_bid_at_1": 0.0,
+      "pct_bid_at_0": 1.0
+    },
+    {
+      "day": 2,
+      "product": "VEV_6500",
+      "n_ticks": 10000,
+      "med_bid": 0.0,
+      "med_bid_vol": 16.0,
+      "med_ask": 1.0,
+      "med_ask_vol": 16.0,
+      "med_spread": 1.0,
+      "pct_bid_ge_1": 0.0,
+      "max_bid": 0.0,
+      "min_bid": 0.0,
+      "bid_vol_mean": 15.5064,
+      "bid_vol_p75": 18.0,
+      "bid_vol_sum": 155064,
+      "pct_bid_at_1": 0.0,
+      "pct_bid_at_0": 1.0
+    }
+  ],
+  "trades": [
+    {
+      "day": 0,
+      "product": "VEV_6000",
+      "n_trades": 91,
+      "total_volume": 320,
+      "mean_price": 0.0,
+      "max_price": 0.0
+    },
+    {
+      "day": 0,
+      "product": "VEV_6500",
+      "n_trades": 91,
+      "total_volume": 320,
+      "mean_price": 0.0,
+      "max_price": 0.0
+    },
+    {
+      "day": 1,
+      "product": "VEV_6000",
+      "n_trades": 98,
+      "total_volume": 345,
+      "mean_price": 0.0,
+      "max_price": 0.0
+    },
+    {
+      "day": 1,
+      "product": "VEV_6500",
+      "n_trades": 98,
+      "total_volume": 345,
+      "mean_price": 0.0,
+      "max_price": 0.0
+    },
+    {
+      "day": 2,
+      "product": "VEV_6000",
+      "n_trades": 95,
+      "total_volume": 337,
+      "mean_price": 0.0,
+      "max_price": 0.0
+    },
+    {
+      "day": 2,
+      "product": "VEV_6500",
+      "n_trades": 95,
+      "total_volume": 337,
+      "mean_price": 0.0,
+      "max_price": 0.0
+    }
+  ],
+  "touch_panel": [
+    {
+      "product": "V_6000",
+      "mean": 0.5,
+      "min": 0.5,
+      "max": 0.5,
+      "pct_ge_1": 0.0,
+      "pct_ge_2": 0.0,
+      "pct_ge_5": 0.0,
+      "pct_at_0p5": 1.0,
+      "n_ticks": 30000
+    },
+    {
+      "product": "V_6500",
+      "mean": 0.5,
+      "min": 0.5,
+      "max": 0.5,
+      "pct_ge_1": 0.0,
+      "pct_ge_2": 0.0,
+      "pct_ge_5": 0.0,
+      "pct_at_0p5": 1.0,
+      "n_ticks": 30000
+    }
+  ],
+  "touch_raw_book": [
+    {
+      "day": 0,
+      "product": "VEV_6000",
+      "max_ask_1": 1.0,
+      "max_bid_1": 0.0,
+      "pct_ask_ge_5": 0.0,
+      "pct_ask_ge_2": 0.0
+    },
+    {
+      "day": 0,
+      "product": "VEV_6500",
+      "max_ask_1": 1.0,
+      "max_bid_1": 0.0,
+      "pct_ask_ge_5": 0.0,
+      "pct_ask_ge_2": 0.0
+    },
+    {
+      "day": 1,
+      "product": "VEV_6000",
+      "max_ask_1": 1.0,
+      "max_bid_1": 0.0,
+      "pct_ask_ge_5": 0.0,
+      "pct_ask_ge_2": 0.0
+    },
+    {
+      "day": 1,
+      "product": "VEV_6500",
+      "max_ask_1": 1.0,
+      "max_bid_1": 0.0,
+      "pct_ask_ge_5": 0.0,
+      "pct_ask_ge_2": 0.0
+    },
+    {
+      "day": 2,
+      "product": "VEV_6000",
+      "max_ask_1": 1.0,
+      "max_bid_1": 0.0,
+      "pct_ask_ge_5": 0.0,
+      "pct_ask_ge_2": 0.0
+    },
+    {
+      "day": 2,
+      "product": "VEV_6500",
+      "max_ask_1": 1.0,
+      "max_bid_1": 0.0,
+      "pct_ask_ge_5": 0.0,
+      "pct_ask_ge_2": 0.0
+    }
+  ],
+  "naive_pnl": [
+    {
+      "case": "sell at 0.5 (lift bid)",
+      "strike": "VEV_6000",
+      "premium_per_contract": 0.5,
+      "E_payoff": 0.6159446962645697,
+      "E_pnl_per_contract": -0.11594469626456971,
+      "E_pnl_300": -34.78340887937092
+    },
+    {
+      "case": "sell at 0.5 (lift bid)",
+      "strike": "VEV_6500",
+      "premium_per_contract": 0.5,
+      "E_payoff": 0.0004043727452647545,
+      "E_pnl_per_contract": 0.4995956272547352,
+      "E_pnl_300": 149.87868817642055
+    },
+    {
+      "case": "sell at 0.25 (effective mid)",
+      "strike": "VEV_6000",
+      "premium_per_contract": 0.25,
+      "E_payoff": 0.6159446962645697,
+      "E_pnl_per_contract": -0.3659446962645697,
+      "E_pnl_300": -109.78340887937091
+    },
+    {
+      "case": "sell at 0.25 (effective mid)",
+      "strike": "VEV_6500",
+      "premium_per_contract": 0.25,
+      "E_payoff": 0.0004043727452647545,
+      "E_pnl_per_contract": 0.24959562725473525,
+      "E_pnl_300": 74.87868817642057
+    },
+    {
+      "case": "sell at 0.0 (worst)",
+      "strike": "VEV_6000",
+      "premium_per_contract": 0.0,
+      "E_payoff": 0.6159446962645697,
+      "E_pnl_per_contract": -0.6159446962645697,
+      "E_pnl_300": -184.7834088793709
+    },
+    {
+      "case": "sell at 0.0 (worst)",
+      "strike": "VEV_6500",
+      "premium_per_contract": 0.0,
+      "E_payoff": 0.0004043727452647545,
+      "E_pnl_per_contract": -0.0004043727452647545,
+      "E_pnl_300": -0.12131182357942635
+    }
+  ],
+  "tail_matrix": [
+    {
+      "S_T": 6000,
+      "loss_per_6000": -0.5,
+      "loss_per_6500": -0.5,
+      "total_loss_600_contracts": -300.0
+    },
+    {
+      "S_T": 6250,
+      "loss_per_6000": 249.5,
+      "loss_per_6500": -0.5,
+      "total_loss_600_contracts": 74700.0
+    },
+    {
+      "S_T": 6500,
+      "loss_per_6000": 499.5,
+      "loss_per_6500": -0.5,
+      "total_loss_600_contracts": 149700.0
+    },
+    {
+      "S_T": 7000,
+      "loss_per_6000": 999.5,
+      "loss_per_6500": 499.5,
+      "total_loss_600_contracts": 449700.0
+    },
+    {
+      "S_T": 7500,
+      "loss_per_6000": 1499.5,
+      "loss_per_6500": 999.5,
+      "total_loss_600_contracts": 749700.0
+    }
+  ],
+  "notes": {
+    "S0": 5258.0,
+    "sigma": 0.24,
+    "T_years": 0.0136986301369863
+  }
+}

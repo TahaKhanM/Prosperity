@@ -1,0 +1,31 @@
+{
+  "run_id": "bench-baseline-none-1776623716231",
+  "trader": "baseline.py",
+  "dataset": "round2",
+  "results": [
+    {
+      "set": "D-1",
+      "day": -1,
+      "tick_count": 10000,
+      "own_trade_count": 323,
+      "final_pnl_total": 84163.5,
+      "run_dir": "runs/bench-baseline-none-1776623716231/round2-day-1-*"
+    },
+    {
+      "set": "day-0",
+      "day": 0,
+      "tick_count": 10000,
+      "own_trade_count": 299,
+      "final_pnl_total": 84015.0,
+      "run_dir": "runs/bench-baseline-none-1776623716231/round2-day-0-*"
+    },
+    {
+      "set": "day-1",
+      "day": 1,
+      "tick_count": 10000,
+      "own_trade_count": 338,
+      "final_pnl_total": 84732.0,
+      "run_dir": "runs/bench-baseline-none-1776623716231/round2-day-1-*"
+    }
+  ]
+}

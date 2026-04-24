@@ -1,0 +1,102 @@
+{
+  "artifact_mode": "full",
+  "baseline_path": "prosperity_rust_backtester/traders/Round 2/baseline.py",
+  "carry": false,
+  "created_at": "2026-04-19T10:59:36.713847+00:00",
+  "dataset": {
+    "cli_value": "/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/datasets/round2",
+    "day": -1,
+    "label": "round2",
+    "path": "prosperity_rust_backtester/datasets/round2",
+    "round_key": "round2"
+  },
+  "flat": false,
+  "git_commit": "57752a5eaec9b9158f2618580d9d264c44fbcace",
+  "runs": {
+    "baseline": {
+      "all_inspection_files": [
+        "prosperity_rust_backtester/runs/round2-ash-exec-overlay-v02-dayneg1-day-1/baseline/combined.log",
+        "prosperity_rust_backtester/runs/round2-ash-exec-overlay-v02-dayneg1-day-1/baseline/bundle.json",
+        "prosperity_rust_backtester/runs/round2-ash-exec-overlay-v02-dayneg1-day-1/baseline/metrics.json"
+      ],
+      "all_visualizer_files": [
+        "prosperity_rust_backtester/runs/round2-ash-exec-overlay-v02-dayneg1-day-1/baseline/submission.log"
+      ],
+      "command": [
+        "/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/scripts/cargo_local.sh",
+        "run",
+        "--",
+        "--trader",
+        "/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/traders/Round 2/baseline.py",
+        "--dataset",
+        "/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/datasets/round2",
+        "--output-root",
+        "/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/runs/round2-ash-exec-overlay-v02-dayneg1-day-1",
+        "--run-id",
+        "baseline",
+        "--artifact-mode",
+        "full",
+        "--day=-1"
+      ],
+      "inspection_file": "prosperity_rust_backtester/runs/round2-ash-exec-overlay-v02-dayneg1-day-1/baseline/combined.log",
+      "run_dir": "prosperity_rust_backtester/runs/round2-ash-exec-overlay-v02-dayneg1-day-1/baseline",
+      "run_id": "baseline",
+      "stdout_tail": [
+        "trader: baseline.py",
+        "dataset: round2",
+        "mode: fast",
+        "artifacts: saved",
+        "SET             DAY    TICKS  OWN_TRADES    FINAL_PNL  RUN_DIR",
+        "D-1              -1    10000         959    102962.50  runs/round2-ash-exec-overlay-v02-dayneg1-day-1/baseline",
+        "",
+        "PRODUCT                     D-1",
+        "INTARIAN_PEPPER_ROOT   81715.50",
+        "ASH_COATED_OSMIUM      21247.00"
+      ],
+      "visualizer_file": "prosperity_rust_backtester/runs/round2-ash-exec-overlay-v02-dayneg1-day-1/baseline/submission.log"
+    },
+    "candidate": {
+      "all_inspection_files": [
+        "prosperity_rust_backtester/runs/round2-ash-exec-overlay-v02-dayneg1-day-1/candidate/combined.log",
+        "prosperity_rust_backtester/runs/round2-ash-exec-overlay-v02-dayneg1-day-1/candidate/bundle.json",
+        "prosperity_rust_backtester/runs/round2-ash-exec-overlay-v02-dayneg1-day-1/candidate/metrics.json"
+      ],
+      "all_visualizer_files": [
+        "prosperity_rust_backtester/runs/round2-ash-exec-overlay-v02-dayneg1-day-1/candidate/submission.log"
+      ],
+      "command": [
+        "/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/scripts/cargo_local.sh",
+        "run",
+        "--",
+        "--trader",
+        "/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/traders/Round2/candidates/round2_ash_exec_overlay_v02.py",
+        "--dataset",
+        "/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/datasets/round2",
+        "--output-root",
+        "/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity_rust_backtester/runs/round2-ash-exec-overlay-v02-dayneg1-day-1",
+        "--run-id",
+        "candidate",
+        "--artifact-mode",
+        "full",
+        "--day=-1"
+      ],
+      "inspection_file": "prosperity_rust_backtester/runs/round2-ash-exec-overlay-v02-dayneg1-day-1/candidate/combined.log",
+      "run_dir": "prosperity_rust_backtester/runs/round2-ash-exec-overlay-v02-dayneg1-day-1/candidate",
+      "run_id": "candidate",
+      "stdout_tail": [
+        "trader: round2_ash_exec_overlay_v02.py",
+        "dataset: round2",
+        "mode: fast",
+        "artifacts: saved",
+        "SET             DAY    TICKS  OWN_TRADES    FINAL_PNL  RUN_DIR",
+        "D-1              -1    10000         947    102964.50  runs/round2-ash-exec-overlay-v02-dayneg1-day-1/candidate",
+        "",
+        "PRODUCT                     D-1",
+        "INTARIAN_PEPPER_ROOT   81715.50",
+        "ASH_COATED_OSMIUM      21249.00"
+      ],
+      "visualizer_file": "prosperity_rust_backtester/runs/round2-ash-exec-overlay-v02-dayneg1-day-1/candidate/submission.log"
+    }
+  },
+  "trader_path": "prosperity_rust_backtester/traders/Round2/candidates/round2_ash_exec_overlay_v02.py"
+}

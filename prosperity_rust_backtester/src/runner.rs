@@ -539,8 +539,27 @@ fn enforce_position_limits(
 
 fn position_limit(symbol: &str) -> i64 {
     match symbol {
+        // Prosperity 4 tutorial products
         "EMERALDS" => 80,
         "TOMATOES" => 80,
+        // Prosperity 4 Rounds 1 and 2 (archived; PnL reset at Round 3)
+        "ASH_COATED_OSMIUM" => 80,
+        "INTARIAN_PEPPER_ROOT" => 80,
+        // Prosperity 4 Round 3 delta-1 products
+        "HYDROGEL_PACK" => 200,
+        "VELVETFRUIT_EXTRACT" => 200,
+        // Prosperity 4 Round 3 VELVETFRUIT_EXTRACT vouchers (10 strikes, 300 each)
+        "VEV_4000" => 300,
+        "VEV_4500" => 300,
+        "VEV_5000" => 300,
+        "VEV_5100" => 300,
+        "VEV_5200" => 300,
+        "VEV_5300" => 300,
+        "VEV_5400" => 300,
+        "VEV_5500" => 300,
+        "VEV_6000" => 300,
+        "VEV_6500" => 300,
+        // Legacy Prosperity 3 products retained for cross-version reference
         "RAINFOREST_RESIN" => 50,
         "KELP" => 50,
         "SQUID_INK" => 50,

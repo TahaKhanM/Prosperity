@@ -1,250 +1,183 @@
-# Algorithmic Trading Context (Rounds 1 and 2)
+# Algorithmic Trading Context (Round 3 / GOAT)
 
 ## Scope
 
-This file condenses the algorithmic-trading facts and hints from the uploaded
-Prosperity 4 materials.
+Round 3 ("Gloves Off", Salvinar) algorithmic trading facts, constraints,
+and strategy-relevant hints extracted from the official Round 3 doc, the
+ARIA uplink transcript, and ten+ public Prosperity 2/3 winner repositories.
 
-Use it for:
-- trader implementation
-- backtest interpretation
-- round-specific rule checks
-- alpha search on `ASH_COATED_OSMIUM` and `INTARIAN_PEPPER_ROOT`
-- deciding whether and how to include a Round 2 `bid()`
+Do **not** use this file as the sole source for repo/tooling behavior. For
+that, read `30_REPO_AND_TOOLING_CONTEXT.md`.
 
-Do **not** use this file as the sole source for repo/tooling behavior. For that,
-read `30_REPO_AND_TOOLING_CONTEXT.md`.
-
-## Hard official interface facts
+## Hard interface facts
 
 From the official general context:
 
-- The hosted algorithm interface is a Python `Trader` class with `run(self,
-  state)`.
-- The official general context says testing uses `1,000` simulation iterations
-  on historical data and final scoring uses `10,000` iterations.
-- For **Algorithmic Round 2**, `Trader` should also define `bid(self)`.
-- Including `bid()` in all rounds is acceptable; it is ignored outside Round 2.
-- The official submission-compatible return shape is:
-  `orders, conversions, traderData`
-- `traderData` is the intended persistence channel across hosted calls.
-- Hosted execution is stateless with respect to class/global variables because
-  the container is AWS Lambda based.
-- `traderData` is truncated at 50,000 characters by the external framework.
-- `TradingState` includes at minimum:
-  - `traderData`
-  - `timestamp`
-  - `listings`
-  - `order_depths`
-  - `own_trades`
-  - `market_trades`
-  - `position`
-  - `observations`
+- Python `Trader` class with `run(self, state)`; return
+  `orders, conversions, traderData`.
+- Testing uses 1,000 simulation iterations; final scoring uses 10,000.
+- `bid()` is only evaluated in Round 2; ignored in Round 3+. Include or omit.
+- `traderData` is the persistence channel across hosted calls (≤ 50,000 chars).
+- Hosted execution is stateless with respect to class/global variables.
+- `TradingState` includes: `traderData`, `timestamp`, `listings`,
+  `order_depths`, `own_trades`, `market_trades`, `position`, `observations`.
 - `OrderDepth.sell_orders` volumes are negative.
-- If you post an order and bots do not trade against the remaining quantity, the
-  remainder is canceled at the end of the iteration.
-- If all product-side orders in one iteration would breach the worst-case
-  position limit, the exchange rejects all orders for that product in that
-  iteration.
-- Official hosted execution is effectively instantaneous versus bots.
+- Orders that exceed the worst-case aggregated position limit for a product
+  in a single iteration cause the exchange to reject **all** orders for that
+  product in that iteration. Size defensively.
+- Outstanding unmatched orders are canceled at the end of the iteration.
+- Hosted execution is effectively instantaneous versus bots.
 
-## Shared official product facts for uploaded Rounds 1 and 2
+## Round 3 products
 
-Products:
-- `ASH_COATED_OSMIUM`
-- `INTARIAN_PEPPER_ROOT`
+| Symbol | Type | Limit | Notes |
+|---|---|---|---|
+| `HYDROGEL_PACK` | Delta-1 | 200 | Anchored ~10000 (range 9890–10080 in hist) |
+| `VELVETFRUIT_EXTRACT` | Delta-1 underlying | 200 | Trading ~5250, slow drift |
+| `VEV_4000` | Call voucher | 300 | K=4000, deep ITM (~intrinsic) |
+| `VEV_4500` | Call voucher | 300 | K=4500, deep ITM |
+| `VEV_5000` | Call voucher | 300 | K=5000, slightly ITM |
+| `VEV_5100` | Call voucher | 300 | K=5100, near-ATM |
+| `VEV_5200` | Call voucher | 300 | K=5200, near-ATM |
+| `VEV_5300` | Call voucher | 300 | K=5300, OTM |
+| `VEV_5400` | Call voucher | 300 | K=5400, OTM |
+| `VEV_5500` | Call voucher | 300 | K=5500, OTM |
+| `VEV_6000` | Call voucher | 300 | K=6000, far OTM (stuck ~0.5) |
+| `VEV_6500` | Call voucher | 300 | K=6500, far OTM (stuck ~0.5) |
 
-Position limits in both uploaded round docs:
-- `ASH_COATED_OSMIUM`: `80`
-- `INTARIAN_PEPPER_ROOT`: `80`
+**TTE convention**: at start of live Round 3, TTE = 5 days. Historical files
+`prices_round_3_day_{0,1,2}.csv` correspond to TTE = 8, 7, 6. Each round is
+one day. Prosperity timestamps increment by 100 per tick; a round is 100
+ticks (timestamp 0 → 999_900 inclusive, but end-of-round handling varies).
 
-Shared qualitative description:
-- `INTARIAN_PEPPER_ROOT` is the steadier product.
-- `ASH_COATED_OSMIUM` is the more volatile product and may hide a pattern.
+**Year basis**: there is no stated risk-free rate. Use `r = 0`. For IV on an
+annualized scale, convert TTE using `T = days / 365` (or 252 if you prefer
+trading-day basis — be consistent). The winning P3 team (Timo) used `/365`.
 
-## Round 1: official facts
+## Strategy playbook (synthesized from past Prosperity 2/3 winners)
 
-Round name:
-- `Trading groundwork`
+The ranking below is ordered by empirical PnL impact in prior rounds and by
+how robust each approach is on only three historical days of data.
 
-Official objective:
-- deploy the first trading algorithm for `ASH_COATED_OSMIUM` and
-  `INTARIAN_PEPPER_ROOT`
-- also participate in the manual Exchange Auction for extra profit
+### 1. Hydrogel Pack — anchored market making
 
-Official algorithm framing:
-- `INTARIAN_PEPPER_ROOT` is relatively steady, similar in spirit to tutorial
-  stable products
-- `ASH_COATED_OSMIUM` appears more volatile and may contain hidden structure
+Historical data shows HYDROGEL_PACK oscillating tightly around 10000. This
+matches the "pinned fair-value" family (P3 RAINFOREST_RESIN, P2 AMETHYSTS).
 
-Operational implication:
-- Round 1 should be treated as a two-product market with different regimes, not
-  as a single generic mean-reversion problem
+Canonical recipe:
+- `fair = 10000` hardcoded; revert to market mid only if `|mid - 10000| > 5`.
+- Take any ask ≤ `fair - 1` and any bid ≥ `fair + 1` up to full capacity.
+- Quote one tick inside the next resting level outside `[fair-1, fair+1]`.
+- Skew quote by 1 tick when `|position| > 40` (soft threshold; hard limit 200).
+- Keep 2–3 levels of "popular volume" filtering: ignore thin resting quotes
+  (`|qty| < 15`) when computing any adaptive mid.
 
-## Round 1: soft strategic hints from prompt cards
+### 2. Velvetfruit Extract — adaptive delta-1 market making
 
-The uploaded prompt-hint context is **not formal rules**, but it contains
-important directional clues.
+VELVETFRUIT_EXTRACT is slower-drifting (range ~5200–5300). Treat as a KELP /
+STARFRUIT analog:
+- Compute **wall mid**: average of the bid and ask levels with the largest
+  volume in the current book (excluding retail-sized quotes).
+- Optional AR(1) adjustment: `fair = wall_mid * (1 + β * last_return)` with
+  `β ≈ -0.2` (negative; weak mean-reversion).
+- Take when ask ≤ `fair - 1` / bid ≥ `fair + 1`.
+- Clear-layer: post an unwind at `fair` when position is non-zero.
+- Quote width: `fair ± 2` default, `fair ± 3` when inventory is heavy.
 
-### Pepper Root hints
+### 3. Voucher IV-residual scalping (core alpha)
 
-`INTARIAN_PEPPER_ROOT` is described as:
-- slow growth
-- predictable supply
-- no drama
+Per tick:
+1. Compute mid per strike; derive IV per strike (Newton on BS).
+2. Fit quadratic `IV(m) = a0 + a1·m + a2·m²` where `m = log(S/K)`.
+3. Restrict fit to strikes with meaningful vega and `|m| < 0.35`. Deep-OTM
+   strikes (VEV_6000, VEV_6500) should be excluded until data proves otherwise.
+4. Residual per strike `res = IV_market - IV_fit`.
+5. EMA-smooth `res` with half-life ~20 ticks. Trade when `|res_t - EMA_20|`
+   exceeds a per-strike threshold (start ~0.5–1.0 IV-vol points).
+6. Widen the threshold on low-vega strikes by +0.5.
+7. Convert residual mispricing into price-space via vega; never trade a
+   voucher whose vega < 1 for residual scalping (too noisy).
 
-Yet the prompt cards suggest:
-- subtle directional leaning can exist
-- repeated moods or micro-regimes may exist
-- spread behavior can sometimes encode intent rather than noise
+Top P3 winners **froze** their smile coefficients from historical fit and
+did not refit live (overfit risk with 3 days of data). Our freeze-candidates:
+ATM IV ≈ 0.24, skew slightly negative, convexity positive (see
+`prosperity-research/04_signal_notes/round3/vol_surface_coeffs.csv`).
 
-Useful hypothesis families:
-- small repeated drift
-- order-book imbalance persistence
-- spread-state persistence
-- “lean before move” behavior
-- subtle regime detection rather than loud trend detection
+### 4. Delta hedging policy
 
-### Quoting / execution hints
+Empirical rule from P3 post-mortems: hedging every tick burns more PnL than
+it saves. Adopt a **dead-band hedge**:
+- Compute portfolio delta `D = Σ Δ_i × pos_i` across all 10 vouchers.
+- Rebalance only when `|D| > 40` units of VE (tunable). Never hedge to zero;
+  hedge to ±20.
+- Never hedge with HYDROGEL_PACK — it is uncorrelated.
+- The in-repo tooling emits per-strike deltas via
+  `scripts/round3_options/bs.py::bs_call_delta`.
 
-The prompt cards warn against:
-- conspicuously eager pricing
-- outsized size that broadcasts urgency
-- orders that look too generous or rushed
+### 5. Parity arbitrage (identity gates)
 
-Useful execution hypotheses:
-- calmer fair-relative quoting may preserve more edge than naive aggression
-- context-matched sizing may outperform fixed sizing
-- spread state and book “mood” may matter for placement
-- patience can be a decision variable, not just price
+Identity-only checks that are always bounded-payoff arbs if violated *in
+tradeable size*:
+- Intrinsic floor: `V_K ≥ max(S - K, 0)` — if best-ask < intrinsic: buy.
+- Upper bound:    `V_K ≤ S` — if best-bid > S: sell.
+- Monotonicity:   for `K1 < K2`, `V_{K1} ≥ V_{K2}` — if best-bid(K1) >
+  best-ask(K2): short K1, long K2.
+- Convexity:      for equally-spaced `K1 < K2 < K3`,
+  `V_{K1} - 2 V_{K2} + V_{K3} ≥ 0` — if violated, butterfly trade.
 
-### What these hints do NOT prove
+Important caveat: compute these on the *tradeable side* (ask for buys,
+bid for sells), not on mids. Historical mid-based parity scan flags many
+0.5 violations that collapse once spreads are respected.
 
-Do not overclaim that the prompt cards prove:
-- trend-following beats mean reversion
-- spread predicts returns in a specific way
-- aggressive orders are always wrong
-- any exact model family must win Round 1
+### 6. Counterparty flow
 
-Treat them as strong clues to test, not settled truth.
+Prosperity typically plants a named "smart" bot. The single highest-alpha
+move in P3 was copying `Olivia`. Round 3 has anonymized buyer/seller strings
+in historical `trades_round_3_day_*.csv`; run
+`scripts/round3_options/counterparty_scan.py` early and watch for
+consistently-positive horizon-PnL traders. If such a name appears in
+`market_trades` during live trading, copy their direction.
 
-## Round 2: official facts
+## Ceci n'est pas une pipe — structural warnings to validate
 
-Round name:
-- `Growing Your Outpost`
+The Round 3 data folder contains a Magritte image as a deliberate hint.
+Before trusting any "option" machinery, confirm with data:
+- Do the vouchers settle at `max(S_T - K, 0)`? Yes, per official doc.
+- Is there time value? Check `time_value_{K}` in the panel. If deep-ITM
+  vouchers trade at exactly intrinsic (no time value), the chain is behaving
+  more like a set of shifted spot positions than true options.
+- Do VEV_6000 / VEV_6500 ever move? Historically no; treat as non-tradable.
+- Is there a hidden parity relationship (like put-call) we are missing? There
+  are no puts in the chain, but strike-ladder monotonicity must hold.
 
-Official objective:
-- continue trading the same two products
-- refine the algorithm
-- optionally bid for extra market access using `bid()`
+## Known failure modes
 
-### Market Access Fee (MAF)
-
-Round 2 introduces a **blind auction** for extra flow.
-
-Facts:
-- accepted bids get access to **25% more quotes**
-- acceptance depends on being in the **top 50% of bids**
-- if accepted, you pay your own bid as a **one-time fee**
-- if not accepted, you pay nothing and remain on the base quote set
-- the MAF affects Round 2 profit only through the fee and extra flow; it does
-  **not** change simulation dynamics beyond quote access
-- `bid()` is unique to Round 2 and is ignored in other rounds
-
-Example logic from official doc:
-- bids above the median threshold are accepted
-- you do **not** need the highest bid, only a bid high enough to land in the
-  top half
-
-### Testing caveat in Round 2
-
-Official Round 2 doc says:
-- during testing, the visible quote set defaults to **80%** of all generated
-  quotes, i.e. no extra market access
-- this 80% is slightly randomized per submission
-- repeated resubmission can slightly change visible outcomes but the payoff from
-  gaming that randomness is limited
-
-Operational implication:
-- treat local/hosted testing noise carefully
-- do not mistake slightly changed submission outcomes for proof of a structural
-  edge
-- separate “strategy quality” from “MAF game-theory choice”
-
-### Practical MAF implications
-
-Safe conclusions:
-- MAF sizing is a game-theory problem, not a signal-model problem
-- extremely high bids can secure access but may destroy net PnL
-- the optimum is likely near the acceptance boundary, not at the maximum bid
-- because MAF is ignored outside final comparison, backtests that do not model
-  accepted extra flow cannot tell you the true best bid directly
-
-## Round 2: algorithm strategy implications
-
-Keep these layers separate:
-
-1. **Core trader quality**
-   - edge on the two products
-   - fair value
-   - taking thresholds
-   - passive execution quality
-   - inventory control
-2. **MAF choice**
-   - how much extra flow is worth in expectation
-   - how much to sacrifice in guaranteed fee cost to reach top-half acceptance
-
-A poor core trader with a good MAF guess is still weak.
-A strong core trader can be harmed by an unnecessarily large MAF.
-
-## Submission-compatibility rules that matter in both rounds
-
-- Hosted submissions generate a UUID-style submission identifier and a run ID;
-  keep them when analyzing official results or asking staff/debugging hosted
-  behavior.
-
-- Return the official 3-tuple shape even if local tools accept looser shapes.
-- Prefer `traderData` over hidden instance state.
-- Keep persistence compact enough for the hosted 50k truncation limit.
-- Size orders against the official position limits, not against optimistic local
-  fill assumptions.
-- Separate official facts from backtester-specific behavior.
-
-## Backtester-aware caveats for algorithm work
-
-These are local-repo caveats, not official exchange rules:
-
-- The uploaded Rust backtester context says the Rust engine is the **primary**
-  local validator for this repo.
-- That same context says the Rust engine captures conversions but does **not**
-  simulate them, and CSV ingestion does **not** load observation CSV files.
-- The uploaded Python backtester context says the older Python engine also does
-  not actually simulate conversions, even though the trader can return a
-  conversion request.
-- Therefore, conversion-heavy ideas are not faithfully tested by the documented
-  local tools.
+- **Fill model slack**: local Rust backtester can over-report PnL on mean
+  reversion strategies that send aggressive marketable quotes. Cross-check
+  with official submissions before trusting backtest deltas.
+- **Hedge bleed**: naive every-tick portfolio hedging costs ~40k/day on 10
+  vouchers given the 1-tick VELVETFRUIT_EXTRACT spread.
+- **IV floor collapse**: for deep-ITM vouchers, observed time value may be
+  negative due to mid-vs-ask. Do not trade these on IV residual.
+- **Off-by-one TTE on the last day**: use sub-tick TTE
+  `T = (days_left - timestamp/1e6) / 365` rather than discrete-day rounding.
 
 ## Minimal checklist for any algorithm task
 
-Before editing or evaluating a trader, confirm all of the following:
+- Which round are we shipping into? (Currently 3.)
+- Which trader file? Explicit path, no auto-pick.
+- Which dataset? Explicit `--dataset round3` / `--day X`.
+- What is the baseline we're improving on?
+- Is this a structural change (model, hedge band) or a parameter sweep?
+- What single backtest will validate the change?
+- Are we preserving `(orders, conversions, traderData)` compatibility?
 
-- Which round?
-- Which dataset?
-- Which trader file?
-- Are you working on tutorial data or live round data?
-- Are you relying on official facts or on narrative hints?
-- Are you evaluating core alpha / execution or MAF game theory?
-- Are you assuming conversion behavior that the documented local backtesters do
-  not actually simulate?
+## Condensed reminders
 
-## High-value condensed reminders
-
-- `ASH_COATED_OSMIUM` and `INTARIAN_PEPPER_ROOT` are the official Round 1 and
-  Round 2 algorithmic products in the uploaded docs.
-- Pepper Root may still hide subtle short-horizon structure despite looking
-  stable.
-- Spread state may be signal, not only cost.
-- Avoid visibly desperate quote placement.
-- Round 2 `bid()` only matters in Round 2.
-- Top-half bidding, not highest bidding, wins extra flow.
-- Hosted persistence should go through `traderData`, not mutable globals.
+- Pin `HYDROGEL_PACK` fair at 10000 with a ±5 safety band.
+- Treat `VELVETFRUIT_EXTRACT` as a drift-aware MM with wall-mid fair value.
+- Freeze your vol smile; do not refit live on 3 days of data.
+- Exclude VEV_6000 and VEV_6500 from scalping unless they start trading.
+- Dead-band the delta hedge; never rebalance to zero.
+- Run `parity_scan.py` on every new dataset before trading vouchers.
+- Use `counterparty_scan.py` early to catch any planted bot.

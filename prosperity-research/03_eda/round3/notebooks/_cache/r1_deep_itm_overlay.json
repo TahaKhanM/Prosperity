@@ -1,0 +1,290 @@
+{
+  "residuals": {
+    "pooled": {
+      "r4000": {
+        "n": 30000,
+        "mean": 0.0117,
+        "median": 0.0,
+        "std": 0.8286752480649814,
+        "min": -7.0,
+        "max": 7.0,
+        "p01": -1.5,
+        "p05": -0.5,
+        "p50": 0.0,
+        "p95": 0.5,
+        "p99": 2.0,
+        "frac_abs_gt_2": 0.018566666666666665,
+        "frac_abs_gt_5": 0.009166666666666667
+      },
+      "r4500": {
+        "n": 30000,
+        "mean": 0.011466666666666667,
+        "median": 0.0,
+        "std": 0.758894621312536,
+        "min": -6.0,
+        "max": 5.5,
+        "p01": -1.5,
+        "p05": -0.5,
+        "p50": 0.0,
+        "p95": 0.5,
+        "p99": 2.0,
+        "frac_abs_gt_2": 0.0183,
+        "frac_abs_gt_5": 0.0002666666666666667
+      }
+    },
+    "day_0": {
+      "r4000": {
+        "n": 10000,
+        "mean": 0.01385,
+        "median": 0.0,
+        "std": 0.8166087572921616,
+        "min": -6.5,
+        "max": 6.5,
+        "p01": -1.5,
+        "p05": -0.5,
+        "p50": 0.0,
+        "p95": 0.5,
+        "p99": 2.0,
+        "frac_abs_gt_2": 0.018,
+        "frac_abs_gt_5": 0.0086
+      },
+      "r4500": {
+        "n": 10000,
+        "mean": 0.01135,
+        "median": 0.0,
+        "std": 0.7529627300121027,
+        "min": -5.5,
+        "max": 5.5,
+        "p01": -1.5,
+        "p05": -0.5,
+        "p50": 0.0,
+        "p95": 0.5,
+        "p99": 2.0,
+        "frac_abs_gt_2": 0.0179,
+        "frac_abs_gt_5": 0.0003
+      }
+    },
+    "day_1": {
+      "r4000": {
+        "n": 10000,
+        "mean": 0.01605,
+        "median": 0.0,
+        "std": 0.8388311875914769,
+        "min": -6.0,
+        "max": 6.5,
+        "p01": -2.0,
+        "p05": -0.5,
+        "p50": 0.0,
+        "p95": 0.5,
+        "p99": 2.0,
+        "frac_abs_gt_2": 0.0197,
+        "frac_abs_gt_5": 0.0095
+      },
+      "r4500": {
+        "n": 10000,
+        "mean": 0.01335,
+        "median": 0.0,
+        "std": 0.7682810703644259,
+        "min": -4.5,
+        "max": 5.5,
+        "p01": -1.5,
+        "p05": -0.5,
+        "p50": 0.0,
+        "p95": 0.5,
+        "p99": 2.0,
+        "frac_abs_gt_2": 0.0192,
+        "frac_abs_gt_5": 0.0002
+      }
+    },
+    "day_2": {
+      "r4000": {
+        "n": 10000,
+        "mean": 0.0052,
+        "median": 0.0,
+        "std": 0.8304769287541462,
+        "min": -7.0,
+        "max": 7.0,
+        "p01": -1.5,
+        "p05": -0.5,
+        "p50": 0.0,
+        "p95": 0.5,
+        "p99": 2.0,
+        "frac_abs_gt_2": 0.018,
+        "frac_abs_gt_5": 0.0094
+      },
+      "r4500": {
+        "n": 10000,
+        "mean": 0.0097,
+        "median": 0.0,
+        "std": 0.7554223827089251,
+        "min": -6.0,
+        "max": 5.5,
+        "p01": -1.5,
+        "p05": -0.5,
+        "p50": 0.0,
+        "p95": 0.5,
+        "p99": 2.0,
+        "frac_abs_gt_2": 0.0178,
+        "frac_abs_gt_5": 0.0003
+      }
+    }
+  },
+  "corr": {
+    "corr_r4000_dS_lvl": -0.17168989398940046,
+    "corr_r4500_dS_lvl": -0.24860180886078428,
+    "corr_dr4000_dS": -0.2454874803317683,
+    "corr_dr4500_dS": -0.3562000354834709
+  },
+  "beta": {
+    "V_4000_lag0": {
+      "beta": 0.7450542342912805,
+      "corr": 0.594873808113947,
+      "n": 29997
+    },
+    "V_4000_lag1": {
+      "beta": -0.03021478934528726,
+      "corr": -0.02412396376337316,
+      "n": 29994
+    },
+    "V_4500_lag0": {
+      "beta": 0.6617918392623994,
+      "corr": 0.5979063819424834,
+      "n": 29997
+    },
+    "V_4500_lag1": {
+      "beta": 0.010727264076045628,
+      "corr": 0.009691617597136942,
+      "n": 29994
+    }
+  },
+  "book_stats": {
+    "VEV_4000": {
+      "n": 30000,
+      "mean_bid": 1239.7030666666667,
+      "mean_ask": 1260.5165333333334,
+      "mean_spread": 20.813466666666667,
+      "median_spread": 21.0,
+      "std_spread": 1.481602225203292,
+      "max_spread": 22.0,
+      "frac_spread_1": 0.0,
+      "frac_spread_le_2": 0.0,
+      "mean_level1_bid_vol": 10.921533333333333,
+      "mean_level1_ask_vol": 10.9199,
+      "median_level1_bid_vol": 11.0,
+      "median_level1_ask_vol": 11.0,
+      "mean_total_bid_vol": 33.515366666666665,
+      "mean_total_ask_vol": 33.51806666666667,
+      "frac_bid_missing": 0.0,
+      "frac_ask_missing": 0.0,
+      "frac_one_sided": 0.0,
+      "frac_ask_vol_ge_300_single_tick": 0.0,
+      "frac_ask_vol_ge_50_single_tick": 6.666666666666667e-05,
+      "mean_S_minus_K_proxy": null,
+      "mean_ask_premium_over_intrinsic": 10.418433333333333,
+      "median_ask_premium_over_intrinsic": 10.5,
+      "p95_ask_premium": 11.5,
+      "frac_ask_le_intrinsic_plus_1": 0.009333333333333334,
+      "frac_ask_le_intrinsic_plus_0": 0.009133333333333334,
+      "mean_bid_premium": -10.395033333333334,
+      "median_bid_premium": -10.5
+    },
+    "VEV_4500": {
+      "n": 30000,
+      "mean_bid": 742.1832333333333,
+      "mean_ask": 758.0359,
+      "mean_spread": 15.852666666666666,
+      "median_spread": 16.0,
+      "std_spread": 1.1889238860789695,
+      "max_spread": 17.0,
+      "frac_spread_1": 0.0,
+      "frac_spread_le_2": 0.0,
+      "mean_level1_bid_vol": 8.951033333333333,
+      "mean_level1_ask_vol": 8.948766666666666,
+      "median_level1_bid_vol": 9.0,
+      "median_level1_ask_vol": 9.0,
+      "mean_total_bid_vol": 27.011266666666668,
+      "mean_total_ask_vol": 27.013966666666665,
+      "frac_bid_missing": 0.0,
+      "frac_ask_missing": 0.0,
+      "frac_one_sided": 0.0,
+      "frac_ask_vol_ge_300_single_tick": 0.0,
+      "frac_ask_vol_ge_50_single_tick": 0.0,
+      "mean_S_minus_K_proxy": null,
+      "mean_ask_premium_over_intrinsic": 7.9378,
+      "median_ask_premium_over_intrinsic": 8.0,
+      "p95_ask_premium": 8.5,
+      "frac_ask_le_intrinsic_plus_1": 0.009333333333333334,
+      "frac_ask_le_intrinsic_plus_0": 0.009133333333333334,
+      "mean_bid_premium": -7.914866666666667,
+      "median_bid_premium": -8.0
+    }
+  },
+  "S_stats": {
+    "last_S_by_day": {
+      "0": 5244.0,
+      "1": 5265.5,
+      "2": 5295.5
+    },
+    "mean_S": 5250.0981,
+    "median_S": 5249.5,
+    "min_S": 5198.0,
+    "max_S": 5300.0,
+    "p01_S": 5213.5,
+    "p05_S": 5225.5,
+    "p95_S": 5275.5,
+    "p99_S": 5283.5
+  },
+  "pnl_scenarios": {
+    "S0_assumed": 5250.0981,
+    "sigma_atm": 0.244,
+    "T_years": 0.0136986301369863,
+    "entry_ask_V_4000_mean": 1260.5165333333334,
+    "entry_ask_V_4500_mean": 758.0359,
+    "expected_payoff_4000_lognormal": 1250.0981000000002,
+    "expected_payoff_4500_lognormal": 750.0981008129802,
+    "pnl_per_contract_4000_expected": -10.418433333333269,
+    "pnl_per_contract_4500_expected": -7.9377991870197775,
+    "pnl_300_contracts_4000": -3125.5299999999806,
+    "pnl_300_contracts_4500": -2381.3397561059332,
+    "prob_ST_below_4000_lognormal": 0.0,
+    "prob_ST_below_4500_lognormal": 3.360813904951243e-08,
+    "min_hist_S": 5198.0,
+    "historical_S_at_expiry_by_day": {
+      "0": 5244.0,
+      "1": 5265.5,
+      "2": 5295.5
+    },
+    "hist_ST_day0_S_T": 5244.0,
+    "hist_ST_day0_pnl_per_contract_4000": -16.516533333333427,
+    "hist_ST_day0_pnl_per_contract_4500": -14.03589999999997,
+    "hist_ST_day1_S_T": 5265.5,
+    "hist_ST_day1_pnl_per_contract_4000": 4.983466666666573,
+    "hist_ST_day1_pnl_per_contract_4500": 7.46410000000003,
+    "hist_ST_day2_S_T": 5295.5,
+    "hist_ST_day2_pnl_per_contract_4000": 34.98346666666657,
+    "hist_ST_day2_pnl_per_contract_4500": 37.46410000000003
+  },
+  "narrow_ask_entry_analysis": {
+    "VEV_4000": {
+      "frac_ask_le_intrinsic_plus_1": 0.00933,
+      "narrow_count": 280,
+      "total_ask_vol_when_narrow": 991,
+      "mean_ask_premium": 10.42,
+      "min_ask_premium": -2.0,
+      "p01_ask_premium": 8.5
+    },
+    "VEV_4500": {
+      "frac_ask_le_intrinsic_plus_1": 0.00933,
+      "narrow_count": 280,
+      "total_ask_vol_when_narrow": 991,
+      "mean_ask_premium": 7.94,
+      "min_ask_premium": -2.0,
+      "p01_ask_premium": 6.0
+    }
+  },
+  "settlement_audit": {
+    "rust_runner": "prosperity_rust_backtester/src/runner.rs:280-284 \u2014 pnl = cash + position*mid_price, every tick, including last",
+    "python_runner": "imc-prosperity-4-backtester/prosperity4bt/runner.py:97-99 \u2014 product_profit_loss += position * row.mid_price",
+    "verdict": "A \u2014 mark-to-market at last observed mid. No cash-settlement of vouchers. No max(S_T-K,0) logic in either runner."
+  }
+}

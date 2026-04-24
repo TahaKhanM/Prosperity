@@ -1,0 +1,127 @@
+{
+  "per_day": {
+    "0": {
+      "counts": {
+        "floor_sbid": 0,
+        "floor_sask": 176,
+        "cap": 0,
+        "mono": 0,
+        "butterfly": 0
+      },
+      "edge_stats": {
+        "floor_sbid": {
+          "n": 0,
+          "mean": 0.0,
+          "max": 0.0,
+          "sum": 0.0
+        },
+        "floor_sask": {
+          "n": 176,
+          "mean": 3.0681818181818183,
+          "max": 4.0,
+          "sum": 540.0
+        },
+        "cap": {
+          "n": 0,
+          "mean": 0.0,
+          "max": 0.0,
+          "sum": 0.0
+        },
+        "mono": {
+          "n": 0,
+          "mean": 0.0,
+          "max": 0.0,
+          "sum": 0.0
+        },
+        "butterfly": {
+          "n": 0,
+          "mean": 0.0,
+          "max": 0.0,
+          "sum": 0.0
+        }
+      }
+    },
+    "1": {
+      "counts": {
+        "floor_sbid": 0,
+        "floor_sask": 188,
+        "cap": 0,
+        "mono": 0,
+        "butterfly": 0
+      },
+      "edge_stats": {
+        "floor_sbid": {
+          "n": 0,
+          "mean": 0.0,
+          "max": 0.0,
+          "sum": 0.0
+        },
+        "floor_sask": {
+          "n": 188,
+          "mean": 3.0531914893617023,
+          "max": 4.0,
+          "sum": 574.0
+        },
+        "cap": {
+          "n": 0,
+          "mean": 0.0,
+          "max": 0.0,
+          "sum": 0.0
+        },
+        "mono": {
+          "n": 0,
+          "mean": 0.0,
+          "max": 0.0,
+          "sum": 0.0
+        },
+        "butterfly": {
+          "n": 0,
+          "mean": 0.0,
+          "max": 0.0,
+          "sum": 0.0
+        }
+      }
+    },
+    "2": {
+      "counts": {
+        "floor_sbid": 2,
+        "floor_sask": 218,
+        "cap": 0,
+        "mono": 0,
+        "butterfly": 0
+      },
+      "edge_stats": {
+        "floor_sbid": {
+          "n": 2,
+          "mean": 1.0,
+          "max": 1.0,
+          "sum": 2.0
+        },
+        "floor_sask": {
+          "n": 218,
+          "mean": 2.81651376146789,
+          "max": 4.0,
+          "sum": 614.0
+        },
+        "cap": {
+          "n": 0,
+          "mean": 0.0,
+          "max": 0.0,
+          "sum": 0.0
+        },
+        "mono": {
+          "n": 0,
+          "mean": 0.0,
+          "max": 0.0,
+          "sum": 0.0
+        },
+        "butterfly": {
+          "n": 0,
+          "mean": 0.0,
+          "max": 0.0,
+          "sum": 0.0
+        }
+      }
+    }
+  }
+}

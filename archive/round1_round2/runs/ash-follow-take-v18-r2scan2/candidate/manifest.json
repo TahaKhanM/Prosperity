@@ -1,0 +1,31 @@
+{
+  "run_id": "candidate",
+  "trader": "ash_follow_take_v18.py",
+  "dataset": "round2",
+  "results": [
+    {
+      "set": "D-1",
+      "day": -1,
+      "tick_count": 10000,
+      "own_trade_count": 979,
+      "final_pnl_total": 99572.5,
+      "run_dir": "runs/ash-follow-take-v18-r2scan2/candidate-round2-day-1"
+    },
+    {
+      "set": "day-0",
+      "day": 0,
+      "tick_count": 10000,
+      "own_trade_count": 1017,
+      "final_pnl_total": 98213.0,
+      "run_dir": "runs/ash-follow-take-v18-r2scan2/candidate-round2-day-0"
+    },
+    {
+      "set": "day-1",
+      "day": 1,
+      "tick_count": 10000,
+      "own_trade_count": 1072,
+      "final_pnl_total": 100363.0,
+      "run_dir": "runs/ash-follow-take-v18-r2scan2/candidate-round2-day-1"
+    }
+  ]
+}

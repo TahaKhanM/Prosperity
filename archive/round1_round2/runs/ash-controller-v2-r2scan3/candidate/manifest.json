@@ -1,0 +1,31 @@
+{
+  "run_id": "candidate",
+  "trader": "ash_controller_v2.py",
+  "dataset": "round2",
+  "results": [
+    {
+      "set": "D-1",
+      "day": -1,
+      "tick_count": 10000,
+      "own_trade_count": 449,
+      "final_pnl_total": 83912.5,
+      "run_dir": "runs/ash-controller-v2-r2scan3/candidate-round2-day-1"
+    },
+    {
+      "set": "day-0",
+      "day": 0,
+      "tick_count": 10000,
+      "own_trade_count": 588,
+      "final_pnl_total": 85720.0,
+      "run_dir": "runs/ash-controller-v2-r2scan3/candidate-round2-day-0"
+    },
+    {
+      "set": "day-1",
+      "day": 1,
+      "tick_count": 10000,
+      "own_trade_count": 602,
+      "final_pnl_total": 86350.0,
+      "run_dir": "runs/ash-controller-v2-r2scan3/candidate-round2-day-1"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "run_id": "bench-ash_residual_v01-none-1776366455858",
+  "trader": "ash_residual_v01.py",
+  "dataset": "round1",
+  "results": [
+    {
+      "set": "D-2",
+      "day": -2,
+      "tick_count": 10000,
+      "own_trade_count": 378,
+      "final_pnl_total": 81997.5,
+      "run_dir": "runs/bench-ash_residual_v01-none-1776366455858/round1-day-2-*"
+    },
+    {
+      "set": "D-1",
+      "day": -1,
+      "tick_count": 10000,
+      "own_trade_count": 447,
+      "final_pnl_total": 83662.0,
+      "run_dir": "runs/bench-ash_residual_v01-none-1776366455858/round1-day-1-*"
+    },
+    {
+      "set": "day-0",
+      "day": 0,
+      "tick_count": 10000,
+      "own_trade_count": 442,
+      "final_pnl_total": 84422.0,
+      "run_dir": "runs/bench-ash_residual_v01-none-1776366455858/round1-day-0-*"
+    },
+    {
+      "set": "prices-submission",
+      "day": 0,
+      "tick_count": 1000,
+      "own_trade_count": 51,
+      "final_pnl_total": 7825.0,
+      "run_dir": "runs/bench-ash_residual_v01-none-1776366455858/round1-day-0-*"
+    }
+  ]
+}
