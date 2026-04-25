@@ -352,6 +352,12 @@ def write_diff_table(
         "off_n_fills",
         "divergence_py_vs_rust",
         "divergence_local_vs_official",
+        # Fill-shape divergence: differs from the qty-based flags above when
+        # the *totals* match but the per-fill tuple list differs (e.g. IMC
+        # emits 13@1; 4@1 while locals emit a single 17@1). Real signal for
+        # matching-engine differences that the totals-only flags miss.
+        "fill_shape_py_vs_rust",
+        "fill_shape_local_vs_official",
     ]
     intent_lookup: dict[str, dict[str, Any]] = {}
     if py_events:
@@ -420,9 +426,51 @@ def write_diff_table(
                     "off_n_fills": off.get("n_fills", ""),
                     "divergence_py_vs_rust": div_pr,
                     "divergence_local_vs_official": div_lo,
+                    "fill_shape_py_vs_rust": _fill_shape_diff(py, rs),
+                    # Compare against whichever local source we have. Prefer
+                    # python (it's the reference impl), fall back to rust.
+                    "fill_shape_local_vs_official": _fill_shape_diff(
+                        py if py else rs, off
+                    ),
                 }
             )
     return divergent
+
+
+def _fill_signature(agg: dict[str, Any] | None) -> tuple | None:
+    """Canonical fill-shape signature for cross-source comparison.
+
+    Returns a sorted tuple of (side, symbol, qty, price, ts) for every fill,
+    or None if the source had no observed events. We sort so that intra-tick
+    ordering doesn't cause spurious divergence — what matters is the *set*
+    of (side, symbol, qty, price, ts) emitted.
+    """
+    if not agg:
+        return None
+    fills = agg.get("fills") or []
+    return tuple(
+        sorted(
+            (
+                str(f.get("side", "")),
+                str(f.get("symbol", "")),
+                int(f.get("qty", 0)),
+                int(round(float(f.get("price", 0)))),
+                int(f.get("ts", 0)),
+            )
+            for f in fills
+        )
+    )
+
+
+def _fill_shape_diff(a: dict[str, Any] | None, b: dict[str, Any] | None) -> str:
+    """'yes' / 'no' / 'n/a' depending on whether two sources' fill shapes match.
+
+    'n/a' is returned when either side is missing input. We do NOT collapse
+    'both empty' into 'no' — that's a real "no shape divergence" answer.
+    """
+    if not a or not b:
+        return "n/a"
+    return "no" if _fill_signature(a) == _fill_signature(b) else "yes"
 
 
 def _fmt_fills(fills: list[dict[str, Any]]) -> str:
@@ -493,6 +541,17 @@ def write_diff_summary(
         lines.append(f"- official: buy={off.get('buy_qty', 'pending')} sell={off.get('sell_qty', 'pending')} n_fills={off.get('n_fills', 'pending')} | {_fmt_fills(off.get('fills', []) if off else [])}")
         lines.append(f"- divergence_py_vs_rust: {tag_pr}")
         lines.append(f"- divergence_local_vs_official: {tag_lo}")
+        # Fill-shape flags catch matching-engine differences where totals
+        # agree but per-fill granularity differs (e.g. official splits
+        # 17@1 into 13@1 + 4@1). Without these, such cases silently
+        # report "no divergence" above.
+        lines.append(
+            f"- fill_shape_py_vs_rust: {_fill_shape_diff(py, rs)}"
+        )
+        lines.append(
+            f"- fill_shape_local_vs_official: "
+            f"{_fill_shape_diff(py if py else rs, off)}"
+        )
     out_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
@@ -518,9 +577,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--rust-stdout", default=None)
     ap.add_argument("--rust-json", default=None)
     ap.add_argument("--official-log", default=None)
+    # Default to <repo_root>/runs/probes so the script is portable across
+    # checkouts. Override with --out-dir for ad-hoc runs (e.g. v2 probes).
+    _default_out_dir = Path(__file__).resolve().parent.parent / "runs" / "probes"
     ap.add_argument(
         "--out-dir",
-        default="/Users/tahakhan/Documents/Work/Projects/Prosperity/runs/probes",
+        default=str(_default_out_dir),
     )
     args = ap.parse_args(argv)
 
