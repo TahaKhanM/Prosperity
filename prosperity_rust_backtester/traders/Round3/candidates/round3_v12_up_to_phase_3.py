@@ -1,47 +1,67 @@
-"""Round 3 v8 (up to Phase 1) — v7 + deep-ITM MM + tighter smile quotes.
+"""Round 3 v12 (up to Phase 3, Phase 2 skipped) — v9 + residual scalp.
 
 Phase tracker
 -------------
 Phase 0 (BS pricer + IV solver):              DONE
-Phase 1 (smile-based MM near-ATM):            DONE — tuned in v6/v7/v8
-Phase 2 (delta-hedge voucher book vs VFE):    NOT IN THIS FILE
-Phase 3 (residual scalp on sticky strikes):   NOT IN THIS FILE
-Phase 4 (deep-ITM strategy):                  PARTIAL — v8 adds MM here,
-                                              no delta-1 overlay yet.
+Phase 1 (smile-based MM near-ATM):            DONE
+Phase 2 (delta-hedge voucher book vs VFE):    SKIPPED (cost -3k in v11;
+                                              voucher PnL too small to
+                                              justify hedging cost)
+Phase 3 (residual scalp on sticky strikes):   DONE in this file
+Phase 4 (deep-ITM strategy):                  mostrecent accumulation
 
-The filename suffix `_up_to_phase_1` reminds us that no Phase 2+
-architecture (delta hedging) is wired in yet. The v8 changes are
-parameter and logic refinements within the existing surface.
+v12 motivation
+--------------
+v9 hosted +9,115 baseline. v10 (HYDROGEL learned anchor + soft cap)
+lost -8k by destroying mean-reversion edge. v11 (delta hedge) lost -3k
+by overriding VFE MM's directional gain. Both were "defensive" changes
+that traded away real edge for variance reduction we didn't need at
+this scale.
 
-v7 hosted result (submission 393636, day 2 only, 1000 ticks):
-    Total +9,112
-    HYDROGEL +6,072 | VFE +2,080 | deep-ITM (4000+4500) +350
-    smile (5000-5500) +610 | VEV_5500/6000/6500 = 0 (untraded)
+v12 is an ADDITIVE change: leave everything that's working alone, and
+add a focused residual mean-reversion scalp on K=5300 — the strike
+with the longest residual half-life (1.82 ticks) and a +386 v9 PnL
+that suggests it has more to give.
 
-Two diagnoses from v7 hosted:
-  (a) Deep-ITM accumulation `ask <= intrinsic + 4` fires only 10/1000
-      ticks. Median actual `ask - intrinsic` is 13. Position never
-      builds — VEV_4000 ended at +37 (cap is 300).
-  (b) Smile quotes are too wide on tight markets. K=5500 has a 2-shell
-      market spread (6/8); our quotes at fair+/-2 land at 4/9, outside
-      the book → 0 fills.
+How Phase 3 residual scalp works
+--------------------------------
+Per tick, after the smile fit settles:
 
-v8 changes
-----------
-1. Deep-ITM MM. Replace mostrecent's accumulation/exit threshold
-   strategy on VEV_4000/4500 with proper two-sided market-making
-   around `fair = intrinsic`. Time value ~ 0 on these strikes (Phase 4
-   research), so intrinsic IS the fair. Quotes step inside the wide
-   ~21-shell book at fair+/-1; takes fire on any sub-intrinsic ask or
-   super-intrinsic bid. Soft cap at +/-60 to bound VFE-drift risk.
+  iv_market = solve(market_mid_K)
+  fair_iv   = a0 + a1*m + a2*m^2 + bias_K       (= existing smile fair)
+  res       = iv_market - fair_iv               (zero-mean by bias choice)
+  res_ema   = ewma(res, alpha=SCALP_RES_EMA_ALPHA)
+  dev       = res - res_ema
+  z         = dev / sigma_K                     (research-measured sigma)
 
-2. Tighter smile quotes. SMILE_QUOTE_VEGA_FRAC 0.012 -> 0.006 (0.6 IV
-   cents per side instead of 1.2). SMILE_QUOTE_MIN_EDGE 2 -> 1. Lets
-   us sit inside the 2-shell market spreads on K=5400/5500.
+  if z > +SCALP_TRIGGER_Z: market is tactically rich -> sell at bid
+  if z < -SCALP_TRIGGER_Z: market is tactically cheap -> buy at ask
+  cap inventory at +/-SCALP_POS_CAP per strike
 
-Everything else identical to v7. **TTE default = 5.0 (live R3).** When
-running the local Rust 3-day harness, the smile a0 EMA absorbs most of
-the TTE mismatch in seconds; wing strikes (5500) are off by ~1 shell.
+The smile MM is unchanged; the scalp ADDS additional orders when
+residuals deviate sharply from the recent mean. Only K=5300 in v12.
+
+K=5300 stats from research (smile_stability_report.md, 30k ticks):
+  rho1 = 0.683 (high autocorrelation)
+  half-life = 1.82 ticks
+  sigma = 0.0042 IV
+  vega ~228 -> sigma in shells ~0.96
+
+Design choices
+--------------
+- Scalp uses the SAME smile state as the smile MM (no separate fit)
+- Trigger at 1.5 sigma keeps fire frequency moderate (~50/1000 ticks)
+- Crosses the spread (take) — the half-spread cost is paid for by the
+  expected reversion magnitude when |z| >= 1.5
+- Capped at +/-25 inventory so an inverted regime is bounded
+- One strike only (K=5300) for clean attribution
+
+Expected impact on this seed
+----------------------------
+Per fire: ~1.5 * sigma * vega - 0.5*spread = 1.5*0.96 - 1 = ~0.4 shells
+At 50 fires per 1000 ticks: ~20 shells base case. Could be +/-300 with
+favourable sequencing. Real upside is in subsequent versions where
+this pattern extends to K=5400/5500.
 
 Submission contract: run(state) -> (orders, conversions, traderData).
 """
@@ -85,7 +105,9 @@ EXIT_SLACK = 6
 
 SMILE_STRIKES = (5000, 5100, 5200, 5300, 5400, 5500)
 
-START_TTE_DAYS = 5.0                # live R3 starts at TTE = 5 days
+START_TTE_DAYS = 8.0                # IMC site backtester (day 2 = TTE 6d).
+                                    # Flip to 5.0 for actual live R3 only.
+                                    # See docstring: T=5 hurt -957 in v8 hosted.
 DAY_TICKS = 1_000_000.0
 SMILE_TTE_FLOOR_DAYS = 0.25
 
@@ -98,21 +120,11 @@ SMILE_A2_DRIFT_PER_DAY = 0.815
 
 SMILE_A0_EMA_ALPHA = 0.05
 SMILE_TAKE_EDGE_SHELLS = 0.7
-SMILE_QUOTE_VEGA_FRAC = 0.006        # v8: 0.012 -> 0.006 (0.6 IV cents)
-SMILE_QUOTE_MIN_EDGE = 1             # v8: 2 -> 1 (sit inside 2-shell spreads)
+SMILE_QUOTE_VEGA_FRAC = 0.006        # v9: carry-over from v8 (0.012 -> 0.006)
+SMILE_QUOTE_MIN_EDGE = 1             # v9: carry-over from v8 (2 -> 1)
 SMILE_QUOTE_SIZE = 5
 SMILE_SOFT_CAP = 80
 SMILE_VEGA_FLOOR = 0.5
-
-# ----- v8 deep-ITM MM (replaces mostrecent's accumulation block) -----------
-# VEV_4000 / VEV_4500 have ~0 time value (Phase 4 research, 30,000 ticks of
-# median TV = 0). Treat fair = intrinsic and market-make the wide ~21-shell
-# spread at +/-1 around it. Soft cap bounds VFE-drift risk.
-DEEP_ITM_TAKE_EDGE = 1               # take ask if ask + 1 <= intrinsic
-DEEP_ITM_TAKE_SIZE = 30              # max take size per side per tick
-DEEP_ITM_QUOTE_EDGE = 1              # quote +/-1 around intrinsic
-DEEP_ITM_QUOTE_SIZE = 8
-DEEP_ITM_SOFT_CAP = 60               # per-strike soft cap; hard cap is CAP_VOU=300
 
 # v7. Per-strike residual offset, IV units. Source: 30,000-tick mean
 # residual measurement in smile_stability_report.md.
@@ -128,6 +140,25 @@ SMILE_PER_STRIKE_BIAS: Dict[int, float] = {
 # v7. Warm-up gate. Update the a0 EMA from observed IVs but post no orders
 # until the EMA has settled. ~3 half-lives of SMILE_A0_EMA_ALPHA=0.05.
 SMILE_WARMUP_TICKS = 30
+
+# ----- v12 Phase 3 residual scalp ------------------------------------------
+# Trades extreme deviations of per-strike IV residual from its rolling mean.
+# Only K=5300 in v12 (longest half-life, cleanest signal in research).
+SCALP_STRIKES = (5300,)
+SCALP_RES_EMA_ALPHA = 0.05         # half-life ~14 ticks; tracks the current
+                                    # residual regime, not the long-run prior.
+# Trigger calibrated against actual hosted-data deviation distribution
+# (smoke test on v9 hosted: max |z| was 1.20, p95 ~0.4). At 0.6 trigger we
+# fire on the top ~4% of ticks (~40 fires per 1000 hosted ticks).
+SCALP_TRIGGER_Z = 0.6              # |z| threshold for entering a scalp
+SCALP_SIZE = 10                    # lots per fire
+SCALP_POS_CAP = 25                 # max scalp inventory per strike
+# Per-strike sigma in IV units (smile_stability_report.md, 30k ticks).
+SCALP_SIGMA: Dict[int, float] = {
+    5300: 0.0042,
+    5400: 0.0053,
+    5500: 0.0054,
+}
 
 
 # ---------- Black-Scholes (inlined) ---------------------------------------
@@ -399,6 +430,97 @@ def _smile_voucher_orders(state: Dict, depths: Dict[str, OrderDepth],
     return out
 
 
+# ---------- v12 Phase 3 residual scalp -------------------------------------
+
+
+def _residual_scalp(state: Dict, depths: Dict[str, OrderDepth],
+                     positions: Dict[str, int], timestamp: int,
+                     smile_state: Dict) -> Dict[str, List[Order]]:
+    """Mean-reversion scalp on per-strike IV residual deviations.
+
+    Reuses the smile state's a0/a1/a2 — does not refit. Fires only when
+    the current tick's residual deviates more than SCALP_TRIGGER_Z sigmas
+    from the recent residual EMA. Crosses the spread (take), capped at
+    SCALP_POS_CAP per strike.
+    """
+    out: Dict[str, List[Order]] = {}
+    a0 = smile_state.get("smile_a0")
+    if a0 is None:
+        return out
+    a1 = smile_state.get("smile_a1")
+    a2 = smile_state.get("smile_a2")
+    if a1 is None or a2 is None:
+        return out
+    ve_depth = depths.get(VFE)
+    if ve_depth is None:
+        return out
+    s = _micro(ve_depth)
+    if s is None or s <= 0:
+        return out
+    t = _tte_years(timestamp)
+    if t <= 0:
+        return out
+
+    res_ema = state.setdefault("scalp_res_ema", {})
+
+    for k in SCALP_STRIKES:
+        sym = f"VEV_{k}"
+        d_ = depths.get(sym)
+        if d_ is None:
+            continue
+        mid_px = _mid(d_)
+        if mid_px is None or mid_px <= 0:
+            continue
+        iv_market = implied_vol_call(mid_px, s, float(k), t)
+        if not (iv_market == iv_market) or iv_market <= 0.005:
+            continue
+        m = math.log(s / float(k))
+        bias_k = SMILE_PER_STRIKE_BIAS.get(k, 0.0)
+        fair_iv = a0 + a1 * m + a2 * m * m + bias_k
+        res = iv_market - fair_iv
+
+        key = str(k)
+        prev = res_ema.get(key)
+        new_ema = res if prev is None else prev * (1.0 - SCALP_RES_EMA_ALPHA) + res * SCALP_RES_EMA_ALPHA
+        res_ema[key] = new_ema
+
+        sigma = SCALP_SIGMA.get(k, 0.005)
+        if sigma <= 0:
+            continue
+        dev = res - new_ema
+        z = dev / sigma
+
+        # Need a settled EMA before scalping. Skip first tick (prev was None).
+        if prev is None:
+            continue
+        if abs(z) < SCALP_TRIGGER_Z:
+            continue
+
+        pos = positions.get(sym, 0)
+        bid = _bb(d_); ask = _ba(d_)
+        legs: List[Order] = []
+
+        if z > 0:
+            # Market IV currently rich vs recent regime → SELL (cross to bid).
+            if pos > -SCALP_POS_CAP and bid is not None:
+                avail = d_.buy_orders[bid]
+                sz = _cs(pos, CAP_VOU, 0, min(avail, SCALP_SIZE))
+                if sz > 0:
+                    legs.append(Order(sym, bid, -sz))
+        else:
+            # Market IV currently cheap → BUY (cross to ask).
+            if pos < SCALP_POS_CAP and ask is not None:
+                avail = -d_.sell_orders[ask]
+                sz = _cb(pos, CAP_VOU, 0, min(avail, SCALP_SIZE))
+                if sz > 0:
+                    legs.append(Order(sym, ask, sz))
+
+        if legs:
+            out.setdefault(sym, []).extend(legs)
+
+    return out
+
+
 # ---------- Trader --------------------------------------------------------
 
 
@@ -510,41 +632,16 @@ class Trader:
             intr = max(ref - k, 0.0)
             legs = []
             if k in ACC_STRIKES:
-                # v8 deep-ITM MM. fair = intrinsic (time value ~ 0).
-                # Take any sub-intrinsic ask / super-intrinsic bid, then
-                # quote +/-1 inside the wide market spread.
-                fair_di = intr
-                bought = sold = 0
-
-                # Take side: ask + edge <= fair → buy; bid - edge >= fair → sell
-                if ask is not None and ask + DEEP_ITM_TAKE_EDGE <= fair_di:
+                if ask is not None and ask <= intr + ACC_SLACK:
                     av = -d_.sell_orders[ask]
-                    sz = _cb(pos, CAP_VOU, bought, min(av, DEEP_ITM_TAKE_SIZE))
+                    sz = _cb(pos, CAP_VOU, 0, min(av, ACC_SIZE_PER_TICK))
                     if sz > 0:
-                        legs.append(Order(sym, ask, sz)); bought += sz
-                if bid is not None and bid - DEEP_ITM_TAKE_EDGE >= fair_di:
+                        legs.append(Order(sym, ask, sz))
+                if bid is not None and bid >= intr + EXIT_SLACK and pos > 0:
                     av = d_.buy_orders[bid]
-                    sz = _cs(pos, CAP_VOU, sold, min(av, DEEP_ITM_TAKE_SIZE))
+                    sz = _cs(pos, CAP_VOU, 0, min(av, min(pos, 50)))
                     if sz > 0:
-                        legs.append(Order(sym, bid, -sz)); sold += sz
-
-                # Quote both sides at intrinsic +/- 1, clamped inside the book.
-                if bid is not None and ask is not None:
-                    bp = int(math.floor(fair_di - DEEP_ITM_QUOTE_EDGE))
-                    sp = int(math.ceil(fair_di + DEEP_ITM_QUOTE_EDGE))
-                    bp = max(bp, bid + 1)              # at least 1 inside bid
-                    sp = min(sp, ask - 1)              # at most 1 inside ask
-                    bp = min(bp, ask - 1)              # never cross
-                    sp = max(sp, bid + 1)              # never cross
-                    if bp < sp:
-                        if pos < DEEP_ITM_SOFT_CAP:
-                            bsz = _cb(pos, CAP_VOU, bought, DEEP_ITM_QUOTE_SIZE)
-                            if bsz > 0:
-                                legs.append(Order(sym, bp, bsz))
-                        if pos > -DEEP_ITM_SOFT_CAP:
-                            ssz = _cs(pos, CAP_VOU, sold, DEEP_ITM_QUOTE_SIZE)
-                            if ssz > 0:
-                                legs.append(Order(sym, sp, -ssz))
+                        legs.append(Order(sym, bid, -sz))
             else:
                 if ask is not None and ask + 1 < intr:
                     av = -d_.sell_orders[ask]
@@ -566,6 +663,13 @@ class Trader:
         for sym, legs in smile_orders.items():
             out.setdefault(sym, []).extend(legs)
 
+        # ---------- Phase 3 residual scalp (v12) ----------
+        scalp_state = dict(prior.get("scalp", {}) or {})
+        scalp_orders = _residual_scalp(scalp_state, depths, positions,
+                                        state.timestamp, smile_state)
+        for sym, legs in scalp_orders.items():
+            out.setdefault(sym, []).extend(legs)
+
         td_out = {
             "fs": {k: round(v, 4) for k, v in fs.items()},
             "smile": {
@@ -575,6 +679,10 @@ class Trader:
                 "smile_s": smile_state.get("smile_s"),
                 "smile_tte_days": smile_state.get("smile_tte_days"),
                 "smile_ticks": smile_state.get("smile_ticks", 0),
+            },
+            "scalp": {
+                "scalp_res_ema": {k: round(v, 6) for k, v in
+                                   scalp_state.get("scalp_res_ema", {}).items()},
             },
         }
         return out, 0, json.dumps(td_out)

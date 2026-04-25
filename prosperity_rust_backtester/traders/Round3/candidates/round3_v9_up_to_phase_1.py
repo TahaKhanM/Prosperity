@@ -1,47 +1,49 @@
-"""Round 3 v8 (up to Phase 1) — v7 + deep-ITM MM + tighter smile quotes.
+"""Round 3 v9 (up to Phase 1) — v7 base + v8 smile-tightening only.
 
 Phase tracker
 -------------
 Phase 0 (BS pricer + IV solver):              DONE
-Phase 1 (smile-based MM near-ATM):            DONE — tuned in v6/v7/v8
+Phase 1 (smile-based MM near-ATM):            DONE — converged at v9
 Phase 2 (delta-hedge voucher book vs VFE):    NOT IN THIS FILE
 Phase 3 (residual scalp on sticky strikes):   NOT IN THIS FILE
-Phase 4 (deep-ITM strategy):                  PARTIAL — v8 adds MM here,
-                                              no delta-1 overlay yet.
+Phase 4 (deep-ITM strategy):                  reverted to mostrecent's
+                                              accumulation in this file.
 
-The filename suffix `_up_to_phase_1` reminds us that no Phase 2+
-architecture (delta hedging) is wired in yet. The v8 changes are
-parameter and logic refinements within the existing surface.
+Why v9 = v7 + smile tightening (and nothing else)
+-------------------------------------------------
+v8 hosted comparison (IMC site, day 2 historical, 1000 ticks):
+    v7         total: +9,112
+    v8 (T=8)   total: +8,785   (-327 vs v7)
+    v8 (T=5)   total: +7,828   (-957 vs v8 T=8)
 
-v7 hosted result (submission 393636, day 2 only, 1000 ticks):
-    Total +9,112
-    HYDROGEL +6,072 | VFE +2,080 | deep-ITM (4000+4500) +350
-    smile (5000-5500) +610 | VEV_5500/6000/6500 = 0 (untraded)
+v8 had two changes; both hurt or were neutral:
 
-Two diagnoses from v7 hosted:
-  (a) Deep-ITM accumulation `ask <= intrinsic + 4` fires only 10/1000
-      ticks. Median actual `ask - intrinsic` is 13. Position never
-      builds — VEV_4000 ended at +37 (cap is 300).
-  (b) Smile quotes are too wide on tight markets. K=5500 has a 2-shell
-      market spread (6/8); our quotes at fair+/-2 land at 4/9, outside
-      the book → 0 fills.
+1. Deep-ITM MM destroyed mostrecent's accumulation edge (-330).
+   VEV_4000 PnL collapsed +166 -> +10, VEV_4500 +184 -> +10.
+   Stepping inside the deep-ITM 21-shell market spread is wrong:
+   that spread is information-risk compensation, not slack.
+   mostrecent's `ask <= intrinsic + 4` accumulation rarely fired (10
+   of 1000 ticks) but each fire was real edge. v9 restores it.
 
-v8 changes
-----------
-1. Deep-ITM MM. Replace mostrecent's accumulation/exit threshold
-   strategy on VEV_4000/4500 with proper two-sided market-making
-   around `fair = intrinsic`. Time value ~ 0 on these strikes (Phase 4
-   research), so intrinsic IS the fair. Quotes step inside the wide
-   ~21-shell book at fair+/-1; takes fire on any sub-intrinsic ask or
-   super-intrinsic bid. Soft cap at +/-60 to bound VFE-drift risk.
+2. Tighter smile quotes (SMILE_QUOTE_VEGA_FRAC 0.012 -> 0.006,
+   SMILE_QUOTE_MIN_EDGE 2 -> 1) were a wash on day-2 hosted: per-
+   strike Δ summed to +4. **Kept** in v9 because tighter quotes
+   should sit better inside live-R3 spreads (and didn't hurt here).
 
-2. Tighter smile quotes. SMILE_QUOTE_VEGA_FRAC 0.012 -> 0.006 (0.6 IV
-   cents per side instead of 1.2). SMILE_QUOTE_MIN_EDGE 2 -> 1. Lets
-   us sit inside the 2-shell market spreads on K=5400/5500.
+3. TTE = 5d caused the smile prior to over-extrapolate skew/
+   convexity outside the research calibration range. Wing strikes
+   (5400/5500) hit the +300 long cap and 5300 hit -300 short cap,
+   bleeding -957. **v9 keeps TTE = 8.0** for IMC site backtester
+   (which runs day 2 = TTE 6d). Flip to 5.0 ONLY for actual live R3
+   submission, and accept that per-strike biases were measured at
+   TTE 6-8d; live behaviour outside that range is unmeasured.
 
-Everything else identical to v7. **TTE default = 5.0 (live R3).** When
-running the local Rust 3-day harness, the smile a0 EMA absorbs most of
-the TTE mismatch in seconds; wing strikes (5500) are off by ~1 shell.
+v9 changes vs v7
+----------------
+- SMILE_QUOTE_VEGA_FRAC: 0.012 -> 0.006   (carried over from v8)
+- SMILE_QUOTE_MIN_EDGE:  2     -> 1       (carried over from v8)
+
+Everything else identical to v7.
 
 Submission contract: run(state) -> (orders, conversions, traderData).
 """
@@ -85,7 +87,9 @@ EXIT_SLACK = 6
 
 SMILE_STRIKES = (5000, 5100, 5200, 5300, 5400, 5500)
 
-START_TTE_DAYS = 5.0                # live R3 starts at TTE = 5 days
+START_TTE_DAYS = 8.0                # IMC site backtester (day 2 = TTE 6d).
+                                    # Flip to 5.0 for actual live R3 only.
+                                    # See docstring: T=5 hurt -957 in v8 hosted.
 DAY_TICKS = 1_000_000.0
 SMILE_TTE_FLOOR_DAYS = 0.25
 
@@ -98,21 +102,11 @@ SMILE_A2_DRIFT_PER_DAY = 0.815
 
 SMILE_A0_EMA_ALPHA = 0.05
 SMILE_TAKE_EDGE_SHELLS = 0.7
-SMILE_QUOTE_VEGA_FRAC = 0.006        # v8: 0.012 -> 0.006 (0.6 IV cents)
-SMILE_QUOTE_MIN_EDGE = 1             # v8: 2 -> 1 (sit inside 2-shell spreads)
+SMILE_QUOTE_VEGA_FRAC = 0.006        # v9: carry-over from v8 (0.012 -> 0.006)
+SMILE_QUOTE_MIN_EDGE = 1             # v9: carry-over from v8 (2 -> 1)
 SMILE_QUOTE_SIZE = 5
 SMILE_SOFT_CAP = 80
 SMILE_VEGA_FLOOR = 0.5
-
-# ----- v8 deep-ITM MM (replaces mostrecent's accumulation block) -----------
-# VEV_4000 / VEV_4500 have ~0 time value (Phase 4 research, 30,000 ticks of
-# median TV = 0). Treat fair = intrinsic and market-make the wide ~21-shell
-# spread at +/-1 around it. Soft cap bounds VFE-drift risk.
-DEEP_ITM_TAKE_EDGE = 1               # take ask if ask + 1 <= intrinsic
-DEEP_ITM_TAKE_SIZE = 30              # max take size per side per tick
-DEEP_ITM_QUOTE_EDGE = 1              # quote +/-1 around intrinsic
-DEEP_ITM_QUOTE_SIZE = 8
-DEEP_ITM_SOFT_CAP = 60               # per-strike soft cap; hard cap is CAP_VOU=300
 
 # v7. Per-strike residual offset, IV units. Source: 30,000-tick mean
 # residual measurement in smile_stability_report.md.
@@ -510,41 +504,16 @@ class Trader:
             intr = max(ref - k, 0.0)
             legs = []
             if k in ACC_STRIKES:
-                # v8 deep-ITM MM. fair = intrinsic (time value ~ 0).
-                # Take any sub-intrinsic ask / super-intrinsic bid, then
-                # quote +/-1 inside the wide market spread.
-                fair_di = intr
-                bought = sold = 0
-
-                # Take side: ask + edge <= fair → buy; bid - edge >= fair → sell
-                if ask is not None and ask + DEEP_ITM_TAKE_EDGE <= fair_di:
+                if ask is not None and ask <= intr + ACC_SLACK:
                     av = -d_.sell_orders[ask]
-                    sz = _cb(pos, CAP_VOU, bought, min(av, DEEP_ITM_TAKE_SIZE))
+                    sz = _cb(pos, CAP_VOU, 0, min(av, ACC_SIZE_PER_TICK))
                     if sz > 0:
-                        legs.append(Order(sym, ask, sz)); bought += sz
-                if bid is not None and bid - DEEP_ITM_TAKE_EDGE >= fair_di:
+                        legs.append(Order(sym, ask, sz))
+                if bid is not None and bid >= intr + EXIT_SLACK and pos > 0:
                     av = d_.buy_orders[bid]
-                    sz = _cs(pos, CAP_VOU, sold, min(av, DEEP_ITM_TAKE_SIZE))
+                    sz = _cs(pos, CAP_VOU, 0, min(av, min(pos, 50)))
                     if sz > 0:
-                        legs.append(Order(sym, bid, -sz)); sold += sz
-
-                # Quote both sides at intrinsic +/- 1, clamped inside the book.
-                if bid is not None and ask is not None:
-                    bp = int(math.floor(fair_di - DEEP_ITM_QUOTE_EDGE))
-                    sp = int(math.ceil(fair_di + DEEP_ITM_QUOTE_EDGE))
-                    bp = max(bp, bid + 1)              # at least 1 inside bid
-                    sp = min(sp, ask - 1)              # at most 1 inside ask
-                    bp = min(bp, ask - 1)              # never cross
-                    sp = max(sp, bid + 1)              # never cross
-                    if bp < sp:
-                        if pos < DEEP_ITM_SOFT_CAP:
-                            bsz = _cb(pos, CAP_VOU, bought, DEEP_ITM_QUOTE_SIZE)
-                            if bsz > 0:
-                                legs.append(Order(sym, bp, bsz))
-                        if pos > -DEEP_ITM_SOFT_CAP:
-                            ssz = _cs(pos, CAP_VOU, sold, DEEP_ITM_QUOTE_SIZE)
-                            if ssz > 0:
-                                legs.append(Order(sym, sp, -ssz))
+                        legs.append(Order(sym, bid, -sz))
             else:
                 if ask is not None and ask + 1 < intr:
                     av = -d_.sell_orders[ask]

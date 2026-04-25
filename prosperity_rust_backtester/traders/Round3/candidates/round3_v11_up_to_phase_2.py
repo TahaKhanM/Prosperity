@@ -1,47 +1,65 @@
-"""Round 3 v8 (up to Phase 1) — v7 + deep-ITM MM + tighter smile quotes.
+"""Round 3 v11 (up to Phase 2) — v9 + delta-hedge against VFE.
 
 Phase tracker
 -------------
 Phase 0 (BS pricer + IV solver):              DONE
-Phase 1 (smile-based MM near-ATM):            DONE — tuned in v6/v7/v8
-Phase 2 (delta-hedge voucher book vs VFE):    NOT IN THIS FILE
+Phase 1 (smile-based MM near-ATM):            DONE
+Phase 2 (delta-hedge voucher book vs VFE):    DONE in this file
 Phase 3 (residual scalp on sticky strikes):   NOT IN THIS FILE
-Phase 4 (deep-ITM strategy):                  PARTIAL — v8 adds MM here,
-                                              no delta-1 overlay yet.
+Phase 4 (deep-ITM strategy):                  mostrecent accumulation
 
-The filename suffix `_up_to_phase_1` reminds us that no Phase 2+
-architecture (delta hedging) is wired in yet. The v8 changes are
-parameter and logic refinements within the existing surface.
+v11 motivation
+--------------
+v9 hosted: +9,115 final. v10 (learned anchor + soft pos limit) tried
+to fix the mid-run -13.8k HYDROGEL drawdown but cost -8,055 because
+the hardcoded ANCHOR=10000 was actually generating real edge on this
+seed (deep accumulation at the dip → recovery PnL). Phase 1 is
+converged at v9.
 
-v7 hosted result (submission 393636, day 2 only, 1000 ticks):
-    Total +9,112
-    HYDROGEL +6,072 | VFE +2,080 | deep-ITM (4000+4500) +350
-    smile (5000-5500) +610 | VEV_5500/6000/6500 = 0 (untraded)
+v11 adds Phase 2 delta-hedging on top of v9. Voucher PnL is currently
+small (~+1k aggregate) because positions are small and noisy; delta
+hedging lets the trader hold larger voucher positions safely by
+neutralising VFE-direction exposure.
 
-Two diagnoses from v7 hosted:
-  (a) Deep-ITM accumulation `ask <= intrinsic + 4` fires only 10/1000
-      ticks. Median actual `ask - intrinsic` is 13. Position never
-      builds — VEV_4000 ended at +37 (cap is 300).
-  (b) Smile quotes are too wide on tight markets. K=5500 has a 2-shell
-      market spread (6/8); our quotes at fair+/-2 land at 4/9, outside
-      the book → 0 fills.
+How Phase 2 works in v11
+------------------------
+Each tick, after the smile fit settles, compute the voucher book's
+delta exposure in VFE-equivalent units:
 
-v8 changes
-----------
-1. Deep-ITM MM. Replace mostrecent's accumulation/exit threshold
-   strategy on VEV_4000/4500 with proper two-sided market-making
-   around `fair = intrinsic`. Time value ~ 0 on these strikes (Phase 4
-   research), so intrinsic IS the fair. Quotes step inside the wide
-   ~21-shell book at fair+/-1; takes fire on any sub-intrinsic ask or
-   super-intrinsic bid. Soft cap at +/-60 to bound VFE-drift risk.
+    voucher_delta = sum_K (position_K * delta_K)
 
-2. Tighter smile quotes. SMILE_QUOTE_VEGA_FRAC 0.012 -> 0.006 (0.6 IV
-   cents per side instead of 1.2). SMILE_QUOTE_MIN_EDGE 2 -> 1. Lets
-   us sit inside the 2-shell market spreads on K=5400/5500.
+where delta_K = bs_call_delta(S, K, T, fair_iv_K). Deep-ITM strikes
+(VEV_4000/4500) use delta = 1.0 (zero time value, pure delta-1).
 
-Everything else identical to v7. **TTE default = 5.0 (live R3).** When
-running the local Rust 3-day harness, the smile a0 EMA absorbs most of
-the TTE mismatch in seconds; wing strikes (5500) are off by ~1 shell.
+Total directional exposure = voucher_delta + position_VFE.
+
+We then bias VFE's MM fair value DOWN if total exposure > 0 (lean
+toward selling VFE) or UP if exposure < 0. The bias is gentle
+(K_HEDGE_SHELLS_PER_DELTA = 0.03 → ~3 shells per 100 delta units),
+so the hedge runs as a SLOW LEAN on the existing MM, not aggressive
+crossing of the spread.
+
+Why a fair-skew bias and not a separate hedge order?
+- Avoids burning VFE's bid-ask spread on hedge trades
+- Composes cleanly with VFE's existing MM (still earns +2k spread PnL)
+- Adjusts smoothly with delta exposure as voucher positions move
+
+Trade-offs:
+- Hedge will be partial (the lean may not always close the gap)
+- Voucher PnL on this hosted seed is small enough that the hedge's
+  marginal effect may be in the noise (~+/-200 expected)
+- Phase 2's real value is enabling LARGER voucher positions in
+  future versions; v11 alone is mostly variance reduction.
+
+v11 changes vs v9
+-----------------
++ _voucher_book_delta() helper using smile-state IVs.
++ K_HEDGE_SHELLS_PER_DELTA constant.
++ VFE fair value adjusted by total-delta skew before VFE MM runs.
++ traderData persists last-tick voucher_delta for inspection.
+
+Everything else identical to v9 (including HYDROGEL=10000 anchor —
+NOT reverted to v10's learned anchor; v10 lost 8k on that change).
 
 Submission contract: run(state) -> (orders, conversions, traderData).
 """
@@ -84,8 +102,12 @@ EXIT_SLACK = 6
 # ---------- Phase 1 smile MM constants -------------------------------------
 
 SMILE_STRIKES = (5000, 5100, 5200, 5300, 5400, 5500)
+# All 10 voucher strikes for Phase 2 delta accounting.
+VOUCHER_STRIKES = (4000, 4500, 5000, 5100, 5200, 5300, 5400, 5500, 6000, 6500)
 
-START_TTE_DAYS = 5.0                # live R3 starts at TTE = 5 days
+START_TTE_DAYS = 8.0                # IMC site backtester (day 2 = TTE 6d).
+                                    # Flip to 5.0 for actual live R3 only.
+                                    # See docstring: T=5 hurt -957 in v8 hosted.
 DAY_TICKS = 1_000_000.0
 SMILE_TTE_FLOOR_DAYS = 0.25
 
@@ -98,21 +120,11 @@ SMILE_A2_DRIFT_PER_DAY = 0.815
 
 SMILE_A0_EMA_ALPHA = 0.05
 SMILE_TAKE_EDGE_SHELLS = 0.7
-SMILE_QUOTE_VEGA_FRAC = 0.006        # v8: 0.012 -> 0.006 (0.6 IV cents)
-SMILE_QUOTE_MIN_EDGE = 1             # v8: 2 -> 1 (sit inside 2-shell spreads)
+SMILE_QUOTE_VEGA_FRAC = 0.006        # v9: carry-over from v8 (0.012 -> 0.006)
+SMILE_QUOTE_MIN_EDGE = 1             # v9: carry-over from v8 (2 -> 1)
 SMILE_QUOTE_SIZE = 5
 SMILE_SOFT_CAP = 80
 SMILE_VEGA_FLOOR = 0.5
-
-# ----- v8 deep-ITM MM (replaces mostrecent's accumulation block) -----------
-# VEV_4000 / VEV_4500 have ~0 time value (Phase 4 research, 30,000 ticks of
-# median TV = 0). Treat fair = intrinsic and market-make the wide ~21-shell
-# spread at +/-1 around it. Soft cap bounds VFE-drift risk.
-DEEP_ITM_TAKE_EDGE = 1               # take ask if ask + 1 <= intrinsic
-DEEP_ITM_TAKE_SIZE = 30              # max take size per side per tick
-DEEP_ITM_QUOTE_EDGE = 1              # quote +/-1 around intrinsic
-DEEP_ITM_QUOTE_SIZE = 8
-DEEP_ITM_SOFT_CAP = 60               # per-strike soft cap; hard cap is CAP_VOU=300
 
 # v7. Per-strike residual offset, IV units. Source: 30,000-tick mean
 # residual measurement in smile_stability_report.md.
@@ -128,6 +140,15 @@ SMILE_PER_STRIKE_BIAS: Dict[int, float] = {
 # v7. Warm-up gate. Update the a0 EMA from observed IVs but post no orders
 # until the EMA has settled. ~3 half-lives of SMILE_A0_EMA_ALPHA=0.05.
 SMILE_WARMUP_TICKS = 30
+
+# ----- v11 Phase 2 delta-hedge ---------------------------------------------
+# Bias VFE's fair value by `K_HEDGE_SHELLS_PER_DELTA * total_delta`. With
+# K=0.03 and total_delta=100 (e.g. 100-share long voucher delta exposure
+# unhedged), VFE fair drops by 3 shells, leaning the MM toward selling.
+# The hedge is a soft lean on the existing MM, not an aggressive cross.
+K_HEDGE_SHELLS_PER_DELTA = 0.03
+HEDGE_DELTA_DEADBAND = 10            # don't bias VFE fair if |total_delta| < this
+HEDGE_MAX_SKEW_SHELLS = 8            # cap fair-value bias regardless of delta
 
 
 # ---------- Black-Scholes (inlined) ---------------------------------------
@@ -277,6 +298,47 @@ def _smile_prior(tte_days: float) -> Tuple[float, float, float]:
     a1 = SMILE_A1_BASE + SMILE_A1_DRIFT_PER_DAY * drift
     a2 = SMILE_A2_BASE + SMILE_A2_DRIFT_PER_DAY * drift
     return a0, a1, a2
+
+
+def _voucher_book_delta(smile_state: Dict, depths: Dict[str, OrderDepth],
+                         positions: Dict[str, int], timestamp: int) -> float:
+    """Total voucher book delta in VFE-equivalent units (Phase 2)."""
+    ve_depth = depths.get(VFE)
+    if ve_depth is None:
+        return 0.0
+    s = _micro(ve_depth)
+    if s is None or s <= 0:
+        return 0.0
+    t = _tte_years(timestamp)
+    if t <= 0:
+        return 0.0
+
+    # Use smile state if it has converged; else fall back to TTE prior.
+    a0 = smile_state.get("smile_a0")
+    if a0 is None:
+        a0, a1, a2 = _smile_prior(t * 365.0)
+    else:
+        a1 = smile_state.get("smile_a1") or _smile_prior(t * 365.0)[1]
+        a2 = smile_state.get("smile_a2") or _smile_prior(t * 365.0)[2]
+
+    total = 0.0
+    for k in VOUCHER_STRIKES:
+        sym = f"VEV_{k}"
+        pos_k = positions.get(sym, 0)
+        if pos_k == 0:
+            continue
+        if k <= 4500:
+            # Deep-ITM: zero time value, treat as pure delta-1.
+            total += float(pos_k)
+            continue
+        m = math.log(s / float(k))
+        bias_k = SMILE_PER_STRIKE_BIAS.get(k, 0.0)
+        fair_iv = a0 + a1 * m + a2 * m * m + bias_k
+        if fair_iv <= 0.005:
+            continue
+        d = bs_call_delta(s, float(k), t, fair_iv)
+        total += pos_k * d
+    return total
 
 
 def _smile_voucher_orders(state: Dict, depths: Dict[str, OrderDepth],
@@ -461,10 +523,23 @@ class Trader:
             if legs:
                 out[HYD] = legs
 
-        # ---------- VFE MM ----------
+        # ---------- Phase 2: voucher delta -> VFE hedge skew ----------
+        # Use the smile state from the prior tick (one-tick stale, fine —
+        # smile_a0 EMA half-life is ~14 ticks, so day-over-day jitter is
+        # negligible). Voucher delta is in VFE-equivalent units; add the
+        # current VFE position to get total directional exposure.
+        voucher_delta = _voucher_book_delta(smile_state, depths, positions, state.timestamp)
+        total_delta = voucher_delta + positions.get(VFE, 0)
+        if abs(total_delta) > HEDGE_DELTA_DEADBAND:
+            raw_skew = K_HEDGE_SHELLS_PER_DELTA * total_delta
+            hedge_skew = max(-HEDGE_MAX_SKEW_SHELLS, min(HEDGE_MAX_SKEW_SHELLS, raw_skew))
+        else:
+            hedge_skew = 0.0
+
+        # ---------- VFE MM (with Phase 2 hedge bias) ----------
         if vd is not None and VFE in fs:
             bid = _bb(vd); ask = _ba(vd); pos = positions.get(VFE, 0)
-            fair = fs[VFE]
+            fair = fs[VFE] - hedge_skew
             legs = []; b = s = 0
             if ask is not None and ask + V_TAKE <= fair:
                 av = -vd.sell_orders[ask]
@@ -510,41 +585,16 @@ class Trader:
             intr = max(ref - k, 0.0)
             legs = []
             if k in ACC_STRIKES:
-                # v8 deep-ITM MM. fair = intrinsic (time value ~ 0).
-                # Take any sub-intrinsic ask / super-intrinsic bid, then
-                # quote +/-1 inside the wide market spread.
-                fair_di = intr
-                bought = sold = 0
-
-                # Take side: ask + edge <= fair → buy; bid - edge >= fair → sell
-                if ask is not None and ask + DEEP_ITM_TAKE_EDGE <= fair_di:
+                if ask is not None and ask <= intr + ACC_SLACK:
                     av = -d_.sell_orders[ask]
-                    sz = _cb(pos, CAP_VOU, bought, min(av, DEEP_ITM_TAKE_SIZE))
+                    sz = _cb(pos, CAP_VOU, 0, min(av, ACC_SIZE_PER_TICK))
                     if sz > 0:
-                        legs.append(Order(sym, ask, sz)); bought += sz
-                if bid is not None and bid - DEEP_ITM_TAKE_EDGE >= fair_di:
+                        legs.append(Order(sym, ask, sz))
+                if bid is not None and bid >= intr + EXIT_SLACK and pos > 0:
                     av = d_.buy_orders[bid]
-                    sz = _cs(pos, CAP_VOU, sold, min(av, DEEP_ITM_TAKE_SIZE))
+                    sz = _cs(pos, CAP_VOU, 0, min(av, min(pos, 50)))
                     if sz > 0:
-                        legs.append(Order(sym, bid, -sz)); sold += sz
-
-                # Quote both sides at intrinsic +/- 1, clamped inside the book.
-                if bid is not None and ask is not None:
-                    bp = int(math.floor(fair_di - DEEP_ITM_QUOTE_EDGE))
-                    sp = int(math.ceil(fair_di + DEEP_ITM_QUOTE_EDGE))
-                    bp = max(bp, bid + 1)              # at least 1 inside bid
-                    sp = min(sp, ask - 1)              # at most 1 inside ask
-                    bp = min(bp, ask - 1)              # never cross
-                    sp = max(sp, bid + 1)              # never cross
-                    if bp < sp:
-                        if pos < DEEP_ITM_SOFT_CAP:
-                            bsz = _cb(pos, CAP_VOU, bought, DEEP_ITM_QUOTE_SIZE)
-                            if bsz > 0:
-                                legs.append(Order(sym, bp, bsz))
-                        if pos > -DEEP_ITM_SOFT_CAP:
-                            ssz = _cs(pos, CAP_VOU, sold, DEEP_ITM_QUOTE_SIZE)
-                            if ssz > 0:
-                                legs.append(Order(sym, sp, -ssz))
+                        legs.append(Order(sym, bid, -sz))
             else:
                 if ask is not None and ask + 1 < intr:
                     av = -d_.sell_orders[ask]
@@ -568,6 +618,11 @@ class Trader:
 
         td_out = {
             "fs": {k: round(v, 4) for k, v in fs.items()},
+            "hedge": {
+                "voucher_delta": round(voucher_delta, 2),
+                "total_delta": round(total_delta, 2),
+                "skew": round(hedge_skew, 2),
+            },
             "smile": {
                 "smile_a0": smile_state.get("smile_a0"),
                 "smile_a1": smile_state.get("smile_a1"),

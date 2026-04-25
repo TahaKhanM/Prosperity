@@ -1,47 +1,49 @@
-"""Round 3 v8 (up to Phase 1) — v7 + deep-ITM MM + tighter smile quotes.
+"""Round 3 v10 (up to Phase 1) — v9 + learned HYDROGEL anchor.
 
 Phase tracker
 -------------
 Phase 0 (BS pricer + IV solver):              DONE
-Phase 1 (smile-based MM near-ATM):            DONE — tuned in v6/v7/v8
+Phase 1 (smile-based MM near-ATM):            DONE
 Phase 2 (delta-hedge voucher book vs VFE):    NOT IN THIS FILE
 Phase 3 (residual scalp on sticky strikes):   NOT IN THIS FILE
-Phase 4 (deep-ITM strategy):                  PARTIAL — v8 adds MM here,
-                                              no delta-1 overlay yet.
+Phase 4 (deep-ITM strategy):                  mostrecent accumulation.
 
-The filename suffix `_up_to_phase_1` reminds us that no Phase 2+
-architecture (delta hedging) is wired in yet. The v8 changes are
-parameter and logic refinements within the existing surface.
+v10 motivation: HYDROGEL drawdown
+---------------------------------
+v9 hosted (submission 394516, day 2, 1000 ticks): +9,115 final.
+But peaked at +14,280 at ts=70000 then dropped to +2,807 at ts=90000.
+Drawdown decomposition: HYDROGEL alone went from +13,352 -> -427 over
+that 20k-tick window. Vouchers were untouched (gained +800 across the
+same window).
 
-v7 hosted result (submission 393636, day 2 only, 1000 ticks):
-    Total +9,112
-    HYDROGEL +6,072 | VFE +2,080 | deep-ITM (4000+4500) +350
-    smile (5000-5500) +610 | VEV_5500/6000/6500 = 0 (untraded)
+Root cause: mostrecent hardcodes ANCHOR=10000 with weight 0.40. When
+HYDROGEL mid drifted from 9996 -> 9927 (-69 shells), the trader kept
+buying on dips because the anchor said 10000 was fair. We sat at the
++200 hard cap the entire window. -69 shells x 200 lots = -13,800 MTM.
 
-Two diagnoses from v7 hosted:
-  (a) Deep-ITM accumulation `ask <= intrinsic + 4` fires only 10/1000
-      ticks. Median actual `ask - intrinsic` is 13. Position never
-      builds — VEV_4000 ended at +37 (cap is 300).
-  (b) Smile quotes are too wide on tight markets. K=5500 has a 2-shell
-      market spread (6/8); our quotes at fair+/-2 land at 4/9, outside
-      the book → 0 fills.
+Empirical mean is 9991 (CLAUDE.md), not 10000. v3 had the same anchor
+failure and lost -1,657 hosted; v4's learned-anchor fix delivered
++2,497 on the same hosted replay (+4,155 swing, +3,341 from HYDROGEL).
 
-v8 changes
-----------
-1. Deep-ITM MM. Replace mostrecent's accumulation/exit threshold
-   strategy on VEV_4000/4500 with proper two-sided market-making
-   around `fair = intrinsic`. Time value ~ 0 on these strikes (Phase 4
-   research), so intrinsic IS the fair. Quotes step inside the wide
-   ~21-shell book at fair+/-1; takes fire on any sub-intrinsic ask or
-   super-intrinsic bid. Soft cap at +/-60 to bound VFE-drift risk.
+v10 changes vs v9
+-----------------
+HYDROGEL fair only. Replaces:
+    fair = 0.40 * 10000 + 0.60 * micro     (mostrecent)
+with:
+    slow_ema   = ewma(slow_ema, micro, alpha=0.005)   # half-life ~138 ticks
+    anchor     = clamp(slow_ema, 9940, 10030)
+    fair_blend = 0.30 * anchor + 0.70 * micro
+    fair       = ewma(fair, fair_blend, alpha=0.10)   # smoothing
+    if |slow_ema - anchor| > 80: halt takes (regime guard)
+    if  pos > +80: do not post buy quote
+    if  pos < -80: do not post sell quote
 
-2. Tighter smile quotes. SMILE_QUOTE_VEGA_FRAC 0.012 -> 0.006 (0.6 IV
-   cents per side instead of 1.2). SMILE_QUOTE_MIN_EDGE 2 -> 1. Lets
-   us sit inside the 2-shell market spreads on K=5400/5500.
+All other constants (H_TAKE=4, H_QE=3, H_SIZE=20, H_IMB=5.0) and the
+voucher / smile MM modules are unchanged from v9.
 
-Everything else identical to v7. **TTE default = 5.0 (live R3).** When
-running the local Rust 3-day harness, the smile a0 EMA absorbs most of
-the TTE mismatch in seconds; wing strikes (5500) are off by ~1 shell.
+Trade-off: variance reduction. Hosted runs where HYDROGEL drifts down
+gain a lot (~+10k saved tail). Hosted runs where HYDROGEL trends up
+toward 10000 lose a bit (~1-2k of "buy the dip toward anchor" edge).
 
 Submission contract: run(state) -> (orders, conversions, traderData).
 """
@@ -62,9 +64,13 @@ CAP_H = 200
 CAP_V = 200
 CAP_VOU = 300
 
-ANCHOR = 10000.0
-A_W = 0.40
-A_HYD = 0.10
+A_W = 0.30                # v10: 0.40 -> 0.30 (less aggressive anchor pull)
+A_HYD = 0.10              # EMA alpha on the (anchor-blend, micro) blend
+H_SLOW_ALPHA = 0.005      # v10: slow EMA of microprice; half-life ~138 ticks
+H_CLAMP_LO = 9940.0       # v10: defensive bound on the learned anchor
+H_CLAMP_HI = 10030.0
+H_REGIME_GUARD_DEV = 80.0 # v10: halt takes if |slow_ema - clamped_anchor| > this
+H_SOFT_POS_LIMIT = 80     # v10: above this, quote one-sided to bleed inventory
 H_TAKE = 4
 H_QE = 3
 H_SIZE = 20
@@ -85,7 +91,9 @@ EXIT_SLACK = 6
 
 SMILE_STRIKES = (5000, 5100, 5200, 5300, 5400, 5500)
 
-START_TTE_DAYS = 5.0                # live R3 starts at TTE = 5 days
+START_TTE_DAYS = 8.0                # IMC site backtester (day 2 = TTE 6d).
+                                    # Flip to 5.0 for actual live R3 only.
+                                    # See docstring: T=5 hurt -957 in v8 hosted.
 DAY_TICKS = 1_000_000.0
 SMILE_TTE_FLOOR_DAYS = 0.25
 
@@ -98,21 +106,11 @@ SMILE_A2_DRIFT_PER_DAY = 0.815
 
 SMILE_A0_EMA_ALPHA = 0.05
 SMILE_TAKE_EDGE_SHELLS = 0.7
-SMILE_QUOTE_VEGA_FRAC = 0.006        # v8: 0.012 -> 0.006 (0.6 IV cents)
-SMILE_QUOTE_MIN_EDGE = 1             # v8: 2 -> 1 (sit inside 2-shell spreads)
+SMILE_QUOTE_VEGA_FRAC = 0.006        # v9: carry-over from v8 (0.012 -> 0.006)
+SMILE_QUOTE_MIN_EDGE = 1             # v9: carry-over from v8 (2 -> 1)
 SMILE_QUOTE_SIZE = 5
 SMILE_SOFT_CAP = 80
 SMILE_VEGA_FLOOR = 0.5
-
-# ----- v8 deep-ITM MM (replaces mostrecent's accumulation block) -----------
-# VEV_4000 / VEV_4500 have ~0 time value (Phase 4 research, 30,000 ticks of
-# median TV = 0). Treat fair = intrinsic and market-make the wide ~21-shell
-# spread at +/-1 around it. Soft cap bounds VFE-drift risk.
-DEEP_ITM_TAKE_EDGE = 1               # take ask if ask + 1 <= intrinsic
-DEEP_ITM_TAKE_SIZE = 30              # max take size per side per tick
-DEEP_ITM_QUOTE_EDGE = 1              # quote +/-1 around intrinsic
-DEEP_ITM_QUOTE_SIZE = 8
-DEEP_ITM_SOFT_CAP = 60               # per-strike soft cap; hard cap is CAP_VOU=300
 
 # v7. Per-strike residual offset, IV units. Source: 30,000-tick mean
 # residual measurement in smile_stability_report.md.
@@ -414,13 +412,25 @@ class Trader:
         positions = state.position or {}
         depths = state.order_depths or {}
 
-        # ---------- HYDROGEL fair (anchor + microprice EMA) ----------
+        # ---------- HYDROGEL fair (v10 learned anchor) ----------
         hd = depths.get(HYD)
         himb = 0.0
+        h_slow = prior.get("h_slow")
+        h_clamped = False
         if hd is not None:
             m = _micro(hd)
             if m is not None:
-                fs[HYD] = _ew(fs.get(HYD), A_W * ANCHOR + (1 - A_W) * m, A_HYD)
+                # Slow EMA of microprice. Seeded at first observed micro to
+                # avoid an initial 10000 bias (CLAUDE.md: empirical mean is
+                # 9991, only 13.8% of ticks within +/-5 of 10000).
+                if h_slow is None:
+                    h_slow = m
+                else:
+                    h_slow = h_slow * (1.0 - H_SLOW_ALPHA) + m * H_SLOW_ALPHA
+                anchor = min(max(h_slow, H_CLAMP_LO), H_CLAMP_HI)
+                h_clamped = (h_slow != anchor)
+                blended = A_W * anchor + (1.0 - A_W) * m
+                fs[HYD] = _ew(fs.get(HYD), blended, A_HYD)
             himb = _imb(hd)
 
         # ---------- VFE fair (microprice EMA) ----------
@@ -435,12 +445,22 @@ class Trader:
             bid = _bb(hd); ask = _ba(hd); pos = positions.get(HYD, 0)
             fair = fs[HYD] + H_IMB * himb
             legs = []; b = s = 0
-            if ask is not None and ask + H_TAKE <= fair:
+            # Regime guard: if the slow EMA hit the clamp, the trader's
+            # anchor is fighting reality. Halt aggressive takes; keep
+            # passive quotes to bleed inventory back toward 0.
+            allow_take = not h_clamped
+            # Inventory-aware take gating: stop building one-sided
+            # inventory past the soft cap. v9 hit +200 by ts=50000 and
+            # stayed there for the rest of the run because takes kept
+            # firing on every dip; this caps that behaviour.
+            allow_buy_take  = allow_take and pos < H_SOFT_POS_LIMIT
+            allow_sell_take = allow_take and pos > -H_SOFT_POS_LIMIT
+            if allow_buy_take and ask is not None and ask + H_TAKE <= fair:
                 av = -hd.sell_orders[ask]
                 sz = _cb(pos, CAP_H, b, min(av, CAP_H))
                 if sz > 0:
                     legs.append(Order(HYD, ask, sz)); b += sz
-            if bid is not None and bid - H_TAKE >= fair:
+            if allow_sell_take and bid is not None and bid - H_TAKE >= fair:
                 av = hd.buy_orders[bid]
                 sz = _cs(pos, CAP_H, s, min(av, CAP_H))
                 if sz > 0:
@@ -452,8 +472,14 @@ class Trader:
             if ask is not None:
                 bp = min(bp, ask - 1); sp = max(sp, ask - 1)
             if bid is not None: sp = max(sp, bid + 1)
-            bsz = _cb(pos, CAP_H, b, max(0, int(round(H_SIZE * max(0.0, 1 - 2.0 * inv)))))
-            ssz = _cs(pos, CAP_H, s, max(0, int(round(H_SIZE * max(0.0, 1 + 2.0 * inv)))))
+            bsz_raw = max(0, int(round(H_SIZE * max(0.0, 1 - 2.0 * inv))))
+            ssz_raw = max(0, int(round(H_SIZE * max(0.0, 1 + 2.0 * inv))))
+            # Soft pos limit: above |80|, only quote one-sided to bleed
+            # inventory toward 0 instead of accumulating further.
+            if pos > H_SOFT_POS_LIMIT: bsz_raw = 0
+            if pos < -H_SOFT_POS_LIMIT: ssz_raw = 0
+            bsz = _cb(pos, CAP_H, b, bsz_raw)
+            ssz = _cs(pos, CAP_H, s, ssz_raw)
             if bsz > 0 and (ask is None or bp < ask):
                 legs.append(Order(HYD, bp, bsz))
             if ssz > 0 and (bid is None or sp > bid):
@@ -510,41 +536,16 @@ class Trader:
             intr = max(ref - k, 0.0)
             legs = []
             if k in ACC_STRIKES:
-                # v8 deep-ITM MM. fair = intrinsic (time value ~ 0).
-                # Take any sub-intrinsic ask / super-intrinsic bid, then
-                # quote +/-1 inside the wide market spread.
-                fair_di = intr
-                bought = sold = 0
-
-                # Take side: ask + edge <= fair → buy; bid - edge >= fair → sell
-                if ask is not None and ask + DEEP_ITM_TAKE_EDGE <= fair_di:
+                if ask is not None and ask <= intr + ACC_SLACK:
                     av = -d_.sell_orders[ask]
-                    sz = _cb(pos, CAP_VOU, bought, min(av, DEEP_ITM_TAKE_SIZE))
+                    sz = _cb(pos, CAP_VOU, 0, min(av, ACC_SIZE_PER_TICK))
                     if sz > 0:
-                        legs.append(Order(sym, ask, sz)); bought += sz
-                if bid is not None and bid - DEEP_ITM_TAKE_EDGE >= fair_di:
+                        legs.append(Order(sym, ask, sz))
+                if bid is not None and bid >= intr + EXIT_SLACK and pos > 0:
                     av = d_.buy_orders[bid]
-                    sz = _cs(pos, CAP_VOU, sold, min(av, DEEP_ITM_TAKE_SIZE))
+                    sz = _cs(pos, CAP_VOU, 0, min(av, min(pos, 50)))
                     if sz > 0:
-                        legs.append(Order(sym, bid, -sz)); sold += sz
-
-                # Quote both sides at intrinsic +/- 1, clamped inside the book.
-                if bid is not None and ask is not None:
-                    bp = int(math.floor(fair_di - DEEP_ITM_QUOTE_EDGE))
-                    sp = int(math.ceil(fair_di + DEEP_ITM_QUOTE_EDGE))
-                    bp = max(bp, bid + 1)              # at least 1 inside bid
-                    sp = min(sp, ask - 1)              # at most 1 inside ask
-                    bp = min(bp, ask - 1)              # never cross
-                    sp = max(sp, bid + 1)              # never cross
-                    if bp < sp:
-                        if pos < DEEP_ITM_SOFT_CAP:
-                            bsz = _cb(pos, CAP_VOU, bought, DEEP_ITM_QUOTE_SIZE)
-                            if bsz > 0:
-                                legs.append(Order(sym, bp, bsz))
-                        if pos > -DEEP_ITM_SOFT_CAP:
-                            ssz = _cs(pos, CAP_VOU, sold, DEEP_ITM_QUOTE_SIZE)
-                            if ssz > 0:
-                                legs.append(Order(sym, sp, -ssz))
+                        legs.append(Order(sym, bid, -sz))
             else:
                 if ask is not None and ask + 1 < intr:
                     av = -d_.sell_orders[ask]
@@ -568,6 +569,7 @@ class Trader:
 
         td_out = {
             "fs": {k: round(v, 4) for k, v in fs.items()},
+            "h_slow": round(h_slow, 4) if h_slow is not None else None,
             "smile": {
                 "smile_a0": smile_state.get("smile_a0"),
                 "smile_a1": smile_state.get("smile_a1"),
