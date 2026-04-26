@@ -1,97 +1,96 @@
-"""Round 3 v12 — v10 + 1k-tick-tuned params (post hosted parity check).
+"""Round 3 test_v15 — submitted-v12 + cross-strike vega-neutral pair trade.
 
-Why v11 was discarded
----------------------
-v11's HYD adaptive-anchor up-shift gave +36 k on local 10 k-tick BT but
-zero improvement on the IMC hosted backtester (which runs day 2 historical
-for 1 000 ticks).  The slow-EMA half-life of ~700 ticks means the trend
-detector never fires within 1 000 ticks, and the local 10 k gain was a
-back-tester artefact (Legacy fill model overstates trending-day PnL).
+NOTE: TEST SUBMISSION ONLY. Local simulation against day-2 data in
+v12's framework shows the cross-strike taker pair trade has negative
+expected edge at every (threshold, hold) combination tested:
+   z>=1.5 hold=10t  -> -1.92 shells/fire on K=5300/5400
+   z>=2.0 hold=10t  -> -1.81 shells/fire on K=5300/5400
+   z>=3.0 hold=100t -> -1.23 shells/fire on K=5300/5400
+The signal exists structurally (autocorr decays from 0.85 -> 0.37 over
+10 ticks) but only ~23% of predicted reversion is captured in 100t,
+which doesn't cover the 2.5-shell crossing cost. Submitting anyway to
+see whether hosted matches local sim.
 
-v12 abandons the 10 k metric entirely and tunes against the *correct*
-hosted-equivalent benchmark: day 2 historical, first 1 000 ticks (matches
-official backtester +9 113 for v9 within 0.02 %).
+Lineage / motivation
+--------------------
+v14 attempted a single-strike IV residual scalp (K=5300/5400/5500 each
+trading independently against its own residual EMA). It showed only
++917 lift on rust BT and faces a structural problem: submitted v12's
+smile MM uses SMILE_A0_EMA_ALPHA = 0.40 (half-life 1.4 ticks) which
+ALREADY absorbs the per-strike level-residual signal as a maker.
+v14's scalp tries to capture the same edge as a TAKER (paying spread),
+which is uneconomic at most strikes.
 
-Empirical 1 k-tick day 2 PnL (matches IMC hosted)
-------------------------------------------------
-                              d0       d1       d2     total
-v9                          -3 664   -1 768  + 9 113  +3 682
-v10                         -3 462   -1 515  + 9 227  +4 250
-v11 (anchor up-shift)       -3 462   -1 515  + 9 227  +4 250  (no fire)
-v12 (this file)             -2 891   -  863  +11 705  +7 951
+v15 hunts the alpha smile MM does NOT exploit: cross-strike SHAPE
+mispricings. The smile MM refits a0 only (level), never a1 (skew) or
+a2 (convexity). When two adjacent strikes' IVs diverge in a way that
+implies a smile-shape error, the residual SPREAD between them persists
+much longer than each single residual.
 
-Hosted day 2 lift over v9: +2 592 (+28.4 %).
-v12 also improves d0 1 k by +773 and d1 1 k by +905.
+Empirical evidence (vol_surface_residuals.csv, 30 000 ticks)
+------------------------------------------------------------
+                           half-life   sigma     rho1
+single-strike residual K=5300    1.82t   0.0042   0.683
+single-strike residual K=5400    2.68t   0.0053   0.772
+single-strike residual K=5500    1.43t   0.0054   0.616
 
-What v12 changes (each verified to improve d2 1 k incrementally)
----------------------------------------------------------------
-1. H_TAKE        4   -> 5      (+620 d2 — narrower edge captured most takes
-                                already; +1 widens for cleaner fills.)
-2. H_IMB         5.0 -> 0.0    (+155 d2 — level-1 imbalance skew was noisy
-                                at 1 k, removing it lets fair stay smooth.)
-3. H_QE          3   -> 6      (+124 d2 — wider passive quote captures
-                                spread better when we are not the inside
-                                quote; book is 15-shell wide.)
-4. A_HYD         0.10 -> 0.08  (+84 d2 — slightly slower fair EMA reduces
-                                noise tracking.)
-5. A_W           0.40 -> 0.35  (+21 d2 — anchor weight dropped a touch;
-                                v9's 0.40 was ~optimal but 0.35 wins
-                                marginally on the d2 1 k regime.)
-6. V_IMB_K2      5.0 -> 8.0    (+49 d2 — wider VFE imbalance skew slope.)
-7. SMILE_QUOTE_SIZE 5 -> 8     (+65 d2 — bigger passive smile-MM quotes
-                                catch more fills.)
-8. SMILE_WARMUP_TICKS 30 -> 15 (+69 d2 — earlier smile-MM activation on
-                                short tests; warmup was over-conservative.)
-9. EXIT_SLACK    6  -> 2       (+10 d2 — earlier deep-ITM exit on profit.)
-10. H_INV_K      2.0 -> 1.0    (+50 d2 — softer inventory penalty so we
-                                keep quoting both sides longer.)
-11. H_SIZE       20 -> 100     (+14 d2 — bigger HYD passive quote sizes.)
-12. H_WALL_W     0.5 -> 0.9    (+50 d2 — heavier wall-mid weight in HYD
-                                fair-blend input.)
+PAIR (K=5300 - K=5400)           8.02t   0.00736  0.917
+PAIR (K=5400 - K=5500)           6.05t   0.00600  0.892
 
-The two largest single-tweak wins (and most novel insight)
----------------------------------------------------------
-13. START_TTE_DAYS 8 -> 6      (+817 d2). Day-2 historical has actual
-    TTE = 6 d, so the BS time used in pricing should be 6, not 8.  v9's
-    START_TTE = 8 was chosen to "let drift handle it" — but the smile drift
-    formula only adjusts a0/a1/a2 priors; the BS pricing's `T` argument was
-    1-2 days too long, inflating BS theo prices ~1-2 % and biasing smile MM
-    short.  Correcting T to match the actual day's TTE recovers that bias.
+Pair half-life is 3-4x longer than single-strike. This is the smile-
+shape signature that smile MM (level-only) cannot absorb. A taker can
+fire on the spread, fill in 1-2 ticks, and capture reversion before
+half-life elapses (6-8 ticks of room).
 
-14. SMILE_A0_EMA_ALPHA 0.05 -> 0.40 (+1 175 d2).  Half-life drops from
-    ~14 ticks to ~1.4 ticks — smile fair tracks observed market a0 fast
-    enough that adverse-selection drops sharply.  v9's slow EMA was a
-    holdover from the 30 000-tick research window; on a 1 000-tick day
-    the slow EMA never converges.  Past-winner reference: chrispyroberts
-    P3 7th used very light smoothing on bid/ask vol curves.
+Per-fire economics (at S=5237, T=6d, IV=0.244, vega-neutral hedge):
+                               shells/sigma_pair   break-even z
+  K=5300/5400 pair (lots 2:3)         ~1.84              0.5
+  K=5400/5500 pair (lots 1:2)         ~1.01              1.0
 
-LIVE TTE caveat
----------------
-Live R3 has actual TTE = 5 d.  This file is calibrated for TTE = 6 d
-(historical day 2, the IMC hosted backtester input).  At live ts = 0 the
-trader's BS clock will read 6 d while reality is 5 d — a 1-day
-miscalibration.  The smile MM EMA (alpha = 0.40) converges in ~3 ticks,
-so the fair recalibrates almost immediately.  Switching START_TTE to 5.0
-for live submission costs ~1 600 on the hosted-test number but is the
-strictly correct setting for live.  If maximising the IMC hosted backtester
-number is the goal, leave this at 6.0.
+v15 sets thresholds at z=1.0 (5300/5400) and z=1.5 (5400/5500), well
+above break-even.
 
-Things deliberately preserved
-----------------------------
-- HYDROGEL anchor at 10 000 (post_mortem_378834 warning: live mean drift
-  to 9 979 cost v3 -3 341 with a rigid anchor; we keep it but with smaller
-  effective-anchor weight via A_W=0.35).
-- Smile MM frozen-coefficient design (v8/v9).
-- Deep-ITM accumulation rules (mostrecent style).
-- VFE microprice-EMA fair as the base (v10 design preserved).
+What v15 changes vs submitted v12
+---------------------------------
+Only adds the pair-trade module. HYD MM, VFE MM, smile MM, accumulation,
+identity-arb, counterparty hook are byte-identical to submitted v12 so
+the hosted +11,654 baseline is preserved. The pair trade is purely
+additive.
 
-Counterparty hook (v12 NEW)
----------------------------
-Per-name horizon-PnL accumulation kept in traderData for any market trade
-where buyer or seller string is non-empty.  Once a name has ≥ 20 trades
-with abs Sharpe > 2, the trader skews quotes by ±1 shell in the inferred
-"smart" direction.  Historical data has 100% empty names, so this is a
-pure live-only feature; PnL impact in any local BT = 0 by construction.
+Pair-trade design
+-----------------
+Per tick, after smile MM has refit a0:
+
+  for each pair (K1, K2):
+      res(K) = IV_market(K) - (a0 + a1*m_K + a2*m_K^2 + bias_K)
+      pair_res = res(K1) - res(K2) - mean_pair_static
+      pair_ema = ewma(pair_res, alpha=0.05)
+      dev = pair_res - pair_ema
+      z = dev / sigma_pair
+      if |z| > threshold(K1,K2):
+          lots1 = clamp(BASE + SCALE * (|z| - threshold), MIN, MAX)
+          lots2 = lots1 * ratio2 / ratio1   (vega-neutral hedge)
+          if z > 0:  sell lots1 K=K1, buy lots2 K=K2
+          if z < 0:  buy  lots1 K=K1, sell lots2 K=K2
+          (cap each leg by per-strike inventory cap)
+
+Both legs cross the spread. Per-strike inventory caps keep exposure
+bounded if the pair signal persists.
+
+Risks
+-----
+1. Smile shape can genuinely change (a1/a2 drift). The slow EMA
+   (alpha=0.05) adapts but not instantly — sustained shape change
+   could leave us holding losing positions for ~30 ticks before the
+   EMA catches up.
+2. Partial fills on either leg leave residual single-strike exposure
+   until next tick. Mitigated by: pair signal persists 6-8 ticks, so
+   subsequent fires re-balance.
+3. Both pairs share K=5400. Combined K=5400 inventory is bounded by
+   per-strike cap (80 lots in either direction).
+
+START_TTE_DAYS = 6.0 stays from submitted v12 (calibrated for IMC
+hosted day-2 backtester). Flip to 5.0 only for live R3.
 
 Submission contract: run(state) -> (orders, conversions, traderData).
 """
@@ -179,6 +178,53 @@ SMILE_PER_STRIKE_BIAS: Dict[int, float] = {
 }
 
 SMILE_WARMUP_TICKS = 15
+
+
+# ---------- v15 cross-strike pair-trade constants --------------------------
+# Trades shape mispricings between adjacent strikes — the part of the IV
+# residual structure that smile MM (level-only via a0 EMA) does NOT absorb.
+# Pair half-life from research = 6-8 ticks (vs 1-3 ticks single-strike).
+#
+# IMPORTANT: pair_res in v12's framework (which subtracts per-strike bias_k
+# in fair_iv) is ALREADY zero-mean. Verified empirical mean over 30k ticks:
+#   K=5300/5400 v12-frame: mean = 0.00005  (essentially zero)
+#   K=5400/5500 v12-frame: mean = -0.00007 (essentially zero)
+# So mean_pair = 0 here. The +0.0231 / -0.0078 means in research data are
+# the raw means before bias subtraction, which v12 already handles.
+#
+# No EMA either: alpha=0.05 EMA absorbs the actual signal we want to trade,
+# crushing fire frequency from 32% (raw) to 0.34% (after EMA dev). Trade
+# directly against zero.
+
+# (K1, K2, sigma_pair, ratio_K1, ratio_K2)  — vega-neutral hedge ratios
+PAIR_TRADES: List[Tuple[int, int, float, int, int]] = [
+    (5300, 5400, 0.00736, 2, 3),   # half-life 8.02t, vega ratio 1.49
+    (5400, 5500, 0.00600, 1, 2),   # half-life 6.05t, vega ratio 2.09
+]
+
+# Per-pair z trigger.  Set above break-even after 2-leg crossing cost.
+# 5300/5400: 1.84 shells/z gross, ~2.5 shells crossing cost (2-shell books)
+#            -> z >= 1.36 break-even, use 1.5 for margin (fires 11.65%)
+# 5400/5500: 1.01 shells/z gross, ~2.0 shells crossing cost (mixed spreads)
+#            -> z >= 1.98 break-even, use 2.0 (fires 5.32%)
+PAIR_TRIGGER_Z: Dict[Tuple[int, int], float] = {
+    (5300, 5400): 1.5,
+    (5400, 5500): 2.0,
+}
+
+# Conviction-scaled K1 leg lots: clamp(BASE + SCALE*(|z| - threshold), MIN, MAX)
+PAIR_BASE_LOTS = 2
+PAIR_LOTS_PER_Z = 4
+PAIR_MIN_LOTS = 1
+PAIR_MAX_LOTS = 12
+
+# Hard absolute per-strike cap for pair-derived inventory (lots).  K=5400
+# is shared by both pairs — its cap accounts for combined exposure.
+PAIR_POS_CAP: Dict[int, int] = {
+    5300: 60,
+    5400: 80,
+    5500: 60,
+}
 
 
 # ---------- Black-Scholes (inlined, unchanged) -----------------------------
@@ -536,6 +582,130 @@ def _smile_voucher_orders(state, depths, positions, timestamp, ve_micro):
     return out
 
 
+# ---------- v15 cross-strike pair-trade module -----------------------------
+
+
+def _pair_lots_k1(abs_z: float, threshold: float) -> int:
+    """Conviction-proportional sizing on the K1 leg."""
+    excess = max(0.0, abs_z - threshold)
+    raw = PAIR_BASE_LOTS + PAIR_LOTS_PER_Z * excess
+    sz = int(round(raw))
+    return max(PAIR_MIN_LOTS, min(PAIR_MAX_LOTS, sz))
+
+
+def _hedge_lots(sz1: int, ratio1: int, ratio2: int) -> int:
+    """Round to nearest hedge size keeping vega-neutral ratio."""
+    if sz1 <= 0 or ratio1 <= 0:
+        return 0
+    return max(1, (sz1 * ratio2 + ratio1 // 2) // ratio1)
+
+
+def _pair_trade(state: Dict, depths: Dict[str, OrderDepth],
+                positions: Dict[str, int], timestamp: int,
+                smile_state: Dict) -> Dict[str, List[Order]]:
+    """Cross-strike vega-neutral pair trade on smile-shape mispricings.
+
+    Reuses smile_state's a0/a1/a2 (does not refit). Per pair, computes
+    the bias-subtracted residual spread (already zero-mean in v12's
+    framework) and fires when |z| exceeds the threshold. Trades both
+    legs as takers.
+    """
+    out: Dict[str, List[Order]] = {}
+    a0 = smile_state.get("smile_a0")
+    a1 = smile_state.get("smile_a1")
+    a2 = smile_state.get("smile_a2")
+    if a0 is None or a1 is None or a2 is None:
+        return out
+    ve_depth = depths.get(VFE)
+    if ve_depth is None:
+        return out
+    s = _micro(ve_depth)
+    if s is None or s <= 0:
+        return out
+    t = _tte_years(timestamp)
+    if t <= 0:
+        return out
+
+    # Compute per-strike residual once (used by all pairs).
+    res: Dict[int, float] = {}
+    for k in (5300, 5400, 5500):
+        sym = f"VEV_{k}"
+        d_ = depths.get(sym)
+        if d_ is None:
+            continue
+        mid_px = _mid(d_)
+        if mid_px is None or mid_px <= 0:
+            continue
+        iv_m = implied_vol_call(mid_px, s, float(k), t)
+        if not (iv_m == iv_m) or iv_m <= 0.005:
+            continue
+        m = math.log(s / float(k))
+        bias_k = SMILE_PER_STRIKE_BIAS.get(k, 0.0)
+        fair_iv = a0 + a1 * m + a2 * m * m + bias_k
+        res[k] = iv_m - fair_iv
+
+    for (k1, k2, sigma_pair, ratio1, ratio2) in PAIR_TRADES:
+        if k1 not in res or k2 not in res:
+            continue
+        sym1, sym2 = f"VEV_{k1}", f"VEV_{k2}"
+        d1, d2 = depths.get(sym1), depths.get(sym2)
+        if d1 is None or d2 is None:
+            continue
+
+        # In v12's frame, pair_res is already zero-mean (bias_k already
+        # subtracted in fair_iv). Trade directly against zero.
+        pair_res = res[k1] - res[k2]
+        z = pair_res / sigma_pair
+        threshold = PAIR_TRIGGER_Z.get((k1, k2), 1.5)
+        if abs(z) < threshold:
+            continue
+
+        sz1_intended = _pair_lots_k1(abs(z), threshold)
+        sz2_intended = _hedge_lots(sz1_intended, ratio1, ratio2)
+        cap1 = PAIR_POS_CAP.get(k1, 50)
+        cap2 = PAIR_POS_CAP.get(k2, 50)
+        pos1 = positions.get(sym1, 0)
+        pos2 = positions.get(sym2, 0)
+        bid1 = _bb(d1); ask1 = _ba(d1)
+        bid2 = _bb(d2); ask2 = _ba(d2)
+
+        if z > 0:
+            # K1 IV rich relative to K2: SELL K1, BUY K2.
+            if bid1 is None or ask2 is None:
+                continue
+            sell1_room = max(0, min(pos1 + cap1, CAP_VOU + pos1))
+            buy2_room = max(0, min(cap2 - pos2, CAP_VOU - pos2))
+            avail1 = d1.buy_orders[bid1]
+            avail2 = -d2.sell_orders[ask2]
+            sz1 = min(sz1_intended, avail1, sell1_room)
+            sz2_target = _hedge_lots(sz1, ratio1, ratio2)
+            sz2 = min(sz2_target, avail2, buy2_room)
+            if sz2 < sz2_target:
+                # Hedge constrained — shrink K1 to maintain ratio.
+                sz1 = max(0, (sz2 * ratio1 + ratio2 // 2) // ratio2) if ratio2 > 0 else 0
+            if sz1 > 0 and sz2 > 0:
+                out.setdefault(sym1, []).append(Order(sym1, bid1, -sz1))
+                out.setdefault(sym2, []).append(Order(sym2, ask2, sz2))
+        else:
+            # K1 IV cheap relative to K2: BUY K1, SELL K2.
+            if ask1 is None or bid2 is None:
+                continue
+            buy1_room = max(0, min(cap1 - pos1, CAP_VOU - pos1))
+            sell2_room = max(0, min(pos2 + cap2, CAP_VOU + pos2))
+            avail1 = -d1.sell_orders[ask1]
+            avail2 = d2.buy_orders[bid2]
+            sz1 = min(sz1_intended, avail1, buy1_room)
+            sz2_target = _hedge_lots(sz1, ratio1, ratio2)
+            sz2 = min(sz2_target, avail2, sell2_room)
+            if sz2 < sz2_target:
+                sz1 = max(0, (sz2 * ratio1 + ratio2 // 2) // ratio2) if ratio2 > 0 else 0
+            if sz1 > 0 and sz2 > 0:
+                out.setdefault(sym1, []).append(Order(sym1, ask1, sz1))
+                out.setdefault(sym2, []).append(Order(sym2, bid2, -sz2))
+
+    return out
+
+
 # ---------- Trader --------------------------------------------------------
 
 
@@ -693,6 +863,13 @@ class Trader:
         smile_orders = _smile_voucher_orders(smile_state, depths, positions,
                                               state.timestamp, ve_micro)
         for sym, legs in smile_orders.items():
+            out.setdefault(sym, []).extend(legs)
+
+        # ---------- v15 cross-strike pair trade (NEW) ---------------------
+        pair_state: Dict = {}                # stateless: no EMA, trades vs zero
+        pair_orders = _pair_trade(pair_state, depths, positions,
+                                  state.timestamp, smile_state)
+        for sym, legs in pair_orders.items():
             out.setdefault(sym, []).extend(legs)
 
         td_out = {

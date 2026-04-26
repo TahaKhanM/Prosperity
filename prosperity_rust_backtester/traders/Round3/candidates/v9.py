@@ -1,97 +1,49 @@
-"""Round 3 v12 — v10 + 1k-tick-tuned params (post hosted parity check).
+"""Round 3 v9 (up to Phase 1) — v7 base + v8 smile-tightening only.
 
-Why v11 was discarded
----------------------
-v11's HYD adaptive-anchor up-shift gave +36 k on local 10 k-tick BT but
-zero improvement on the IMC hosted backtester (which runs day 2 historical
-for 1 000 ticks).  The slow-EMA half-life of ~700 ticks means the trend
-detector never fires within 1 000 ticks, and the local 10 k gain was a
-back-tester artefact (Legacy fill model overstates trending-day PnL).
+Phase tracker
+-------------
+Phase 0 (BS pricer + IV solver):              DONE
+Phase 1 (smile-based MM near-ATM):            DONE — converged at v9
+Phase 2 (delta-hedge voucher book vs VFE):    NOT IN THIS FILE
+Phase 3 (residual scalp on sticky strikes):   NOT IN THIS FILE
+Phase 4 (deep-ITM strategy):                  reverted to mostrecent's
+                                              accumulation in this file.
 
-v12 abandons the 10 k metric entirely and tunes against the *correct*
-hosted-equivalent benchmark: day 2 historical, first 1 000 ticks (matches
-official backtester +9 113 for v9 within 0.02 %).
+Why v9 = v7 + smile tightening (and nothing else)
+-------------------------------------------------
+v8 hosted comparison (IMC site, day 2 historical, 1000 ticks):
+    v7         total: +9,112
+    v8 (T=8)   total: +8,785   (-327 vs v7)
+    v8 (T=5)   total: +7,828   (-957 vs v8 T=8)
 
-Empirical 1 k-tick day 2 PnL (matches IMC hosted)
-------------------------------------------------
-                              d0       d1       d2     total
-v9                          -3 664   -1 768  + 9 113  +3 682
-v10                         -3 462   -1 515  + 9 227  +4 250
-v11 (anchor up-shift)       -3 462   -1 515  + 9 227  +4 250  (no fire)
-v12 (this file)             -2 891   -  863  +11 705  +7 951
+v8 had two changes; both hurt or were neutral:
 
-Hosted day 2 lift over v9: +2 592 (+28.4 %).
-v12 also improves d0 1 k by +773 and d1 1 k by +905.
+1. Deep-ITM MM destroyed mostrecent's accumulation edge (-330).
+   VEV_4000 PnL collapsed +166 -> +10, VEV_4500 +184 -> +10.
+   Stepping inside the deep-ITM 21-shell market spread is wrong:
+   that spread is information-risk compensation, not slack.
+   mostrecent's `ask <= intrinsic + 4` accumulation rarely fired (10
+   of 1000 ticks) but each fire was real edge. v9 restores it.
 
-What v12 changes (each verified to improve d2 1 k incrementally)
----------------------------------------------------------------
-1. H_TAKE        4   -> 5      (+620 d2 — narrower edge captured most takes
-                                already; +1 widens for cleaner fills.)
-2. H_IMB         5.0 -> 0.0    (+155 d2 — level-1 imbalance skew was noisy
-                                at 1 k, removing it lets fair stay smooth.)
-3. H_QE          3   -> 6      (+124 d2 — wider passive quote captures
-                                spread better when we are not the inside
-                                quote; book is 15-shell wide.)
-4. A_HYD         0.10 -> 0.08  (+84 d2 — slightly slower fair EMA reduces
-                                noise tracking.)
-5. A_W           0.40 -> 0.35  (+21 d2 — anchor weight dropped a touch;
-                                v9's 0.40 was ~optimal but 0.35 wins
-                                marginally on the d2 1 k regime.)
-6. V_IMB_K2      5.0 -> 8.0    (+49 d2 — wider VFE imbalance skew slope.)
-7. SMILE_QUOTE_SIZE 5 -> 8     (+65 d2 — bigger passive smile-MM quotes
-                                catch more fills.)
-8. SMILE_WARMUP_TICKS 30 -> 15 (+69 d2 — earlier smile-MM activation on
-                                short tests; warmup was over-conservative.)
-9. EXIT_SLACK    6  -> 2       (+10 d2 — earlier deep-ITM exit on profit.)
-10. H_INV_K      2.0 -> 1.0    (+50 d2 — softer inventory penalty so we
-                                keep quoting both sides longer.)
-11. H_SIZE       20 -> 100     (+14 d2 — bigger HYD passive quote sizes.)
-12. H_WALL_W     0.5 -> 0.9    (+50 d2 — heavier wall-mid weight in HYD
-                                fair-blend input.)
+2. Tighter smile quotes (SMILE_QUOTE_VEGA_FRAC 0.012 -> 0.006,
+   SMILE_QUOTE_MIN_EDGE 2 -> 1) were a wash on day-2 hosted: per-
+   strike Δ summed to +4. **Kept** in v9 because tighter quotes
+   should sit better inside live-R3 spreads (and didn't hurt here).
 
-The two largest single-tweak wins (and most novel insight)
----------------------------------------------------------
-13. START_TTE_DAYS 8 -> 6      (+817 d2). Day-2 historical has actual
-    TTE = 6 d, so the BS time used in pricing should be 6, not 8.  v9's
-    START_TTE = 8 was chosen to "let drift handle it" — but the smile drift
-    formula only adjusts a0/a1/a2 priors; the BS pricing's `T` argument was
-    1-2 days too long, inflating BS theo prices ~1-2 % and biasing smile MM
-    short.  Correcting T to match the actual day's TTE recovers that bias.
+3. TTE = 5d caused the smile prior to over-extrapolate skew/
+   convexity outside the research calibration range. Wing strikes
+   (5400/5500) hit the +300 long cap and 5300 hit -300 short cap,
+   bleeding -957. **v9 keeps TTE = 8.0** for IMC site backtester
+   (which runs day 2 = TTE 6d). Flip to 5.0 ONLY for actual live R3
+   submission, and accept that per-strike biases were measured at
+   TTE 6-8d; live behaviour outside that range is unmeasured.
 
-14. SMILE_A0_EMA_ALPHA 0.05 -> 0.40 (+1 175 d2).  Half-life drops from
-    ~14 ticks to ~1.4 ticks — smile fair tracks observed market a0 fast
-    enough that adverse-selection drops sharply.  v9's slow EMA was a
-    holdover from the 30 000-tick research window; on a 1 000-tick day
-    the slow EMA never converges.  Past-winner reference: chrispyroberts
-    P3 7th used very light smoothing on bid/ask vol curves.
+v9 changes vs v7
+----------------
+- SMILE_QUOTE_VEGA_FRAC: 0.012 -> 0.006   (carried over from v8)
+- SMILE_QUOTE_MIN_EDGE:  2     -> 1       (carried over from v8)
 
-LIVE TTE caveat
----------------
-Live R3 has actual TTE = 5 d.  This file is calibrated for TTE = 6 d
-(historical day 2, the IMC hosted backtester input).  At live ts = 0 the
-trader's BS clock will read 6 d while reality is 5 d — a 1-day
-miscalibration.  The smile MM EMA (alpha = 0.40) converges in ~3 ticks,
-so the fair recalibrates almost immediately.  Switching START_TTE to 5.0
-for live submission costs ~1 600 on the hosted-test number but is the
-strictly correct setting for live.  If maximising the IMC hosted backtester
-number is the goal, leave this at 6.0.
-
-Things deliberately preserved
-----------------------------
-- HYDROGEL anchor at 10 000 (post_mortem_378834 warning: live mean drift
-  to 9 979 cost v3 -3 341 with a rigid anchor; we keep it but with smaller
-  effective-anchor weight via A_W=0.35).
-- Smile MM frozen-coefficient design (v8/v9).
-- Deep-ITM accumulation rules (mostrecent style).
-- VFE microprice-EMA fair as the base (v10 design preserved).
-
-Counterparty hook (v12 NEW)
----------------------------
-Per-name horizon-PnL accumulation kept in traderData for any market trade
-where buyer or seller string is non-empty.  Once a name has ≥ 20 trades
-with abs Sharpe > 2, the trader skews quotes by ±1 shell in the inferred
-"smart" direction.  Historical data has 100% empty names, so this is a
-pure live-only feature; PnL impact in any local BT = 0 by construction.
+Everything else identical to v7.
 
 Submission contract: run(state) -> (orders, conversions, traderData).
 """
@@ -104,7 +56,7 @@ from typing import Dict, List, Optional, Tuple
 from datamodel import Order, OrderDepth, TradingState
 
 
-# ---------- product constants ----------------------------------------------
+# ---------- mostrecent.py constants (unchanged) ----------------------------
 
 HYD = "HYDROGEL_PACK"
 VFE = "VELVETFRUIT_EXTRACT"
@@ -113,44 +65,31 @@ CAP_V = 200
 CAP_VOU = 300
 
 ANCHOR = 10000.0
-A_W = 0.35
-A_HYD = 0.08                # EMA alpha on HYD fair
-H_TAKE = 5
-H_QE = 6
-H_SIZE = 100
-H_IMB = 0.0                 # HYD imb-k1 skew slope (v9 unchanged)
-H_WALL_W = 0.9              # v10 NEW: weight of wall-mid in HYD fair input
+A_W = 0.40
+A_HYD = 0.10
+H_TAKE = 4
+H_QE = 3
+H_SIZE = 20
+H_IMB = 5.0
 
 A_VFE = 0.20
 V_TAKE = 1
 V_QE = 1
 V_SIZE = 40
-V_IMB_K2 = 8.0              # v10 NEW: VFE imb-k2 skew slope (capped)
-V_SKEW_CAP = 2.0            # v10 NEW: |skew| <= 2 shells
-WALL_VOL_THR_HYD = 15       # ignore HYD levels with vol < 15 for wall-mid
-WALL_VOL_THR_VFE = 20       # ignore VFE levels with vol < 20 for wall-mid
 
 ACC_STRIKES = [4000, 4500]
 ACC_SLACK = 4
 ACC_SIZE_PER_TICK = 50
-EXIT_SLACK = 2
-
-# Counterparty copy hook (v12) — live-only. Historical buyer/seller fields
-# are 100% empty in R3 days 0/1/2.  If IMC plants a named smart bot in live
-# market_trades (P3 precedent: 'Olivia'), accumulate horizon-PnL per name
-# and skew our quotes by ±1 shell in their inferred direction once the name
-# has enough trade history with statistically-significant directional bias.
-CP_TRACK_MIN_TRADES = 20
-CP_SHARPE_THR = 2.0
-CP_MAX_NAMES = 8
-CP_SKEW_SHELLS = 1.0           # cap on counterparty-driven fair skew
+EXIT_SLACK = 6
 
 
-# ---------- Phase 1 smile MM constants (unchanged from v9) ------------------
+# ---------- Phase 1 smile MM constants -------------------------------------
 
 SMILE_STRIKES = (5000, 5100, 5200, 5300, 5400, 5500)
 
-START_TTE_DAYS = 6.0
+START_TTE_DAYS = 8.0                # IMC site backtester (day 2 = TTE 6d).
+                                    # Flip to 5.0 for actual live R3 only.
+                                    # See docstring: T=5 hurt -957 in v8 hosted.
 DAY_TICKS = 1_000_000.0
 SMILE_TTE_FLOOR_DAYS = 0.25
 
@@ -161,14 +100,16 @@ SMILE_A1_DRIFT_PER_DAY = -0.075
 SMILE_A2_BASE = 7.21
 SMILE_A2_DRIFT_PER_DAY = 0.815
 
-SMILE_A0_EMA_ALPHA = 0.40
+SMILE_A0_EMA_ALPHA = 0.05
 SMILE_TAKE_EDGE_SHELLS = 0.7
-SMILE_QUOTE_VEGA_FRAC = 0.006
-SMILE_QUOTE_MIN_EDGE = 1
-SMILE_QUOTE_SIZE = 8
+SMILE_QUOTE_VEGA_FRAC = 0.006        # v9: carry-over from v8 (0.012 -> 0.006)
+SMILE_QUOTE_MIN_EDGE = 1             # v9: carry-over from v8 (2 -> 1)
+SMILE_QUOTE_SIZE = 5
 SMILE_SOFT_CAP = 80
 SMILE_VEGA_FLOOR = 0.5
 
+# v7. Per-strike residual offset, IV units. Source: 30,000-tick mean
+# residual measurement in smile_stability_report.md.
 SMILE_PER_STRIKE_BIAS: Dict[int, float] = {
     5000: -0.0077,
     5100: +0.0004,
@@ -178,10 +119,12 @@ SMILE_PER_STRIKE_BIAS: Dict[int, float] = {
     5500: -0.0067,
 }
 
-SMILE_WARMUP_TICKS = 15
+# v7. Warm-up gate. Update the a0 EMA from observed IVs but post no orders
+# until the EMA has settled. ~3 half-lives of SMILE_A0_EMA_ALPHA=0.05.
+SMILE_WARMUP_TICKS = 30
 
 
-# ---------- Black-Scholes (inlined, unchanged) -----------------------------
+# ---------- Black-Scholes (inlined) ---------------------------------------
 
 _SQRT2 = math.sqrt(2.0)
 _SQRT_2PI = math.sqrt(2.0 * math.pi)
@@ -257,7 +200,7 @@ def implied_vol_call(price: float, s: float, k: float, t: float,
     return 0.5 * (lo + hi)
 
 
-# ---------- helpers -------------------------------------------------------
+# ---------- mostrecent.py helpers (unchanged) ------------------------------
 
 
 def _bb(d):
@@ -284,7 +227,6 @@ def _micro(d):
 
 
 def _imb(d):
-    """Level-1 signed imbalance (v9 back-compat)."""
     b, a = _bb(d), _ba(d)
     if b is None or a is None:
         return 0.0
@@ -292,40 +234,6 @@ def _imb(d):
     av = -d.sell_orders[a]
     t = bv + av
     return 0.0 if t <= 0 else (bv - av) / t
-
-
-def _imb_k2(d):
-    """Top-2-levels signed imbalance.  Empirical regression slope:
-    HYD next-tick mid change = 12 × imb_k2 (t≈35).
-    VFE next-tick mid change =  3 × imb_k2 (t≈20).
-    """
-    if not d.buy_orders or not d.sell_orders:
-        return 0.0
-    bs = sorted(d.buy_orders.items(), key=lambda x: -x[0])[:2]
-    asks = sorted(d.sell_orders.items(), key=lambda x: x[0])[:2]
-    bv = sum(v for _, v in bs)
-    av = sum(-v for _, v in asks)
-    t = bv + av
-    return 0.0 if t <= 0 else (bv - av) / t
-
-
-def _wall_mid(d, vol_thr):
-    """Mid of highest-volume bid level and highest-volume ask level
-    among quotes whose individual volume is >= vol_thr.  None if no
-    qualifying levels.
-
-    Past-winner reference (TimoDiehm P3 2nd, jmerle 25th): the "popular"
-    level is far more stable under noise than the 1-shell-deep top-of-book.
-    """
-    if not d.buy_orders or not d.sell_orders:
-        return None
-    bids = [(p, v) for p, v in d.buy_orders.items() if v >= vol_thr]
-    asks = [(p, -v) for p, v in d.sell_orders.items() if -v >= vol_thr]
-    if not bids or not asks:
-        return None
-    wb = max(bids, key=lambda x: x[1])[0]
-    wa = max(asks, key=lambda x: x[1])[0]
-    return (wb + wa) / 2.0
 
 
 def _strike(s):
@@ -337,86 +245,27 @@ def _strike(s):
     return None
 
 
-def _cb(p, c, ad, w): return max(0, min(w, c - (p + ad)))
-def _cs(p, c, ad, w): return max(0, min(w, c + (p - ad)))
-def _ew(p, s, a):     return s if p is None else p * (1 - a) + s * a
-def _clamp(x, lo, hi): return max(lo, min(hi, x))
+def _cb(p, c, ad, w):
+    return max(0, min(w, c - (p + ad)))
 
 
-def _update_cp_state(cp_state: Dict, market_trades, mids_now: Dict[str, float]) -> None:
-    """Advance counterparty-PnL accounting using last-tick pending fills + current mids."""
-    pending = cp_state.get("pending", [])
-    new_pending = []
-    by_name = cp_state.setdefault("by_name", {})
-    for entry in pending:
-        sym = entry["s"]; px = entry["p"]; q = entry["q"]; name = entry["n"]
-        m = mids_now.get(sym)
-        if m is None:
-            new_pending.append(entry)
-            continue
-        pnl = q * (m - px)
-        rec = by_name.setdefault(name, {"n": 0, "pnl": 0.0, "p2": 0.0, "sym_pnl": {}})
-        rec["n"] += 1
-        rec["pnl"] += pnl
-        rec["p2"] += pnl * pnl
-        sp = rec.setdefault("sym_pnl", {})
-        sp[sym] = sp.get(sym, 0.0) + pnl
-    cp_state["pending"] = new_pending
-    if len(by_name) > CP_MAX_NAMES:
-        names = sorted(by_name.items(), key=lambda kv: kv[1]["n"])
-        for k_, _ in names[: max(0, len(names) - CP_MAX_NAMES)]:
-            by_name.pop(k_, None)
-    for sym, trades in (market_trades or {}).items():
-        for tr in trades or []:
-            buyer = (getattr(tr, "buyer", "") or "").strip()
-            seller = (getattr(tr, "seller", "") or "").strip()
-            qty = int(getattr(tr, "quantity", 0) or 0)
-            price = float(getattr(tr, "price", 0.0) or 0.0)
-            if qty <= 0 or price <= 0:
-                continue
-            if buyer:
-                cp_state.setdefault("pending", []).append({"s": sym, "p": price, "q": +qty, "n": buyer})
-            if seller:
-                cp_state.setdefault("pending", []).append({"s": sym, "p": price, "q": -qty, "n": seller})
+def _cs(p, c, ad, w):
+    return max(0, min(w, c + (p - ad)))
 
 
-def _cp_signed_skew(cp_state: Dict, sym: str) -> float:
-    """Return skew in shells based on smart-counterparty signal for `sym`.
-    Returns 0 unless a name has accumulated >= CP_TRACK_MIN_TRADES with
-    Sharpe > CP_SHARPE_THR.  Empty in historical data.
-    """
-    skew = 0.0
-    for name, rec in cp_state.get("by_name", {}).items():
-        n = rec.get("n", 0)
-        if n < CP_TRACK_MIN_TRADES:
-            continue
-        mean = rec.get("pnl", 0.0) / n
-        var = max(0.0, rec.get("p2", 0.0) / n - mean * mean)
-        if var <= 0:
-            continue
-        se = (var / n) ** 0.5
-        if se <= 0:
-            continue
-        z = mean / se
-        if abs(z) <= CP_SHARPE_THR:
-            continue
-        sym_pnl = rec.get("sym_pnl", {}).get(sym, 0.0)
-        if sym_pnl > 0:
-            skew += +CP_SKEW_SHELLS
-        elif sym_pnl < 0:
-            skew += -CP_SKEW_SHELLS
-    return _clamp(skew, -2 * CP_SKEW_SHELLS, 2 * CP_SKEW_SHELLS)
+def _ew(p, s, a):
+    return s if p is None else p * (1 - a) + s * a
 
 
-# ---------- Phase 1 smile MM (unchanged from v9) ---------------------------
+# ---------- Phase 1 smile MM (v7: + per-strike bias + warm-up) -------------
 
 
-def _tte_years(timestamp):
+def _tte_years(timestamp: int) -> float:
     days_left = max(START_TTE_DAYS - timestamp / DAY_TICKS, SMILE_TTE_FLOOR_DAYS)
     return days_left / 365.0
 
 
-def _smile_prior(tte_days):
+def _smile_prior(tte_days: float) -> Tuple[float, float, float]:
     drift = max(0.0, 8.0 - tte_days)
     a0 = SMILE_A0_BASE + SMILE_A0_DRIFT_PER_DAY * drift
     a1 = SMILE_A1_BASE + SMILE_A1_DRIFT_PER_DAY * drift
@@ -424,7 +273,9 @@ def _smile_prior(tte_days):
     return a0, a1, a2
 
 
-def _smile_voucher_orders(state, depths, positions, timestamp, ve_micro):
+def _smile_voucher_orders(state: Dict, depths: Dict[str, OrderDepth],
+                          positions: Dict[str, int], timestamp: int,
+                          ve_micro: Optional[float]) -> Dict[str, List[Order]]:
     out: Dict[str, List[Order]] = {}
     if ve_micro is None or ve_micro <= 0:
         return out
@@ -434,6 +285,7 @@ def _smile_voucher_orders(state, depths, positions, timestamp, ve_micro):
     tte_days = t * 365.0
     a0_prior, a1, a2 = _smile_prior(tte_days)
 
+    # 1) per-strike implied IV.
     strike_data: List[Tuple[int, float, float, float]] = []
     for k in SMILE_STRIKES:
         sym = f"VEV_{k}"
@@ -455,6 +307,8 @@ def _smile_voucher_orders(state, depths, positions, timestamp, ve_micro):
     if not strike_data:
         return out
 
+    # 2) refit a0 (vega-weighted, bias-adjusted).
+    #    a0_implied_K = (IV_market_K - bias_K) - a1*m - a2*m^2
     num = 0.0; den = 0.0
     for (k, m, iv_m, v) in strike_data:
         bias_k = SMILE_PER_STRIKE_BIAS.get(k, 0.0)
@@ -463,6 +317,7 @@ def _smile_voucher_orders(state, depths, positions, timestamp, ve_micro):
         den += v
     a0_obs = num / den if den > 0 else a0_prior
 
+    # 3) EMA a0 across ticks.
     prev = state.get("smile_a0")
     a0 = a0_obs if prev is None else prev * (1.0 - SMILE_A0_EMA_ALPHA) + a0_obs * SMILE_A0_EMA_ALPHA
     state["smile_a0"] = a0
@@ -473,9 +328,11 @@ def _smile_voucher_orders(state, depths, positions, timestamp, ve_micro):
     ticks = int(state.get("smile_ticks", 0)) + 1
     state["smile_ticks"] = ticks
 
+    # 4) Warm-up gate.  Update the EMA but post no orders.
     if ticks < SMILE_WARMUP_TICKS:
         return out
 
+    # 5) per-strike fair price + take-and-quote.
     for (k, m, _, v) in strike_data:
         sym = f"VEV_{k}"
         d_ = depths.get(sym)
@@ -548,45 +405,29 @@ class Trader:
             prior = {}
         fs = dict(prior.get("fs", {}) or {})
         smile_state: Dict = dict(prior.get("smile", {}) or {})
-        cp_state: Dict = dict(prior.get("cp", {}) or {})
         positions = state.position or {}
         depths = state.order_depths or {}
 
-        # ---------- Counterparty bookkeeping (v12 NEW; live-only) ---------
-        mids_now: Dict[str, float] = {}
-        for s_, dep in depths.items():
-            mp = _mid(dep)
-            if mp is not None:
-                mids_now[s_] = mp
-        _update_cp_state(cp_state, getattr(state, "market_trades", {}) or {}, mids_now)
-
-        # ---------- HYDROGEL fair (v10: micro+wall blend into anchor) -----
+        # ---------- HYDROGEL fair (anchor + microprice EMA) ----------
         hd = depths.get(HYD)
-        himb_k1 = 0.0
+        himb = 0.0
         if hd is not None:
             m = _micro(hd)
-            wm = _wall_mid(hd, WALL_VOL_THR_HYD)
-            if wm is not None and m is not None:
-                base = H_WALL_W * wm + (1.0 - H_WALL_W) * m
-            else:
-                base = m if m is not None else wm
-            if base is not None:
-                fs[HYD] = _ew(fs.get(HYD), A_W * ANCHOR + (1 - A_W) * base, A_HYD)
-            himb_k1 = _imb(hd)
+            if m is not None:
+                fs[HYD] = _ew(fs.get(HYD), A_W * ANCHOR + (1 - A_W) * m, A_HYD)
+            himb = _imb(hd)
 
-        # ---------- VFE fair (v9 micro EMA + v10 imb-k2 skew at MM stage) -
+        # ---------- VFE fair (microprice EMA) ----------
         vd = depths.get(VFE)
-        vimb_k2 = 0.0
         if vd is not None:
             m = _micro(vd)
             if m is not None:
                 fs[VFE] = _ew(fs.get(VFE), m, A_VFE)
-            vimb_k2 = _imb_k2(vd)
 
-        # ---------- HYDROGEL MM (v9 unchanged) ----------------------------
+        # ---------- HYDROGEL MM ----------
         if hd is not None and HYD in fs:
             bid = _bb(hd); ask = _ba(hd); pos = positions.get(HYD, 0)
-            fair = fs[HYD] + H_IMB * himb_k1 + _cp_signed_skew(cp_state, HYD)
+            fair = fs[HYD] + H_IMB * himb
             legs = []; b = s = 0
             if ask is not None and ask + H_TAKE <= fair:
                 av = -hd.sell_orders[ask]
@@ -605,8 +446,8 @@ class Trader:
             if ask is not None:
                 bp = min(bp, ask - 1); sp = max(sp, ask - 1)
             if bid is not None: sp = max(sp, bid + 1)
-            bsz = _cb(pos, CAP_H, b, max(0, int(round(H_SIZE * max(0.0, 1 - 1.0 * inv)))))
-            ssz = _cs(pos, CAP_H, s, max(0, int(round(H_SIZE * max(0.0, 1 + 1.0 * inv)))))
+            bsz = _cb(pos, CAP_H, b, max(0, int(round(H_SIZE * max(0.0, 1 - 2.0 * inv)))))
+            ssz = _cs(pos, CAP_H, s, max(0, int(round(H_SIZE * max(0.0, 1 + 2.0 * inv)))))
             if bsz > 0 and (ask is None or bp < ask):
                 legs.append(Order(HYD, bp, bsz))
             if ssz > 0 and (bid is None or sp > bid):
@@ -614,11 +455,10 @@ class Trader:
             if legs:
                 out[HYD] = legs
 
-        # ---------- VFE MM (v10: imb-k2 skew NEW, capped) -----------------
+        # ---------- VFE MM ----------
         if vd is not None and VFE in fs:
             bid = _bb(vd); ask = _ba(vd); pos = positions.get(VFE, 0)
-            skew = _clamp(V_IMB_K2 * vimb_k2, -V_SKEW_CAP, V_SKEW_CAP)
-            fair = fs[VFE] + skew + _cp_signed_skew(cp_state, VFE)
+            fair = fs[VFE]
             legs = []; b = s = 0
             if ask is not None and ask + V_TAKE <= fair:
                 av = -vd.sell_orders[ask]
@@ -646,7 +486,7 @@ class Trader:
             if legs:
                 out[VFE] = legs
 
-        # ---------- Voucher accumulation + identity arbs (v9 unchanged) ---
+        # ---------- Voucher accumulation + identity arbs (mostrecent) ----------
         ref = fs.get(VFE)
         if ref is None and vd is not None:
             ref = _mid(vd)
@@ -688,7 +528,7 @@ class Trader:
             if legs:
                 out.setdefault(sym, []).extend(legs)
 
-        # ---------- Phase 1 smile MM (v9 unchanged) -----------------------
+        # ---------- Phase 1 smile MM (v7: bias + warm-up) ----------
         ve_micro = _micro(vd) if vd is not None else None
         smile_orders = _smile_voucher_orders(smile_state, depths, positions,
                                               state.timestamp, ve_micro)
@@ -697,10 +537,6 @@ class Trader:
 
         td_out = {
             "fs": {k: round(v, 4) for k, v in fs.items()},
-            "cp": {
-                "by_name": cp_state.get("by_name", {}),
-                "pending": cp_state.get("pending", [])[-200:],
-            },
             "smile": {
                 "smile_a0": smile_state.get("smile_a0"),
                 "smile_a1": smile_state.get("smile_a1"),

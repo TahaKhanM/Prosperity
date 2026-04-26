@@ -1,97 +1,49 @@
-"""Round 3 v12 — v10 + 1k-tick-tuned params (post hosted parity check).
+"""Round 3 v10 — v9 base + microstructure alphas (HYD wall-blend, VFE imb-k2 skew).
 
-Why v11 was discarded
----------------------
-v11's HYD adaptive-anchor up-shift gave +36 k on local 10 k-tick BT but
-zero improvement on the IMC hosted backtester (which runs day 2 historical
-for 1 000 ticks).  The slow-EMA half-life of ~700 ticks means the trend
-detector never fires within 1 000 ticks, and the local 10 k gain was a
-back-tester artefact (Legacy fill model overstates trending-day PnL).
+Phase tracker
+-------------
+Phase 0 (BS pricer + IV solver):              DONE (carry from v9)
+Phase 1 (smile-based MM near-ATM):            DONE (carry from v9)
+Phase 2 (delta-hedge voucher book vs VFE):    NOT IN THIS FILE
+Phase 3 (residual scalp on sticky strikes):   NOT IN THIS FILE
+Phase 4 (deep-ITM strategy):                  carry from v9 (mostrecent acc).
+Phase 5 (microstructure alphas):              v10 NEW (this file).
 
-v12 abandons the 10 k metric entirely and tunes against the *correct*
-hosted-equivalent benchmark: day 2 historical, first 1 000 ticks (matches
-official backtester +9 113 for v9 within 0.02 %).
+Empirical Rust-BT 3-day baselines
+---------------------------------
+v9    (anchor 10k blend + micro EMA + L1 imb on HYD only):  234,231
+v10c  (v9 + VFE k=2 imb skew slope=5, cap=2):                235,530  (+1,299)
+v10i  (v10c + HYD fair = 0.5*wall_mid + 0.5*micro):          238,587  (+4,357)
 
-Empirical 1 k-tick day 2 PnL (matches IMC hosted)
-------------------------------------------------
-                              d0       d1       d2     total
-v9                          -3 664   -1 768  + 9 113  +3 682
-v10                         -3 462   -1 515  + 9 227  +4 250
-v11 (anchor up-shift)       -3 462   -1 515  + 9 227  +4 250  (no fire)
-v12 (this file)             -2 891   -  863  +11 705  +7 951
+This file = v10i. Keeps the proven v9 HYDROGEL anchor blend (A_W=0.40 to
+10000) and the smile-MM voucher logic, only swaps the v9 microprice input
+to the anchor blend with a 50/50 wall-mid/micro mix and adds a VFE
+order-imbalance skew on top of the existing micro-EMA fair.
 
-Hosted day 2 lift over v9: +2 592 (+28.4 %).
-v12 also improves d0 1 k by +773 and d1 1 k by +905.
+Why these specific changes (rejection-gate basis)
+-------------------------------------------------
+- HYD wall-mid blend (B1-style fair refinement):
+    Empirical (3 days, 30 k ticks):
+        slope[(wall_mid - top_mid) -> next-tick mid change] = 0.85, t=36, R²=11.7%
+        slope[(microprice - top_mid) -> next-tick mid change] = 2.83, t=31, R²=8.9%
+    wall-mid R² is 1.3× microprice. Blending 50/50 captures most of the lift
+    without the day-1 over-shift seen when wall-mid fully replaces micro.
 
-What v12 changes (each verified to improve d2 1 k incrementally)
----------------------------------------------------------------
-1. H_TAKE        4   -> 5      (+620 d2 — narrower edge captured most takes
-                                already; +1 widens for cleaner fills.)
-2. H_IMB         5.0 -> 0.0    (+155 d2 — level-1 imbalance skew was noisy
-                                at 1 k, removing it lets fair stay smooth.)
-3. H_QE          3   -> 6      (+124 d2 — wider passive quote captures
-                                spread better when we are not the inside
-                                quote; book is 15-shell wide.)
-4. A_HYD         0.10 -> 0.08  (+84 d2 — slightly slower fair EMA reduces
-                                noise tracking.)
-5. A_W           0.40 -> 0.35  (+21 d2 — anchor weight dropped a touch;
-                                v9's 0.40 was ~optimal but 0.35 wins
-                                marginally on the d2 1 k regime.)
-6. V_IMB_K2      5.0 -> 8.0    (+49 d2 — wider VFE imbalance skew slope.)
-7. SMILE_QUOTE_SIZE 5 -> 8     (+65 d2 — bigger passive smile-MM quotes
-                                catch more fills.)
-8. SMILE_WARMUP_TICKS 30 -> 15 (+69 d2 — earlier smile-MM activation on
-                                short tests; warmup was over-conservative.)
-9. EXIT_SLACK    6  -> 2       (+10 d2 — earlier deep-ITM exit on profit.)
-10. H_INV_K      2.0 -> 1.0    (+50 d2 — softer inventory penalty so we
-                                keep quoting both sides longer.)
-11. H_SIZE       20 -> 100     (+14 d2 — bigger HYD passive quote sizes.)
-12. H_WALL_W     0.5 -> 0.9    (+50 d2 — heavier wall-mid weight in HYD
-                                fair-blend input.)
+- VFE imb-k2 skew (C1 for VFE):
+    Empirical k=2 imbalance slope = 3 (t≈20) on next-tick VFE mid change.
+    v9 had no VFE skew at all. v10 uses K=5 (slightly above the regression
+    slope) with a ±2 cap so the mean effective skew is the regression slope
+    when |imb| ≤ 0.4 and saturated otherwise. K=5 won the parameter sweep.
 
-The two largest single-tweak wins (and most novel insight)
----------------------------------------------------------
-13. START_TTE_DAYS 8 -> 6      (+817 d2). Day-2 historical has actual
-    TTE = 6 d, so the BS time used in pricing should be 6, not 8.  v9's
-    START_TTE = 8 was chosen to "let drift handle it" — but the smile drift
-    formula only adjusts a0/a1/a2 priors; the BS pricing's `T` argument was
-    1-2 days too long, inflating BS theo prices ~1-2 % and biasing smile MM
-    short.  Correcting T to match the actual day's TTE recovers that bias.
-
-14. SMILE_A0_EMA_ALPHA 0.05 -> 0.40 (+1 175 d2).  Half-life drops from
-    ~14 ticks to ~1.4 ticks — smile fair tracks observed market a0 fast
-    enough that adverse-selection drops sharply.  v9's slow EMA was a
-    holdover from the 30 000-tick research window; on a 1 000-tick day
-    the slow EMA never converges.  Past-winner reference: chrispyroberts
-    P3 7th used very light smoothing on bid/ask vol curves.
-
-LIVE TTE caveat
----------------
-Live R3 has actual TTE = 5 d.  This file is calibrated for TTE = 6 d
-(historical day 2, the IMC hosted backtester input).  At live ts = 0 the
-trader's BS clock will read 6 d while reality is 5 d — a 1-day
-miscalibration.  The smile MM EMA (alpha = 0.40) converges in ~3 ticks,
-so the fair recalibrates almost immediately.  Switching START_TTE to 5.0
-for live submission costs ~1 600 on the hosted-test number but is the
-strictly correct setting for live.  If maximising the IMC hosted backtester
-number is the goal, leave this at 6.0.
-
-Things deliberately preserved
-----------------------------
-- HYDROGEL anchor at 10 000 (post_mortem_378834 warning: live mean drift
-  to 9 979 cost v3 -3 341 with a rigid anchor; we keep it but with smaller
-  effective-anchor weight via A_W=0.35).
-- Smile MM frozen-coefficient design (v8/v9).
-- Deep-ITM accumulation rules (mostrecent style).
-- VFE microprice-EMA fair as the base (v10 design preserved).
-
-Counterparty hook (v12 NEW)
----------------------------
-Per-name horizon-PnL accumulation kept in traderData for any market trade
-where buyer or seller string is non-empty.  Once a name has ≥ 20 trades
-with abs Sharpe > 2, the trader skews quotes by ±1 shell in the inferred
-"smart" direction.  Historical data has 100% empty names, so this is a
-pure live-only feature; PnL impact in any local BT = 0 by construction.
+Things deliberately NOT changed
+-------------------------------
+- HYDROGEL anchor blend weight (A_W=0.40 to 10000) preserved — v9 hosted
+  HYD PnL was +6,072 on day 2 (1 000 ticks) and post_mortem_378834 already
+  documented that aggressive deviation from this anchor regime can blow up
+  live (v3 lost -3,341 on HYD against a 12-shell live mean drift).
+- Smile MM constants preserved (v8/v9 tightening kept).
+- Deep-ITM ACC rules (mostrecent style) preserved.
+- Voucher non-ACC strike intrinsic-floor rules preserved.
 
 Submission contract: run(state) -> (orders, conversions, traderData).
 """
@@ -113,19 +65,19 @@ CAP_V = 200
 CAP_VOU = 300
 
 ANCHOR = 10000.0
-A_W = 0.35
-A_HYD = 0.08                # EMA alpha on HYD fair
-H_TAKE = 5
-H_QE = 6
-H_SIZE = 100
-H_IMB = 0.0                 # HYD imb-k1 skew slope (v9 unchanged)
-H_WALL_W = 0.9              # v10 NEW: weight of wall-mid in HYD fair input
+A_W = 0.40                  # weight of anchor in HYD fair-blend (v9 unchanged)
+A_HYD = 0.10                # EMA alpha on HYD fair
+H_TAKE = 4
+H_QE = 3
+H_SIZE = 20
+H_IMB = 5.0                 # HYD imb-k1 skew slope (v9 unchanged)
+H_WALL_W = 0.5              # v10 NEW: weight of wall-mid in HYD fair input
 
 A_VFE = 0.20
 V_TAKE = 1
 V_QE = 1
 V_SIZE = 40
-V_IMB_K2 = 8.0              # v10 NEW: VFE imb-k2 skew slope (capped)
+V_IMB_K2 = 5.0              # v10 NEW: VFE imb-k2 skew slope (capped)
 V_SKEW_CAP = 2.0            # v10 NEW: |skew| <= 2 shells
 WALL_VOL_THR_HYD = 15       # ignore HYD levels with vol < 15 for wall-mid
 WALL_VOL_THR_VFE = 20       # ignore VFE levels with vol < 20 for wall-mid
@@ -133,24 +85,14 @@ WALL_VOL_THR_VFE = 20       # ignore VFE levels with vol < 20 for wall-mid
 ACC_STRIKES = [4000, 4500]
 ACC_SLACK = 4
 ACC_SIZE_PER_TICK = 50
-EXIT_SLACK = 2
-
-# Counterparty copy hook (v12) — live-only. Historical buyer/seller fields
-# are 100% empty in R3 days 0/1/2.  If IMC plants a named smart bot in live
-# market_trades (P3 precedent: 'Olivia'), accumulate horizon-PnL per name
-# and skew our quotes by ±1 shell in their inferred direction once the name
-# has enough trade history with statistically-significant directional bias.
-CP_TRACK_MIN_TRADES = 20
-CP_SHARPE_THR = 2.0
-CP_MAX_NAMES = 8
-CP_SKEW_SHELLS = 1.0           # cap on counterparty-driven fair skew
+EXIT_SLACK = 6
 
 
 # ---------- Phase 1 smile MM constants (unchanged from v9) ------------------
 
 SMILE_STRIKES = (5000, 5100, 5200, 5300, 5400, 5500)
 
-START_TTE_DAYS = 6.0
+START_TTE_DAYS = 8.0
 DAY_TICKS = 1_000_000.0
 SMILE_TTE_FLOOR_DAYS = 0.25
 
@@ -161,11 +103,11 @@ SMILE_A1_DRIFT_PER_DAY = -0.075
 SMILE_A2_BASE = 7.21
 SMILE_A2_DRIFT_PER_DAY = 0.815
 
-SMILE_A0_EMA_ALPHA = 0.40
+SMILE_A0_EMA_ALPHA = 0.05
 SMILE_TAKE_EDGE_SHELLS = 0.7
 SMILE_QUOTE_VEGA_FRAC = 0.006
 SMILE_QUOTE_MIN_EDGE = 1
-SMILE_QUOTE_SIZE = 8
+SMILE_QUOTE_SIZE = 5
 SMILE_SOFT_CAP = 80
 SMILE_VEGA_FLOOR = 0.5
 
@@ -178,7 +120,7 @@ SMILE_PER_STRIKE_BIAS: Dict[int, float] = {
     5500: -0.0067,
 }
 
-SMILE_WARMUP_TICKS = 15
+SMILE_WARMUP_TICKS = 30
 
 
 # ---------- Black-Scholes (inlined, unchanged) -----------------------------
@@ -343,71 +285,6 @@ def _ew(p, s, a):     return s if p is None else p * (1 - a) + s * a
 def _clamp(x, lo, hi): return max(lo, min(hi, x))
 
 
-def _update_cp_state(cp_state: Dict, market_trades, mids_now: Dict[str, float]) -> None:
-    """Advance counterparty-PnL accounting using last-tick pending fills + current mids."""
-    pending = cp_state.get("pending", [])
-    new_pending = []
-    by_name = cp_state.setdefault("by_name", {})
-    for entry in pending:
-        sym = entry["s"]; px = entry["p"]; q = entry["q"]; name = entry["n"]
-        m = mids_now.get(sym)
-        if m is None:
-            new_pending.append(entry)
-            continue
-        pnl = q * (m - px)
-        rec = by_name.setdefault(name, {"n": 0, "pnl": 0.0, "p2": 0.0, "sym_pnl": {}})
-        rec["n"] += 1
-        rec["pnl"] += pnl
-        rec["p2"] += pnl * pnl
-        sp = rec.setdefault("sym_pnl", {})
-        sp[sym] = sp.get(sym, 0.0) + pnl
-    cp_state["pending"] = new_pending
-    if len(by_name) > CP_MAX_NAMES:
-        names = sorted(by_name.items(), key=lambda kv: kv[1]["n"])
-        for k_, _ in names[: max(0, len(names) - CP_MAX_NAMES)]:
-            by_name.pop(k_, None)
-    for sym, trades in (market_trades or {}).items():
-        for tr in trades or []:
-            buyer = (getattr(tr, "buyer", "") or "").strip()
-            seller = (getattr(tr, "seller", "") or "").strip()
-            qty = int(getattr(tr, "quantity", 0) or 0)
-            price = float(getattr(tr, "price", 0.0) or 0.0)
-            if qty <= 0 or price <= 0:
-                continue
-            if buyer:
-                cp_state.setdefault("pending", []).append({"s": sym, "p": price, "q": +qty, "n": buyer})
-            if seller:
-                cp_state.setdefault("pending", []).append({"s": sym, "p": price, "q": -qty, "n": seller})
-
-
-def _cp_signed_skew(cp_state: Dict, sym: str) -> float:
-    """Return skew in shells based on smart-counterparty signal for `sym`.
-    Returns 0 unless a name has accumulated >= CP_TRACK_MIN_TRADES with
-    Sharpe > CP_SHARPE_THR.  Empty in historical data.
-    """
-    skew = 0.0
-    for name, rec in cp_state.get("by_name", {}).items():
-        n = rec.get("n", 0)
-        if n < CP_TRACK_MIN_TRADES:
-            continue
-        mean = rec.get("pnl", 0.0) / n
-        var = max(0.0, rec.get("p2", 0.0) / n - mean * mean)
-        if var <= 0:
-            continue
-        se = (var / n) ** 0.5
-        if se <= 0:
-            continue
-        z = mean / se
-        if abs(z) <= CP_SHARPE_THR:
-            continue
-        sym_pnl = rec.get("sym_pnl", {}).get(sym, 0.0)
-        if sym_pnl > 0:
-            skew += +CP_SKEW_SHELLS
-        elif sym_pnl < 0:
-            skew += -CP_SKEW_SHELLS
-    return _clamp(skew, -2 * CP_SKEW_SHELLS, 2 * CP_SKEW_SHELLS)
-
-
 # ---------- Phase 1 smile MM (unchanged from v9) ---------------------------
 
 
@@ -548,17 +425,8 @@ class Trader:
             prior = {}
         fs = dict(prior.get("fs", {}) or {})
         smile_state: Dict = dict(prior.get("smile", {}) or {})
-        cp_state: Dict = dict(prior.get("cp", {}) or {})
         positions = state.position or {}
         depths = state.order_depths or {}
-
-        # ---------- Counterparty bookkeeping (v12 NEW; live-only) ---------
-        mids_now: Dict[str, float] = {}
-        for s_, dep in depths.items():
-            mp = _mid(dep)
-            if mp is not None:
-                mids_now[s_] = mp
-        _update_cp_state(cp_state, getattr(state, "market_trades", {}) or {}, mids_now)
 
         # ---------- HYDROGEL fair (v10: micro+wall blend into anchor) -----
         hd = depths.get(HYD)
@@ -586,7 +454,7 @@ class Trader:
         # ---------- HYDROGEL MM (v9 unchanged) ----------------------------
         if hd is not None and HYD in fs:
             bid = _bb(hd); ask = _ba(hd); pos = positions.get(HYD, 0)
-            fair = fs[HYD] + H_IMB * himb_k1 + _cp_signed_skew(cp_state, HYD)
+            fair = fs[HYD] + H_IMB * himb_k1
             legs = []; b = s = 0
             if ask is not None and ask + H_TAKE <= fair:
                 av = -hd.sell_orders[ask]
@@ -605,8 +473,8 @@ class Trader:
             if ask is not None:
                 bp = min(bp, ask - 1); sp = max(sp, ask - 1)
             if bid is not None: sp = max(sp, bid + 1)
-            bsz = _cb(pos, CAP_H, b, max(0, int(round(H_SIZE * max(0.0, 1 - 1.0 * inv)))))
-            ssz = _cs(pos, CAP_H, s, max(0, int(round(H_SIZE * max(0.0, 1 + 1.0 * inv)))))
+            bsz = _cb(pos, CAP_H, b, max(0, int(round(H_SIZE * max(0.0, 1 - 2.0 * inv)))))
+            ssz = _cs(pos, CAP_H, s, max(0, int(round(H_SIZE * max(0.0, 1 + 2.0 * inv)))))
             if bsz > 0 and (ask is None or bp < ask):
                 legs.append(Order(HYD, bp, bsz))
             if ssz > 0 and (bid is None or sp > bid):
@@ -618,7 +486,7 @@ class Trader:
         if vd is not None and VFE in fs:
             bid = _bb(vd); ask = _ba(vd); pos = positions.get(VFE, 0)
             skew = _clamp(V_IMB_K2 * vimb_k2, -V_SKEW_CAP, V_SKEW_CAP)
-            fair = fs[VFE] + skew + _cp_signed_skew(cp_state, VFE)
+            fair = fs[VFE] + skew
             legs = []; b = s = 0
             if ask is not None and ask + V_TAKE <= fair:
                 av = -vd.sell_orders[ask]
@@ -697,10 +565,6 @@ class Trader:
 
         td_out = {
             "fs": {k: round(v, 4) for k, v in fs.items()},
-            "cp": {
-                "by_name": cp_state.get("by_name", {}),
-                "pending": cp_state.get("pending", [])[-200:],
-            },
             "smile": {
                 "smile_a0": smile_state.get("smile_a0"),
                 "smile_a1": smile_state.get("smile_a1"),

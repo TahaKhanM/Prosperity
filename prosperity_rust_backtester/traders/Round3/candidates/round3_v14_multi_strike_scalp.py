@@ -1,97 +1,54 @@
-"""Round 3 v12 — v10 + 1k-tick-tuned params (post hosted parity check).
+"""Round 3 v14 — submitted-v12 + multi-strike conviction-scaled IV scalp.
 
-Why v11 was discarded
----------------------
-v11's HYD adaptive-anchor up-shift gave +36 k on local 10 k-tick BT but
-zero improvement on the IMC hosted backtester (which runs day 2 historical
-for 1 000 ticks).  The slow-EMA half-life of ~700 ticks means the trend
-detector never fires within 1 000 ticks, and the local 10 k gain was a
-back-tester artefact (Legacy fill model overstates trending-day PnL).
+Lineage / rationale
+-------------------
+The first v14 attempt was based on the wrong v12 (a stale source file
+that had v9-equivalent params + a K=5300 scalp). It lost 2,686 hosted vs
+the actually-submitted v12 because the actually-submitted v12 has tuned
+HYD/VFE/smile MM params (NOT a scalp).
 
-v12 abandons the 10 k metric entirely and tunes against the *correct*
-hosted-equivalent benchmark: day 2 historical, first 1 000 ticks (matches
-official backtester +9 113 for v9 within 0.02 %).
+This v14 corrects the base. It starts from the verbatim submitted v12
+(hosted +11,654, day-2 1k-tuned) and adds the scalp ON TOP — the multi-
+strike, conviction-scaled residual scalp that the hint pushes for.
 
-Empirical 1 k-tick day 2 PnL (matches IMC hosted)
+So v14 = v12 hosted (preserved exactly) + new scalp module (additive).
+
+Hosted attribution under this design
+------------------------------------
+- HYD MM, VFE MM, smile MM, accumulation, identity-arb, counterparty hook
+  are byte-identical to submitted v12 → expected same PnL contributions
+  as v12 hosted (~+11,654 baseline).
+- The new multi-strike scalp on K in {5300, 5400, 5500} adds taker
+  activity tied to per-tick IV residuals from the smile fit. Worst case
+  (no scalp edge in 1k regime) it costs the spread on each fire and
+  marginally regresses; best case it adds material PnL.
+
+Scalp design (the "exploit the structure" piece)
 ------------------------------------------------
-                              d0       d1       d2     total
-v9                          -3 664   -1 768  + 9 113  +3 682
-v10                         -3 462   -1 515  + 9 227  +4 250
-v11 (anchor up-shift)       -3 462   -1 515  + 9 227  +4 250  (no fire)
-v12 (this file)             -2 891   -  863  +11 705  +7 951
+1. Multi-strike. {5300, 5400, 5500} — strikes with residual half-life
+   >= 1.4 ticks and meaningful sigma * vega per smile_stability_report:
+       K     rho1   half-life   sigma(IV)   sigma*vega (shells/sigma)
+       5300  0.683  1.82t       0.0042      ~0.96
+       5400  0.772  2.68t       0.0053      ~0.80
+       5500  0.616  1.43t       0.0054      ~0.43
 
-Hosted day 2 lift over v9: +2 592 (+28.4 %).
-v12 also improves d0 1 k by +773 and d1 1 k by +905.
+2. Per-strike threshold. K=5300/5400 use 0.6sigma; K=5500 lifts to
+   1.0sigma (weaker shells/sigma economics).
 
-What v12 changes (each verified to improve d2 1 k incrementally)
----------------------------------------------------------------
-1. H_TAKE        4   -> 5      (+620 d2 — narrower edge captured most takes
-                                already; +1 widens for cleaner fills.)
-2. H_IMB         5.0 -> 0.0    (+155 d2 — level-1 imbalance skew was noisy
-                                at 1 k, removing it lets fair stay smooth.)
-3. H_QE          3   -> 6      (+124 d2 — wider passive quote captures
-                                spread better when we are not the inside
-                                quote; book is 15-shell wide.)
-4. A_HYD         0.10 -> 0.08  (+84 d2 — slightly slower fair EMA reduces
-                                noise tracking.)
-5. A_W           0.40 -> 0.35  (+21 d2 — anchor weight dropped a touch;
-                                v9's 0.40 was ~optimal but 0.35 wins
-                                marginally on the d2 1 k regime.)
-6. V_IMB_K2      5.0 -> 8.0    (+49 d2 — wider VFE imbalance skew slope.)
-7. SMILE_QUOTE_SIZE 5 -> 8     (+65 d2 — bigger passive smile-MM quotes
-                                catch more fills.)
-8. SMILE_WARMUP_TICKS 30 -> 15 (+69 d2 — earlier smile-MM activation on
-                                short tests; warmup was over-conservative.)
-9. EXIT_SLACK    6  -> 2       (+10 d2 — earlier deep-ITM exit on profit.)
-10. H_INV_K      2.0 -> 1.0    (+50 d2 — softer inventory penalty so we
-                                keep quoting both sides longer.)
-11. H_SIZE       20 -> 100     (+14 d2 — bigger HYD passive quote sizes.)
-12. H_WALL_W     0.5 -> 0.9    (+50 d2 — heavier wall-mid weight in HYD
-                                fair-blend input.)
+3. Conviction-proportional sizing.
+       lots = clamp(BASE + SCALE * (|z| - threshold), MIN, MAX)
+            = clamp(5 + 15 * excess_z, 3, 40)
+   Implements the hint directly: bigger gap, bigger position.
 
-The two largest single-tweak wins (and most novel insight)
----------------------------------------------------------
-13. START_TTE_DAYS 8 -> 6      (+817 d2). Day-2 historical has actual
-    TTE = 6 d, so the BS time used in pricing should be 6, not 8.  v9's
-    START_TTE = 8 was chosen to "let drift handle it" — but the smile drift
-    formula only adjusts a0/a1/a2 priors; the BS pricing's `T` argument was
-    1-2 days too long, inflating BS theo prices ~1-2 % and biasing smile MM
-    short.  Correcting T to match the actual day's TTE recovers that bias.
+4. Hard per-strike absolute inventory caps: 30 / 25 / 20 lots for
+   K=5300 / 5400 / 5500.
 
-14. SMILE_A0_EMA_ALPHA 0.05 -> 0.40 (+1 175 d2).  Half-life drops from
-    ~14 ticks to ~1.4 ticks — smile fair tracks observed market a0 fast
-    enough that adverse-selection drops sharply.  v9's slow EMA was a
-    holdover from the 30 000-tick research window; on a 1 000-tick day
-    the slow EMA never converges.  Past-winner reference: chrispyroberts
-    P3 7th used very light smoothing on bid/ask vol curves.
+5. Reuses smile_state (a0/a1/a2 from the smile MM at this tick) — does
+   not refit. Tracks per-strike residual EMA in scalp_state for the
+   "deviation vs recent regime" reading.
 
-LIVE TTE caveat
----------------
-Live R3 has actual TTE = 5 d.  This file is calibrated for TTE = 6 d
-(historical day 2, the IMC hosted backtester input).  At live ts = 0 the
-trader's BS clock will read 6 d while reality is 5 d — a 1-day
-miscalibration.  The smile MM EMA (alpha = 0.40) converges in ~3 ticks,
-so the fair recalibrates almost immediately.  Switching START_TTE to 5.0
-for live submission costs ~1 600 on the hosted-test number but is the
-strictly correct setting for live.  If maximising the IMC hosted backtester
-number is the goal, leave this at 6.0.
-
-Things deliberately preserved
-----------------------------
-- HYDROGEL anchor at 10 000 (post_mortem_378834 warning: live mean drift
-  to 9 979 cost v3 -3 341 with a rigid anchor; we keep it but with smaller
-  effective-anchor weight via A_W=0.35).
-- Smile MM frozen-coefficient design (v8/v9).
-- Deep-ITM accumulation rules (mostrecent style).
-- VFE microprice-EMA fair as the base (v10 design preserved).
-
-Counterparty hook (v12 NEW)
----------------------------
-Per-name horizon-PnL accumulation kept in traderData for any market trade
-where buyer or seller string is non-empty.  Once a name has ≥ 20 trades
-with abs Sharpe > 2, the trader skews quotes by ±1 shell in the inferred
-"smart" direction.  Historical data has 100% empty names, so this is a
-pure live-only feature; PnL impact in any local BT = 0 by construction.
+START_TTE_DAYS = 6.0 stays from submitted v12 (calibrated for IMC hosted
+day-2 backtester). Flip to 5.0 only for actual live R3 submission.
 
 Submission contract: run(state) -> (orders, conversions, traderData).
 """
@@ -179,6 +136,42 @@ SMILE_PER_STRIKE_BIAS: Dict[int, float] = {
 }
 
 SMILE_WARMUP_TICKS = 15
+
+
+# ---------- v14 multi-strike, conviction-scaled residual scalp -------------
+# Trades extreme deviations of per-strike IV residual from its rolling mean.
+# Three strikes with research half-life >= 1.4t and meaningful sigma * vega.
+
+SCALP_STRIKES = (5300, 5400, 5500)
+SCALP_RES_EMA_ALPHA = 0.05         # half-life ~14 ticks
+
+# Per-strike z trigger.
+SCALP_TRIGGER_Z: Dict[int, float] = {
+    5300: 0.6,
+    5400: 0.6,
+    5500: 1.0,                      # weaker shells/sigma -> demand more conviction
+}
+
+# Conviction-scaled sizing: lots = clamp(BASE + SCALE * (|z| - threshold),
+# MIN, MAX). At threshold = MIN; at threshold + ~2.3sigma = MAX.
+SCALP_BASE_LOTS = 5
+SCALP_LOTS_PER_Z = 15
+SCALP_MIN_LOTS = 3
+SCALP_MAX_LOTS = 40
+
+# Hard absolute per-strike scalp inventory cap (lots).
+SCALP_POS_CAP: Dict[int, int] = {
+    5300: 30,
+    5400: 25,
+    5500: 20,
+}
+
+# Per-strike sigma in IV units (smile_stability_report.md, 30k ticks).
+SCALP_SIGMA: Dict[int, float] = {
+    5300: 0.0042,
+    5400: 0.0053,
+    5500: 0.0054,
+}
 
 
 # ---------- Black-Scholes (inlined, unchanged) -----------------------------
@@ -536,6 +529,119 @@ def _smile_voucher_orders(state, depths, positions, timestamp, ve_micro):
     return out
 
 
+# ---------- v14 multi-strike, conviction-scaled residual scalp -------------
+
+
+def _scalp_lots_from_z(abs_z: float, threshold: float) -> int:
+    """Conviction-proportional sizing.
+
+    Returns lots given |z| above the per-strike threshold. Bigger gap,
+    bigger position — clamped to [MIN, MAX].
+    """
+    excess = max(0.0, abs_z - threshold)
+    raw = SCALP_BASE_LOTS + SCALP_LOTS_PER_Z * excess
+    sz = int(round(raw))
+    return max(SCALP_MIN_LOTS, min(SCALP_MAX_LOTS, sz))
+
+
+def _residual_scalp(state: Dict, depths: Dict[str, OrderDepth],
+                    positions: Dict[str, int], timestamp: int,
+                    smile_state: Dict) -> Dict[str, List[Order]]:
+    """Multi-strike mean-reversion scalp on per-strike IV residual deviations.
+
+    Reuses the smile state's a0/a1/a2 — does not refit. Per strike, fires
+    when |z| exceeds the strike's threshold, with size scaled to (|z| -
+    threshold). Crosses the spread (take), bounded by a hard per-strike
+    inventory cap on the resulting position.
+    """
+    out: Dict[str, List[Order]] = {}
+    a0 = smile_state.get("smile_a0")
+    if a0 is None:
+        return out
+    a1 = smile_state.get("smile_a1")
+    a2 = smile_state.get("smile_a2")
+    if a1 is None or a2 is None:
+        return out
+    ve_depth = depths.get(VFE)
+    if ve_depth is None:
+        return out
+    s = _micro(ve_depth)
+    if s is None or s <= 0:
+        return out
+    t = _tte_years(timestamp)
+    if t <= 0:
+        return out
+
+    res_ema = state.setdefault("scalp_res_ema", {})
+
+    for k in SCALP_STRIKES:
+        sym = f"VEV_{k}"
+        d_ = depths.get(sym)
+        if d_ is None:
+            continue
+        mid_px = _mid(d_)
+        if mid_px is None or mid_px <= 0:
+            continue
+        iv_market = implied_vol_call(mid_px, s, float(k), t)
+        if not (iv_market == iv_market) or iv_market <= 0.005:
+            continue
+        m = math.log(s / float(k))
+        bias_k = SMILE_PER_STRIKE_BIAS.get(k, 0.0)
+        fair_iv = a0 + a1 * m + a2 * m * m + bias_k
+        res = iv_market - fair_iv
+
+        key = str(k)
+        prev = res_ema.get(key)
+        new_ema = res if prev is None else prev * (1.0 - SCALP_RES_EMA_ALPHA) + res * SCALP_RES_EMA_ALPHA
+        res_ema[key] = new_ema
+
+        sigma = SCALP_SIGMA.get(k, 0.005)
+        if sigma <= 0:
+            continue
+
+        # Need a settled EMA before scalping. Skip first tick (prev was None).
+        if prev is None:
+            continue
+
+        dev = res - new_ema
+        z = dev / sigma
+        threshold = SCALP_TRIGGER_Z.get(k, 0.6)
+        if abs(z) < threshold:
+            continue
+
+        cap_k = SCALP_POS_CAP.get(k, 25)
+        pos = positions.get(sym, 0)
+        bid = _bb(d_); ask = _ba(d_)
+        sz_intended = _scalp_lots_from_z(abs(z), threshold)
+        legs: List[Order] = []
+
+        if z > 0:
+            # Market IV currently rich vs recent regime → SELL (cross to bid).
+            sell_room = max(0, pos + cap_k)
+            global_room = max(0, CAP_VOU + pos)
+            sell_room = min(sell_room, global_room)
+            if sell_room > 0 and bid is not None:
+                avail = d_.buy_orders[bid]
+                sz = min(sz_intended, avail, sell_room)
+                if sz > 0:
+                    legs.append(Order(sym, bid, -sz))
+        else:
+            # Market IV currently cheap → BUY (cross to ask).
+            buy_room = max(0, cap_k - pos)
+            global_room = max(0, CAP_VOU - pos)
+            buy_room = min(buy_room, global_room)
+            if buy_room > 0 and ask is not None:
+                avail = -d_.sell_orders[ask]
+                sz = min(sz_intended, avail, buy_room)
+                if sz > 0:
+                    legs.append(Order(sym, ask, sz))
+
+        if legs:
+            out.setdefault(sym, []).extend(legs)
+
+    return out
+
+
 # ---------- Trader --------------------------------------------------------
 
 
@@ -695,6 +801,13 @@ class Trader:
         for sym, legs in smile_orders.items():
             out.setdefault(sym, []).extend(legs)
 
+        # ---------- v14 multi-strike conviction scalp (NEW) ----------------
+        scalp_state: Dict = dict(prior.get("scalp", {}) or {})
+        scalp_orders = _residual_scalp(scalp_state, depths, positions,
+                                       state.timestamp, smile_state)
+        for sym, legs in scalp_orders.items():
+            out.setdefault(sym, []).extend(legs)
+
         td_out = {
             "fs": {k: round(v, 4) for k, v in fs.items()},
             "cp": {
@@ -708,6 +821,10 @@ class Trader:
                 "smile_s": smile_state.get("smile_s"),
                 "smile_tte_days": smile_state.get("smile_tte_days"),
                 "smile_ticks": smile_state.get("smile_ticks", 0),
+            },
+            "scalp": {
+                "scalp_res_ema": {k: round(v, 6) for k, v in
+                                  scalp_state.get("scalp_res_ema", {}).items()},
             },
         }
         return out, 0, json.dumps(td_out)
