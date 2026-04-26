@@ -1,7 +1,9 @@
-# Prosperity 4 AI Context Pack
+# Prosperity 4 AI Context Pack (Round 4 active)
 
-This folder contains a compact context pack for coding agents working on an IMC
-Prosperity 4 repository.
+This folder contains a compact context pack for coding agents working on this
+IMC Prosperity 4 repository. Currently configured for Round 4 ("The More The
+Merrier", Salvinar). Round 3 facts are preserved as reference because the
+algorithmic products and dynamics carry over.
 
 ## Why this pack is structured this way
 
@@ -29,11 +31,14 @@ If you are using a real repo checkout:
 - keep the numbered context files next to them or in a clearly referenced docs
   folder with paths updated accordingly
 
-## Important limitation
+## Round 4 entry point
 
-The actual Prosperity repo is not present in this sandbox. The tooling/repo file
-was derived from uploaded documentation that describes the repo, not from direct
-inspection of the repo itself.
+For a Round 4 session, after the four numbered context files, also read:
+- `New Context/Round 4 Trading round.md`: the official Round 4 wiki page.
+- `New Context/Round 4 ARIA Uplink.md`: the in-fiction uplink transcript.
+- `New Context/Round 4 Hint Cards.md`: six prompt cards with research
+  implications for IV / moneyness / volume / counterparty / vanilla-vs-exotic
+  / chooser-options.
 
 ## Included source classes
 

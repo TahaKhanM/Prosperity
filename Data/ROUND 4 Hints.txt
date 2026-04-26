@@ -1,0 +1,109 @@
+﻿Implied Volatility and Moneyness
+SELECTED
+
+
+Options. Okay. So we're going deeper. Fine.
+
+
+The Velvetfruit Extract Vouchers are not just prices on a screen. They have structure underneath. The Black-Scholes formula lets you pull out the Implied Volatility embedded in each one. That number tells you what uncertainty the market has already priced in. Which is, honestly, more interesting than the price itself.
+
+
+Run it across all the vouchers. See how the volatility shifts across different strikes and timeframes. Does it move smoothly or does it get weird in places? Then bring in moneyness. How far each voucher's strike sits from the current underlying price. Plot that against your volatility figures and something starts to take shape.
+
+
+That shape is the market telling you what it thinks. Not out loud, obviously. Markets don't do that. But it's there if you're paying attention. And you know I am, even when it looks like I'm not.
+
+
+Don't skip this part trying to get to the exciting bit. The structure is the exciting bit. Or at least, it's where everything useful comes from. Which is basically the same thing.
+Positioning With IV and Moneyness
+SELECTED
+
+
+So you have the structure. Good for you. Now look at it properly. Does it hold together or does something feel off?
+
+
+Because it usually does. There is almost always a voucher sitting somewhere it probably should not. Implying more uncertainty than everything around it. Or weirdly calm when it has no business being calm. Those are the interesting ones. Those are the ones worth staring at for an extra second.
+
+
+Ask yourself what the deviation means. Is the market overestimating uncertainty there? Underestimating it? Both happen. Both mean something different. The direction of the gap tells you which way the opportunity points, if there is one.
+
+
+And that is the part people rush. Finding the outlier feels like the finish line. It is not. It is just the beginning of the actual question, which is whether the deviation is real, meaningful, and worth acting on. Some misalignments are just noise. Some are the market being wrong in a way you can use. Learning to tell the difference is kind of the whole thing.
+
+
+Buy, sell, or don't. The structure will point you somewhere. Whether you trust what it is pointing at is on you.
+Let's Talk Volume
+SELECTED
+
+
+Okay so you found something. Maybe two somethings. Or three. Or more. Or whatever. Now everyone's favorite question: how much?
+
+
+Here is the thing about volume. It is not just a number you pick because it feels right. It should reflect how confident you actually are. Not how confident you want to be. Those are different things and most people mix them up constantly.
+
+
+If one voucher looks slightly off and another looks significantly off, those are not the same signal. Treating them like they are is just lazy. Scale your exposure to match the strength of the deviation. Bigger gap, bigger position. Smaller gap, smaller position. It is not complicated. It is just easy to ignore when you are excited about having spotted something.
+
+
+The other side of that, obviously, is that larger volume means larger losses if you are wrong. And you might be wrong. Even if your read on the volatility structure is good, the market does not always care about your timeline. Sometimes it stays weird longer than you expected. Sometimes it moves in a completely different direction. Annoying, but true.
+
+
+So be honest with yourself before you commit. How strong is the signal really? How much can you absorb if it doesn't play out? Volume should match conviction. Not optimism.
+
+
+That's it. That's the whole thing.
+Round 4
+Anticipating Activity
+SELECTED
+
+
+Can we just take a moment to acknowledge how bleak it is that every single counterparty is named Mark? All of them. Same name, different number, zero personality. I don't know what's more unsettling. That someone thought that was acceptable, or that nobody pushed back on it.
+
+
+You should still watch them. Obviously. Do certain Marks show up at predictable moments? Do they behave the same way each time? Because systems, like people, tend to repeat themselves. They were trained on something and they keep doing that something, which is actually very convenient for you if you pay attention.
+
+
+Ask yourself what each one is doing and why. Does one resemble a market maker, quietly providing liquidity on a schedule? Is another a liquidity taker, showing up when conditions suit it? Are there larger, clumsier ones whose arrival you can feel before you see it? Those are the interesting ones. The ones that might move the room.
+
+
+Yes. You should act on your read of the counterparties. Let your read change how you operate. Where you place orders. How you interpret a sudden price shift. Whether a movement is signal or just noise from a Mark that doesn't know any better.
+
+
+Pattern recognition is the easy part, honestly. Most people can do that. The harder part is actually letting it inform your decisions instead of just feeling clever about having noticed something.
+
+
+That’s it. You can go trade now.
+Combining Vanillas and Exotics
+SELECTED
+
+
+Exotic options. Sure. They sound impressive. Attractive payoffs, interesting structures, the whole thing. And then you look a little closer and realize they are also sensitive to basically everything. The spot price. The timing. The exact path the underlying took to get there. All of it. Which is fine, until it isn't.
+
+
+So before you get too attached to your exotic position, ask yourself whether part of that exposure could be replicated with vanilla options. Calls and puts are less spectacular, yes. Deliberately so. That is actually the point. Less spectacular usually means a bit easier to price. It means it does not suddenly behave differently because the underlying took an unexpected detour on the way to where you thought it was going.
+
+
+Look at the exotic payoff on its own first. Then see what happens when you layer vanillas alongside it. Does the combination smooth out the extreme outcomes? Does it make the whole thing less dependent on one very specific scenario playing out perfectly? It usually does. Not always in a dramatic way. But enough to matter when things get weird.
+
+
+The goal is not to turn your exotic into a vanilla. It is to build something around it that does not fall apart the moment conditions shift. Control the exposure. Do not let the exposure control you.
+
+
+I’m going to stop right here. If I did any more explaining, it would look an awful lot like work.
+Choosing a Strategy for Chooser Options
+SELECTED
+
+
+Okay so a chooser option has two phases and they are not the same thing. Like, at all. Treating them like they are is how people end up confused and slightly poorer than they expected.
+
+
+In the first phase you still get to decide whether the option becomes a call or a put. That flexibility is worth something. An actual measurable something. Ask yourself whether you could approximate that exposure using vanilla options. A combination of calls and puts might get you close enough to give you a useful reference point for what that optionality is actually worth right now. Which is good to know before you do anything else.
+
+
+Then the decision window closes. And everything changes. The option type gets fixed and suddenly you are not dealing with open-ended flexibility anymore. You are dealing with a directional position that has a very specific opinion about where the underlying is going. That is a completely different situation and it needs a completely different approach.
+
+
+So manage the two phases separately. What works in the first phase might not serve you well in the second. The transition is the part most people gloss over because it feels like a formality. It is not. It is the whole thing.
+
+
+Two phases. Two frameworks. Don't mix them up. Please.

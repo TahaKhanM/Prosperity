@@ -1,0 +1,20 @@
+buyer;seller;n_trades;total_qty;mean_price;buyer_h500_pnl_per_unit;classification
+Mark 01;Mark 22;1339;4636;6.9946;0.5500;one_sided
+Mark 14;Mark 38;728;2447;8350.7740;8.4612;isolated_dyad
+Mark 38;Mark 14;714;2445;8527.7509;-8.5321;isolated_dyad
+Mark 55;Mark 14;331;1763;5249.3925;-2.1838;isolated_dyad
+Mark 14;Mark 55;316;1761;5244.6513;2.4066;mixed
+Mark 01;Mark 55;260;1417;5245.5356;2.9016;mixed
+Mark 55;Mark 01;244;1375;5250.9665;-2.6713;isolated_dyad
+Mark 67;Mark 49;89;963;5250.8390;1.2560;one_sided
+Mark 67;Mark 22;75;546;5246.6136;1.0714;one_sided
+Mark 14;Mark 22;83;302;48.2682;0.4089;one_sided
+Mark 22;Mark 55;18;92;5245.1848;0.0109;mixed
+Mark 49;Mark 22;12;89;5249.3258;-0.2640;mixed
+Mark 55;Mark 22;14;62;5257.7419;0.4919;mixed
+Mark 22;Mark 38;17;60;7117.9667;2.1083;mixed
+Mark 55;Mark 49;9;54;5244.2593;0.5741;mixed
+Mark 22;Mark 49;7;54;5244.7222;1.4074;mixed
+Mark 38;Mark 22;19;48;6815.4167;-0.0833;mixed
+Mark 49;Mark 55;5;26;5241.6538;-0.5962;mixed
+Mark 67;Mark 55;1;1;5241.0000;1.0000;noise
