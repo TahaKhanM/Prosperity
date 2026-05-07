@@ -2,15 +2,25 @@
 
 R4 alpha hunt artefacts. The headline output is `alpha_registry.md`.
 
-## Headline shipping decision (UPDATED)
+## Headline shipping decision (UPDATED 2026-04-26: final implementation)
 
-**Ship `traders/Round4/probes/r4_composite_v01_probe.py` for the next
-R4 submission.** Built in the follow-up session.
+**Ship `prosperity_rust_backtester/traders/Round4/r4_final_v01.py`** -
+the canonical Round 4 production trader. The IMC-upload twin is at
+`submissions/r4_final_v01_imc_upload.py` (byte-identical).
 
-It composes (a) the Phase-5 follow-up `r4_mark_lean_v02_no_m67` trader
-(per-product Mark-conditional lean WITHOUT Mark 67, since Mark 67 fails
-both Phase 6 nulls) and (b) the Phase-2 follow-up `r4_v5000_c02_standalone`
-(imb2 → fair skew on V_5000, β=3, cap 1).
+The production trader encodes composite v01 verbatim with kill switches,
+inlined BS pricer, traderData budget enforcement and a comprehensive
+header docstring (locked params, BT result, falsifiers, IMC-compatibility
+checklist).
+
+Final-implementation Phases 1-4 ran 7 probes on top of composite v01:
+- Phase 1: composite v02 = (v08 minus M67) + V_5000 imb2: REJECT (-3,387).
+- Phase 2 (Tier 1): 3 probes: all REJECT.
+- Phase 3 (race-to-touch): REJECT (falsifier triggered).
+- Phase 4 (Tier 3): 2 probes: both REJECT.
+
+**Zero new SHIP-grade alphas.** Composite v01 remains the floor and the
+production trader encodes it.
 
 Backtest delta: **+5,735.5 / +2.57 % vs v15 baseline (+222,775 → +228,510.50)**.
 
@@ -21,17 +31,23 @@ Per-day positive every day:
 
 Per-product Δ:
 - HYD +519 (mark-lean)
-- VFE +2,560 (mark-lean, including the Mark 67 removal which alone added +2,025 vs the original ship)
+- VFE +2,560 (mark-lean, with Mark 67 EXCLUDED)
 - V_5000 +2,657 (imb2 skew)
 - All other strikes/products: 0 Δ (disjoint code paths)
 
-Composite is **5.4× the improvement** of the original session's ship
-(`r4_mark_lean_v01_probe.py` was +1,054). Sum-of-parts decomposition
-(+3,079 + +2,657 = +5,736) matches actual +5,735.5 within 1 shell -
-zero negative interaction.
+Validation:
+- Rust BT: bit-identical to composite v01 (Δ = 0 across all 3 days).
+- Determinism: confirmed (run twice → identical numbers).
+- traderData peak: 488 chars / 49,000 budget (98.96 % headroom).
+- Python BT (`prosperity4bt`): -23.8 % deviation. Structural fill-model
+  divergence on Mark-lean overlay; v15 alone reconciles +1.7 %. Python
+  BT is conservative lower bound (still positive every day at +174,144).
+- IMC compatibility: all 13 checklist items pass.
 
-See `followup_summary.md` for the seven probes built in the follow-up
-session and the four that REJECTED.
+See `final_implementation_summary.md` for the full seven-probe sweep
+results and lessons. See
+`06_validation/round4_alpha_probes/r4_final_v01_validation.md` for the
+validation report.
 
 ## Read order
 
