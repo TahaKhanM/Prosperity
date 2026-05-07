@@ -1,25 +1,100 @@
-"""Probe: r4_mark_dossier_v06 — VFE-drift-gated Mark 67 contribution.
+"""Phase 3 — race-to-the-touch (Flavor 2 from Mark 14 dossier K.2).
 
-Diagnostic showed:
-- v04 (Mark 67 weight 0.30) total = +619, day-3 = -1,150
-- v05 (Mark 67 weight 0.00) total = -1,361, day-3 = -615
-- The +1,980 alpha from setting Mark 67 weight 0 → 0.30 is real, but on
-  day-3 (sharp VFE drift down day) the +VFE lean keeps getting hit.
+For HYDROGEL_PACK only: track an inferred Mark 14 inside-touch level per
+side (decayed toward mid each tick), and quote one tick INSIDE Mark 14's
+last known location. The dossier evidence:
+  - Mark 14 quotes inside the displayed touch (median price - ask_pre = -16
+    on HYD).
+  - 100 % passive provider (0/496 HYD buys lifted).
+  - Adverse selection +8.65/u h=100 in their direction.
 
-v06: keep VFE_W_M67 = 0.50 (the maximum signal capture) BUT gate on the
-trailing VFE drift. When the EMA-smoothed VFE recent-drift is strongly
-negative (drift_ema < -3 ticks per 100 ticks), reduce the Mark 67
-contribution multiplier to 0.3. This lets us catch Mark 67's bounce signal
-on flat/up days while protecting on persistent down days.
+Implementation:
+- On each market_trade in HYD with `buyer == "Mark 14"`, record
+  `last_mark14_bid = trade.price` (Mark 14 was the resting bidder).
+- Symmetric for `seller == "Mark 14"` → `last_mark14_ask = trade.price`.
+- Each tick, decay: `last_mark14_bid += (mid - last_mark14_bid) * DRIFT_RATE`.
+- Quote: bid = min(default_bid, last_mark14_bid + 1);
+         ask = max(default_ask, last_mark14_ask - 1).
+- Inventory governor: |position_HYD| > 0.7 × 200 → revert to v15 quoting.
+- Race-loss detector: if Mark 14 prints at a price BETWEEN our last quote
+  and the prevailing mid, count consecutive losses; after 5 in a row,
+  pause for 200 ticks.
 
-Changes vs v04:
-- VFE_W_M67 = 0.50 (back to max, as in v03).
-- New: track trailing VFE drift via EMA in `vfe_drift_ema` traderData key.
-- New: scale Mark 67 contribution by `regime_mult` based on `vfe_drift_ema`:
-  drift_ema > +1 → mult 1.0 (up day, full size)
-  drift_ema in [-1, +1] → mult 1.0 (flat day)
-  drift_ema in [-3, -1] → mult 0.5 (mild down)
-  drift_ema < -3 → mult 0.0 (sharp down — disable Mark 67 copy)
+Pre-registered (locked):
+  RTT_DRIFT_RATE          = 0.05         # last_mark14 → mid per tick
+  RTT_INVENTORY_GOVERN    = 0.7          # of position limit
+  RTT_RACE_LOSS_THRESHOLD = 5
+  RTT_RACE_TIMEOUT_TICKS  = 200
+  RTT_PRODUCTS            = ["HYDROGEL_PACK"]   # HYD only initially
+
+Equally-defensible: drift ∈ [0.02, 0.10]; threshold ∈ [3, 10]; timeout ∈
+[100, 500].
+
+Ship gate: 3-day Δ vs floor ≥ +1,500 AND HYD own_trades count INCREASES
+by ≥ 10% AND HYD product Δ ≥ +1,500. If HYD own_trades DROPS → kill
+(we're standing aside).
+
+Falsifiers: live R4 day-1 mean |trade.price - last_mark14_bid| > 5 ticks;
+or live race-loss rate > 50 %.
+
+ORIGINAL composite v01 docstring follows.
+
+Composes the two SURVIVORS of the followup probe sweep:
+  - Phase 5: r4_mark_lean_v02_no_m67 (Δ +3,079 vs v15)
+  - Phase 2: r4_v5000_c02_standalone (Δ +2,657 vs v15)
+
+The two probes touch DISJOINT code paths:
+  - Phase 5: HYD/VFE MM fairs (mark_lean term)
+  - Phase 2: V_5000 smile MM fair (imb2 skew, capped +/- 1 tick)
+
+→ Sum-of-parts: +3,079 + +2,657 = +5,736 vs v15 if no interaction.
+
+Composite ship gate: Δ vs v15 ≥ +5,000 (≥ 87 % of sum-of-parts);
+Δ vs Phase 5 alone ≥ +1,000 (V_5000 imb2 must add meaningful PnL).
+
+Pre-reg locked at constituent values: LEAN_DECAY=0.985, LEAN_CLAMP_PROD=3.0,
+V5000_IMB_BETA=3.0, V5000_IMB_CAP=1.0.
+
+ORIGINAL Phase 5 docstring:
+r4_mark_lean_v02_no_m67 - Mark lean WITHOUT Mark 67.
+
+Identical to Probe 1 (r4_mark_lean_v01) except Mark 67 is removed from
+MARK_RULES_VFE. Phase 6 nulls found Mark 67 fails both Mark-permutation
+(p=0.47) and time-shuffle (z=+2.0); headline +1.19/u h500 PnL is likely
+drift-correlated, not causal.
+
+Decision rule:
+  - Δ vs Probe 1 ≥ −100 over 3-day BT → ship the lighter form (Mark 67 was noise)
+  - Δ vs Probe 1 < −100 → retain Mark 67 with documented "weak null on 7-Mark set"
+
+Pre-registered: single-rule edit. No tuning.
+
+ORIGINAL Probe 1 docstring:
+r4_mark_lean_v01 - Mark-conditional lean stack on top of v15.
+
+Adds a per-product `mark_lean` accumulator decoded/encoded via traderData JSON.
+Decay 0.985 per tick (HL ~46 ticks).
+
+Per-trade contribution (one per trade in state.market_trades[product]):
+
+HYDROGEL_PACK:
+  Mark 14 buyer:    lean[HYD] += 0.20 * qty * 0.05  (positive)
+  Mark 14 seller:   lean[HYD] -= 0.20 * qty * 0.05
+  Mark 38 buyer:    lean[HYD] -= 0.20 * qty * 0.05
+  Mark 38 seller:   lean[HYD] += 0.20 * qty * 0.05
+  Mark 22 buyer:    lean[HYD] -= 0.20 * qty * 0.05  (R4-HYD-M01 fade)
+
+VELVETFRUIT_EXTRACT:
+  Mark 14 buyer:    lean[VFE] += 0.10 * qty * 0.05
+  Mark 14 seller:   lean[VFE] -= 0.10 * qty * 0.05
+  Mark 38 buyer:    lean[VFE] -= 0.10 * qty * 0.05
+  Mark 38 seller:   lean[VFE] += 0.10 * qty * 0.05
+  Mark 67 buyer:    lean[VFE] += 0.10 * qty * 0.05  (R4-VFE-M01 buy follow)
+  Mark 49 seller:   lean[VFE] += 0.10 * qty * 0.05  (R4-VFE-M02 informed seller -> long)
+  Mark 22 seller:   lean[VFE] += 0.05 * qty * 0.05  (R4-VFE-M03)
+
+Clamp lean to +/- 3.0 per product. Apply lean[HYD] to HYD MM fair after the
+existing skew, and lean[VFE] to VFE MM fair after the existing skew+fade.
 
 Submission contract: run(state) -> (orders, conversions, traderData).
 """
@@ -77,49 +152,26 @@ VFE_AC1_FADE_K = 0.03
 VFE_AC1_FADE_CAP = 3.0
 
 
-# ---------- Mark lean constants (DOSSIER-DERIVED) --------------------------
+# ---------- mark lean constants (NEW) --------------------------------------
 
-# Decay rates: HL ~50 ticks → 0.5^(1/50) = 0.986; HL ~20 ticks → 0.5^(1/20) = 0.966
-LEAN_DECAY_DEFAULT = 0.986       # HL ~50 ticks (was 0.985 / HL ~46 in v01)
-LEAN_DECAY_FAST = 0.966          # HL ~20 ticks (Mark 67 contribution)
-LEAN_CLAMP_PROD = 5.0            # widened from 3.0 in v01
+LEAN_DECAY = 0.985
+LEAN_CLAMP_PROD = 3.0
 
-# Per-Mark per-product weights are the **base lean per qty unit at half spread**.
-# The actual lean contribution = sign * qty * weight * 0.05 (the 0.05 keeps
-# magnitudes comparable to v01).
-
-# HYD: dial back from v02's 0.40 to 0.30 — closer to v01's 0.20 but still
-# benefiting from the counterparty gating below.
-HYD_W_M14 = 0.30
-HYD_W_M38 = 0.30
-HYD_W_M22_BUY_FADE = 0.0    # disabled in v03 — too noisy
-
-# VEV_4000: keep at 0.20 (slightly above v01's 0.10 to amplify the cleanest
-# +10.5/u h100 signal in the dataset).
-VEV4000_W_M14 = 0.20
-VEV4000_W_M38 = 0.20
-
-# VFE: keep the highest-confidence rules.
-VFE_W_M14 = 0.12            # slightly tighter than v02's 0.15
-VFE_W_M38 = 0.0             # Mark 38 doesn't trade VFE
-VFE_W_M67 = 0.30            # v09: smaller per-print weight to reduce stacking on day-3
-VFE_DRIFT_EMA_ALPHA = 0.05  # EMA alpha on per-tick mid diff for regime gate
-VFE_W_M49_SELL = 0.25       # fade their sells
-VFE_W_M22_SELL = 0.15       # fade their sells
-VFE_W_M55 = 0.0             # disabled in v03 — tail-driven loss hurt day-3
-VFE_W_M01 = 0.10            # mirror their direction (low priority)
-
-# Counterparty-conditional multipliers. Tightened: default multiplier 0.3
-# (vs 0.5 in v02) — when Mark X is paired with someone other than the
-# expected dyad partner, take a much smaller position.
-CP_MULT = {
-    "Mark 14": {"Mark 38": 1.0, "Mark 22": 0.0, "_default_": 0.3},
-    "Mark 38": {"Mark 14": 1.0, "Mark 22": 0.0, "_default_": 0.3},
-    "Mark 49": {"Mark 67": 1.0, "Mark 55": 0.0, "_default_": 0.3},
-    "Mark 55": {"_default_": 0.0},  # disabled
-    "Mark 22": {"_default_": 1.0},
-    "Mark 67": {"_default_": 1.0},  # always copy, no gating
-    "Mark 01": {"Mark 55": 1.0, "_default_": 0.3},
+# Per-product per-Mark weights. Tuple = (sign_on_buyer, sign_on_seller, weight).
+# Convention: contribution = sign * qty * 0.05 * weight.
+# weight = 0 means inactive.
+# (qty * 0.05 is the per-unit base; weight scales it.)
+MARK_RULES_HYD = {
+    "Mark 14": (+0.20, -0.20),  # buyer +, seller -
+    "Mark 38": (-0.20, +0.20),  # buyer -, seller +
+    "Mark 22": (-0.20, 0.0),    # buyer -, seller no-op (R4-HYD-M01)
+}
+MARK_RULES_VFE = {
+    "Mark 14": (+0.10, -0.10),
+    "Mark 38": (-0.10, +0.10),
+    # "Mark 67" REMOVED (Phase 6 nulls fail: perm p=0.47, shuffle z=+2.0)
+    "Mark 49": (0.0, +0.10),    # seller -> +VE (R4-VFE-M02)
+    "Mark 22": (0.0, +0.05),    # seller -> +VE (R4-VFE-M03)
 }
 
 
@@ -156,6 +208,17 @@ SMILE_PER_STRIKE_BIAS: Dict[int, float] = {
 }
 
 SMILE_WARMUP_TICKS = 20
+
+# R4-V5000-C02 standalone constants (NEW — composite-included)
+V5000_IMB_BETA = 3.0
+V5000_IMB_CAP = 1.0
+
+# Phase 3 — Mark 14 race-to-the-touch constants (HYD only)
+RTT_DRIFT_RATE = 0.05
+RTT_INVENTORY_GOVERN = 0.7
+RTT_RACE_LOSS_THRESHOLD = 5
+RTT_RACE_TIMEOUT_TICKS = 200
+RTT_TS_PER_TICK = 100
 
 
 # ---------- Black-Scholes ---------------------------------------------------
@@ -308,141 +371,45 @@ def _ew(p, s, a):     return s if p is None else p * (1 - a) + s * a
 def _clamp(x, lo, hi): return max(lo, min(hi, x))
 
 
-# ---------- mark lean update (DOSSIER-DERIVED) -----------------------------
+# ---------- mark lean update (NEW) -----------------------------------------
 
 
-def _cp_mult(mark: str, partner: str) -> float:
-    """Look up the counterparty-conditional multiplier for `mark` given `partner`."""
-    rules = CP_MULT.get(mark)
-    if rules is None:
-        return 0.5
-    return rules.get(partner, rules.get("_default_", 0.5))
-
-
-def _regime_mult_for_m67(vfe_drift_ema: float) -> float:
-    """v08: stricter regime gate to catch day-3 earlier.
-
-    drift_ema > 0 ticks: full size (1.0)  — up or flat regime
-    drift_ema in [-1, 0]: half size (0.5) — mild down
-    drift_ema < -1 ticks: zero (0.0)      — any down trend
-    """
-    if vfe_drift_ema >= 0.0:
-        return 1.0
-    if vfe_drift_ema >= -1.0:
-        return 0.5
-    return 0.0
-
-
-def _update_mark_lean(
-    mark_lean: Dict[str, float],
-    mark_lean_fast: Dict[str, float],
-    market_trades,
-    current_ts: int,
-    last_ts: int,
-    vfe_drift_ema: float = 0.0,
-) -> None:
-    """Decay then accumulate per-product lean.
-
-    Two parallel accumulators:
-    - `mark_lean` (HL ~50 ticks): standard decay for all Marks except Mark 67.
-    - `mark_lean_fast` (HL ~20 ticks): Mark 67 only.
-
-    Each is summed into the final fair-value skew at quote time.
-    """
+def _update_mark_lean(mark_lean: Dict[str, float], market_trades, current_ts: int,
+                      last_ts: int) -> None:
+    """Decay then accumulate per-product lean. Mutates `mark_lean` in place."""
     elapsed_ticks = max(0, (current_ts - last_ts) // 100)
     if elapsed_ticks > 0:
-        decay = LEAN_DECAY_DEFAULT ** elapsed_ticks
+        decay = LEAN_DECAY ** elapsed_ticks
         for p in list(mark_lean):
             mark_lean[p] *= decay
-        decay_fast = LEAN_DECAY_FAST ** elapsed_ticks
-        for p in list(mark_lean_fast):
-            mark_lean_fast[p] *= decay_fast
 
     for product, trades in (market_trades or {}).items():
+        if product == HYD:
+            rules = MARK_RULES_HYD
+        elif product == VFE:
+            rules = MARK_RULES_VFE
+        else:
+            continue
         for t in trades:
-            buyer = (getattr(t, "buyer", None) or "").strip()
-            seller = (getattr(t, "seller", None) or "").strip()
+            buyer = getattr(t, "buyer", None) or ""
+            seller = getattr(t, "seller", None) or ""
             qty = float(getattr(t, "quantity", 0))
             if qty == 0:
                 continue
-
-            # Process each principal independently — both sides may contribute.
-            for mark, side, partner in (
-                (buyer, "buy", seller),
-                (seller, "sell", buyer),
-            ):
-                if not mark or mark.startswith("_"):
-                    continue
-                sgn = +1.0 if side == "buy" else -1.0
-
-                # Pick weight by (mark, product, side)
-                w = 0.0
-                use_fast = False
-                if product == HYD:
-                    if mark == "Mark 14":
-                        w = HYD_W_M14
-                    elif mark == "Mark 38":
-                        w = -HYD_W_M38   # opposite direction
-                    elif mark == "Mark 22" and side == "buy":
-                        # Adversarial fade — only on buys, opposite direction.
-                        w = -HYD_W_M22_BUY_FADE
-                elif product == "VEV_4000":
-                    if mark == "Mark 14":
-                        w = VEV4000_W_M14
-                    elif mark == "Mark 38":
-                        w = -VEV4000_W_M38
-                elif product == VFE:
-                    if mark == "Mark 14":
-                        w = VFE_W_M14
-                    elif mark == "Mark 38":
-                        w = -VFE_W_M38
-                    elif mark == "Mark 67":
-                        # Only buys exist for Mark 67; copy direction.
-                        if side == "buy":
-                            w = VFE_W_M67
-                            use_fast = True
-                    elif mark == "Mark 49":
-                        if side == "sell":
-                            # Fade: lean opposite (i.e., buy when they sell)
-                            w = -(-VFE_W_M49_SELL)  # = +VFE_W_M49_SELL applied with sgn
-                            # We want to nudge VFE UP when Mark 49 sells, so:
-                            # contribution = +VFE_W_M49_SELL * qty
-                            # encoded as sgn * w where sgn = -1 (sell) and w<0.
-                            # Set w = -VFE_W_M49_SELL so sgn*w = +VFE_W_M49_SELL.
-                            w = -VFE_W_M49_SELL
-                    elif mark == "Mark 55":
-                        # Fade direction (both sides)
-                        w = -VFE_W_M55
-                    elif mark == "Mark 22":
-                        if side == "sell":
-                            w = -VFE_W_M22_SELL
-                    elif mark == "Mark 01":
-                        # Mirror direction (low priority)
-                        w = VFE_W_M01
-
-                if w == 0.0:
-                    continue
-
-                # Counterparty-conditional gating
-                mult = _cp_mult(mark, partner)
-
-                # NEW v06: VFE drift regime gate, applied only to Mark 67
-                # contribution (the +VFE-direction-only mirror).
-                if mark == "Mark 67" and product == VFE:
-                    mult *= _regime_mult_for_m67(vfe_drift_ema)
-
-                contribution = sgn * qty * 0.05 * w * mult
-
-                if use_fast:
-                    target = mark_lean_fast
-                else:
-                    target = mark_lean
-                new_v = target.get(product, 0.0) + contribution
+            delta = 0.0
+            if buyer in rules:
+                w_buy, _ = rules[buyer]
+                delta += w_buy * qty * 0.05
+            if seller in rules:
+                _, w_sell = rules[seller]
+                delta += w_sell * qty * 0.05
+            if delta != 0.0:
+                new_v = mark_lean.get(product, 0.0) + delta
                 if new_v > LEAN_CLAMP_PROD:
                     new_v = LEAN_CLAMP_PROD
                 elif new_v < -LEAN_CLAMP_PROD:
                     new_v = -LEAN_CLAMP_PROD
-                target[product] = new_v
+                mark_lean[product] = new_v
 
 
 # ---------- Phase 1 smile MM (unchanged) -----------------------------------
@@ -545,6 +512,15 @@ def _smile_voucher_orders(state, depths, positions, timestamp, ve_micro):
                 if fade < -AC1_FADE_CAP: fade = -AC1_FADE_CAP
                 fair = fair + fade
 
+        # R4-V5000-C02 (Phase 2 standalone): imb_k2 -> fair skew on V_5000 only,
+        # capped at +/- 1 tick.
+        if k == 5000:
+            imb2_v5000 = _imb_k2(d_)
+            v5000_skew = V5000_IMB_BETA * imb2_v5000
+            if v5000_skew > V5000_IMB_CAP: v5000_skew = V5000_IMB_CAP
+            if v5000_skew < -V5000_IMB_CAP: v5000_skew = -V5000_IMB_CAP
+            fair = fair + v5000_skew
+
         pos = positions.get(sym, 0)
         bid = _bb(d_); ask = _ba(d_)
         bought = sold = 0
@@ -605,32 +581,22 @@ class Trader:
         fs = dict(prior.get("fs", {}) or {})
         smile_state: Dict = dict(prior.get("smile", {}) or {})
         mark_lean: Dict[str, float] = dict(prior.get("mark_lean", {}) or {})
-        mark_lean_fast: Dict[str, float] = dict(prior.get("mark_lean_fast", {}) or {})
-        vfe_drift_ema: float = float(prior.get("vfe_drift_ema", 0.0))
         last_ts = int(prior.get("last_ts", state.timestamp))
+
+        # Phase 3 — race-to-the-touch state
+        rtt_bid = prior.get("rtt_bid")          # last_mark14_bid (HYD)
+        rtt_ask = prior.get("rtt_ask")          # last_mark14_ask (HYD)
+        rtt_loss_count = int(prior.get("rtt_loss_count", 0))
+        rtt_timeout_until = int(prior.get("rtt_timeout_until", 0))
+        my_last_hyd_bid = prior.get("my_last_hyd_bid")
+        my_last_hyd_ask = prior.get("my_last_hyd_ask")
 
         positions = state.position or {}
         depths = state.order_depths or {}
 
-        # Update VFE drift EMA before applying Mark lean (so the regime gate
-        # uses the most recent state).
-        prev_vfe_mid_for_drift = float(prior.get("prev_vfe_mid") or 0.0)
-        vd_for_drift = depths.get(VFE)
-        cur_vfe_mid = _mid(vd_for_drift) if vd_for_drift is not None else None
-        if cur_vfe_mid is not None and prev_vfe_mid_for_drift > 0:
-            vfe_diff = cur_vfe_mid - prev_vfe_mid_for_drift
-            # EMA on a per-tick mid difference, scaled to "ticks per 100 ticks"
-            vfe_drift_ema = (1.0 - VFE_DRIFT_EMA_ALPHA) * vfe_drift_ema + VFE_DRIFT_EMA_ALPHA * vfe_diff
-        # We multiply EMA by 100 to express "drift over 100 ticks".
-        # Threshold gate uses raw EMA (in per-tick units) — adjust thresholds
-        # accordingly: -3 ticks per 100 ticks ≈ EMA -0.03.
-        # Scale up for readability: store ema * 100 in vfe_drift_ema.
-        vfe_drift_per_100 = vfe_drift_ema * 100.0  # rescaled for the gate
-
+        # NEW: update mark lean from market trades
         market_trades = getattr(state, "market_trades", {}) or {}
-        _update_mark_lean(mark_lean, mark_lean_fast, market_trades,
-                          int(state.timestamp), last_ts,
-                          vfe_drift_ema=vfe_drift_per_100)
+        _update_mark_lean(mark_lean, market_trades, int(state.timestamp), last_ts)
 
         prev_hyd_mid = float(prior.get("prev_hyd_mid") or 0.0)
         hd = depths.get(HYD)
@@ -655,6 +621,51 @@ class Trader:
                 fs[VFE] = _ew(fs.get(VFE), m, A_VFE)
             vimb_k2 = _imb_k2(vd)
 
+        # ---------- Phase 3: process Mark 14 HYD prints ------------------
+        # Update rtt_bid/ask from Mark 14's HYD trades; detect race losses.
+        hyd_trades = (market_trades or {}).get(HYD, []) or []
+        hyd_mid_for_rtt = _mid(hd) if hd is not None else None
+        for tr in hyd_trades:
+            buyer_n = (getattr(tr, "buyer", None) or "").strip()
+            seller_n = (getattr(tr, "seller", None) or "").strip()
+            pr = float(getattr(tr, "price", 0) or 0)
+            if pr <= 0:
+                continue
+            if buyer_n == "Mark 14":
+                # Mark 14 was the resting bidder; print level becomes their bid.
+                rtt_bid = pr
+                # Race-loss check: did Mark 14 out-bid us?
+                if (
+                    hyd_mid_for_rtt is not None
+                    and my_last_hyd_bid is not None
+                    and pr > my_last_hyd_bid
+                    and pr < hyd_mid_for_rtt
+                ):
+                    rtt_loss_count += 1
+                else:
+                    rtt_loss_count = 0
+            elif seller_n == "Mark 14":
+                rtt_ask = pr
+                if (
+                    hyd_mid_for_rtt is not None
+                    and my_last_hyd_ask is not None
+                    and pr < my_last_hyd_ask
+                    and pr > hyd_mid_for_rtt
+                ):
+                    rtt_loss_count += 1
+                else:
+                    rtt_loss_count = 0
+        if rtt_loss_count >= RTT_RACE_LOSS_THRESHOLD:
+            rtt_timeout_until = int(state.timestamp) + RTT_RACE_TIMEOUT_TICKS * RTT_TS_PER_TICK
+            rtt_loss_count = 0
+
+        # Decay rtt_bid/ask toward current mid.
+        if hyd_mid_for_rtt is not None:
+            if rtt_bid is not None:
+                rtt_bid = rtt_bid + (hyd_mid_for_rtt - rtt_bid) * RTT_DRIFT_RATE
+            if rtt_ask is not None:
+                rtt_ask = rtt_ask + (hyd_mid_for_rtt - rtt_ask) * RTT_DRIFT_RATE
+
         # ---------- HYDROGEL MM (lean added to fair) ----------------------
         hyd_mid_now = _mid(hd) if hd is not None else None
         if hd is not None and HYD in fs:
@@ -665,7 +676,7 @@ class Trader:
                 hyd_fade = -HYD_AC1_FADE_K * hyd_ret
                 if hyd_fade > HYD_AC1_FADE_CAP: hyd_fade = HYD_AC1_FADE_CAP
                 if hyd_fade < -HYD_AC1_FADE_CAP: hyd_fade = -HYD_AC1_FADE_CAP
-            lean_h = mark_lean.get(HYD, 0.0) + mark_lean_fast.get(HYD, 0.0)
+            lean_h = mark_lean.get(HYD, 0.0)
             fair = fs[HYD] + H_IMB * himb_k1 + hyd_fade + lean_h
             legs = []; b = s = 0
             if ask is not None and ask + H_TAKE <= fair:
@@ -685,12 +696,33 @@ class Trader:
             if ask is not None:
                 bp = min(bp, ask - 1); sp = max(sp, ask - 1)
             if bid is not None: sp = max(sp, bid + 1)
+
+            # Phase 3 — race-to-the-touch override (HYD only).
+            rtt_active = (
+                int(state.timestamp) >= rtt_timeout_until
+                and abs(pos) <= RTT_INVENTORY_GOVERN * CAP_H
+            )
+            if rtt_active:
+                if rtt_bid is not None:
+                    bp_rtt = int(math.floor(rtt_bid)) + 1
+                    bp = min(bp, bp_rtt)
+                if rtt_ask is not None:
+                    sp_rtt = int(math.ceil(rtt_ask)) - 1
+                    sp = max(sp, sp_rtt)
+                if bid is not None: bp = min(bp, bid + 1)
+                if ask is not None:
+                    bp = min(bp, ask - 1); sp = max(sp, ask - 1)
+                if bid is not None: sp = max(sp, bid + 1)
+
             bsz = _cb(pos, CAP_H, b, max(0, int(round(H_SIZE * max(0.0, 1 - 2.0 * inv)))))
             ssz = _cs(pos, CAP_H, s, max(0, int(round(H_SIZE * max(0.0, 1 + 2.0 * inv)))))
             if bsz > 0 and (ask is None or bp < ask):
                 legs.append(Order(HYD, bp, bsz))
             if ssz > 0 and (bid is None or sp > bid):
                 legs.append(Order(HYD, sp, -ssz))
+            # Track our last submitted quote for race-loss detection next tick.
+            my_last_hyd_bid = bp
+            my_last_hyd_ask = sp
             if legs:
                 out[HYD] = legs
 
@@ -705,7 +737,7 @@ class Trader:
                 vfe_fade = -VFE_AC1_FADE_K * vfe_ret
                 if vfe_fade > VFE_AC1_FADE_CAP: vfe_fade = VFE_AC1_FADE_CAP
                 if vfe_fade < -VFE_AC1_FADE_CAP: vfe_fade = -VFE_AC1_FADE_CAP
-            lean_v = mark_lean.get(VFE, 0.0) + mark_lean_fast.get(VFE, 0.0)
+            lean_v = mark_lean.get(VFE, 0.0)
             fair = fs[VFE] + skew + vfe_fade + lean_v
             legs = []; b = s = 0
             if ask is not None and ask + V_TAKE <= fair:
@@ -788,9 +820,13 @@ class Trader:
             "prev_hyd_mid": round(hyd_mid_now, 4) if hyd_mid_now is not None else 0.0,
             "prev_vfe_mid": round(vfe_mid_now, 4) if vfe_mid_now is not None else 0.0,
             "mark_lean": {k: round(v, 4) for k, v in mark_lean.items()},
-            "mark_lean_fast": {k: round(v, 4) for k, v in mark_lean_fast.items()},
-            "vfe_drift_ema": round(vfe_drift_ema, 6),
             "last_ts": int(state.timestamp),
+            "rtt_bid": round(rtt_bid, 4) if rtt_bid is not None else None,
+            "rtt_ask": round(rtt_ask, 4) if rtt_ask is not None else None,
+            "rtt_loss_count": rtt_loss_count,
+            "rtt_timeout_until": rtt_timeout_until,
+            "my_last_hyd_bid": my_last_hyd_bid,
+            "my_last_hyd_ask": my_last_hyd_ask,
             "smile": {
                 "smile_a0": smile_state.get("smile_a0"),
                 "smile_a1": smile_state.get("smile_a1"),

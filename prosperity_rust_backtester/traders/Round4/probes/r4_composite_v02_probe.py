@@ -1,25 +1,25 @@
-"""Probe: r4_mark_dossier_v06 — VFE-drift-gated Mark 67 contribution.
+"""Probe: r4_composite_v02 = (v08 minus Mark 67) + V_5000 imb2.
 
-Diagnostic showed:
-- v04 (Mark 67 weight 0.30) total = +619, day-3 = -1,150
-- v05 (Mark 67 weight 0.00) total = -1,361, day-3 = -615
-- The +1,980 alpha from setting Mark 67 weight 0 → 0.30 is real, but on
-  day-3 (sharp VFE drift down day) the +VFE lean keeps getting hit.
+Phase 1 of the final-implementation session. Tests the alternative
+composition path that was never measured: v08's per-Mark counterparty-gated
+machinery WITHOUT the Mark 67 leg, layered with the V_5000 imb2 skew.
 
-v06: keep VFE_W_M67 = 0.50 (the maximum signal capture) BUT gate on the
-trailing VFE drift. When the EMA-smoothed VFE recent-drift is strongly
-negative (drift_ema < -3 ticks per 100 ticks), reduce the Mark 67
-contribution multiplier to 0.3. This lets us catch Mark 67's bounce signal
-on flat/up days while protecting on persistent down days.
+Two edits vs v08:
+  1. VFE_W_M67 = 0.0  (drop Mark 67 from v08's stack; Phase 6 nulls reject
+     Mark 67's identity edge — perm p=0.47, shuffle z=+2.0).
+  2. Add V_5000 imb2 → fair skew (β=3.0, cap=±1 tick) inside
+     `_smile_voucher_orders` for k=5000.
 
-Changes vs v04:
-- VFE_W_M67 = 0.50 (back to max, as in v03).
-- New: track trailing VFE drift via EMA in `vfe_drift_ema` traderData key.
-- New: scale Mark 67 contribution by `regime_mult` based on `vfe_drift_ema`:
-  drift_ema > +1 → mult 1.0 (up day, full size)
-  drift_ema in [-1, +1] → mult 1.0 (flat day)
-  drift_ema in [-3, -1] → mult 0.5 (mild down)
-  drift_ema < -3 → mult 0.0 (sharp down — disable Mark 67 copy)
+No other changes. Pre-registered: VFE_W_M67=0.0, V5000_IMB_BETA=3.0,
+V5000_IMB_CAP=1.0. No tuning.
+
+Decision rule:
+  - If composite v02 ≥ composite v01 + 500 (3-day BT) → composite v02 is
+    new baseline for Phase 2-6 stacking.
+  - Else: composite v01 remains baseline; v08's machinery permanently
+    retired.
+
+Floor (composite v01): +228,510.50 / 3-day BT.
 
 Submission contract: run(state) -> (orders, conversions, traderData).
 """
@@ -102,7 +102,7 @@ VEV4000_W_M38 = 0.20
 # VFE: keep the highest-confidence rules.
 VFE_W_M14 = 0.12            # slightly tighter than v02's 0.15
 VFE_W_M38 = 0.0             # Mark 38 doesn't trade VFE
-VFE_W_M67 = 0.50            # back to max; regime-gated below
+VFE_W_M67 = 0.0             # COMPOSITE V02: dropped (fails Phase 6 nulls)
 VFE_DRIFT_EMA_ALPHA = 0.05  # EMA alpha on per-tick mid diff for regime gate
 VFE_W_M49_SELL = 0.25       # fade their sells
 VFE_W_M22_SELL = 0.15       # fade their sells
@@ -156,6 +156,10 @@ SMILE_PER_STRIKE_BIAS: Dict[int, float] = {
 }
 
 SMILE_WARMUP_TICKS = 20
+
+# R4-V5000-C02 standalone constants (Phase 2 of follow-up; now embedded)
+V5000_IMB_BETA = 3.0
+V5000_IMB_CAP = 1.0
 
 
 # ---------- Black-Scholes ---------------------------------------------------
@@ -320,16 +324,15 @@ def _cp_mult(mark: str, partner: str) -> float:
 
 
 def _regime_mult_for_m67(vfe_drift_ema: float) -> float:
-    """Scale Mark 67 +VFE contribution by the VFE drift regime.
+    """v08: stricter regime gate to catch day-3 earlier.
 
-    drift_ema > +1 ticks: full size (1.0)
-    drift_ema in [-1, +1]: full size (1.0)  — flat regime
-    drift_ema in [-3, -1]: half size (0.5)  — mild down regime
-    drift_ema < -3 ticks: zero (0.0)        — sharp down regime
+    drift_ema > 0 ticks: full size (1.0)  — up or flat regime
+    drift_ema in [-1, 0]: half size (0.5) — mild down
+    drift_ema < -1 ticks: zero (0.0)      — any down trend
     """
-    if vfe_drift_ema >= -1.0:
+    if vfe_drift_ema >= 0.0:
         return 1.0
-    if vfe_drift_ema >= -3.0:
+    if vfe_drift_ema >= -1.0:
         return 0.5
     return 0.0
 
@@ -545,6 +548,15 @@ def _smile_voucher_orders(state, depths, positions, timestamp, ve_micro):
                 if fade > AC1_FADE_CAP: fade = AC1_FADE_CAP
                 if fade < -AC1_FADE_CAP: fade = -AC1_FADE_CAP
                 fair = fair + fade
+
+        # R4-V5000-C02 (Phase 2 standalone composed in v02): imb_k2 -> fair
+        # skew on V_5000 only, capped +/- 1 tick.
+        if k == 5000:
+            imb2_v5000 = _imb_k2(d_)
+            v5000_skew = V5000_IMB_BETA * imb2_v5000
+            if v5000_skew > V5000_IMB_CAP: v5000_skew = V5000_IMB_CAP
+            if v5000_skew < -V5000_IMB_CAP: v5000_skew = -V5000_IMB_CAP
+            fair = fair + v5000_skew
 
         pos = positions.get(sym, 0)
         bid = _bb(d_); ask = _ba(d_)

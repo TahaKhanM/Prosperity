@@ -1,14 +1,86 @@
-"""Probe: r4_mark_dossier_v04 — Mark 67 weight reduction for VFE down-day risk.
+"""Phase 2.C — deadband fair-value-bias hedge on top of composite v01.
 
-v03 came in at +973 / 3-day with day-3 still -1,419 (VFE drift down day).
-The Mark 67 fast-decay copy was riding +VFE into a falling market on day-3.
+R4-CHAIN-01-V2 (corrected). Each tick, compute portfolio voucher delta
+  D = sum_K [0.7 × Δ_BS(S, K, tte, sigma_smile_K)] × position_K
+over K ∈ {4000..5500}. If |D| ≥ FV_BIAS_DEADBAND, add bias to VFE MM fair:
+  bias_VFE = -D / FV_BIAS_DIVISOR, clipped to ±FV_BIAS_HARD_CAP.
+Otherwise bias_VFE = 0. Apply as additive skew (NOT take order).
 
-Changes vs v03:
-- Reduce VFE_W_M67 from 0.50 → 0.30 (less aggressive +VFE lean on Mark 67
-  prints; still active but smaller magnitude).
-- Add a SOFT-DECAY EMA on VFE to avoid leaning into prolonged downward drift.
-  Specifically: track the trailing 100-tick mid drift and reduce the +VFE
-  Mark 67 contribution if recent drift is sharply negative.
+Different from the prior failed Phase 4 (`r4_chain_01_fvbias_probe.py`):
+that probe used divisor=4 with no deadband; bias hit ±1 cap on most ticks
+and VFE crashed −35,892. This version raises divisor to 8 and adds a
+deadband at |D|=100.
+
+Pre-registered (locked):
+  FV_BIAS_DELTA_RATIO  = 0.70   # smile-Δ over-states empirical β by ~30%
+  FV_BIAS_DEADBAND     = 100    # only bias when |D| > 100
+  FV_BIAS_DIVISOR      = 8.0    # raised from prior 4.0
+  FV_BIAS_HARD_CAP     = 1.0    # tick
+
+Equally-defensible: deadband ∈ [50,200]; divisor ∈ [6,12]; cap ∈ [0.5,1.5].
+
+Ship gate: 3-day Δ vs composite v01 ≥ +500 AND VFE own_trades drops by ≥5%
+AND no single-day Δ < −500. Falsifier: VFE own_trades INCREASES by >10% →
+the bias is wrong-signed (existing MM is fighting it). Kill.
+
+ORIGINAL composite v01 docstring follows.
+
+Composes the two SURVIVORS of the followup probe sweep:
+  - Phase 5: r4_mark_lean_v02_no_m67 (Δ +3,079 vs v15)
+  - Phase 2: r4_v5000_c02_standalone (Δ +2,657 vs v15)
+
+The two probes touch DISJOINT code paths:
+  - Phase 5: HYD/VFE MM fairs (mark_lean term)
+  - Phase 2: V_5000 smile MM fair (imb2 skew, capped +/- 1 tick)
+
+→ Sum-of-parts: +3,079 + +2,657 = +5,736 vs v15 if no interaction.
+
+Composite ship gate: Δ vs v15 ≥ +5,000 (≥ 87 % of sum-of-parts);
+Δ vs Phase 5 alone ≥ +1,000 (V_5000 imb2 must add meaningful PnL).
+
+Pre-reg locked at constituent values: LEAN_DECAY=0.985, LEAN_CLAMP_PROD=3.0,
+V5000_IMB_BETA=3.0, V5000_IMB_CAP=1.0.
+
+ORIGINAL Phase 5 docstring:
+r4_mark_lean_v02_no_m67 - Mark lean WITHOUT Mark 67.
+
+Identical to Probe 1 (r4_mark_lean_v01) except Mark 67 is removed from
+MARK_RULES_VFE. Phase 6 nulls found Mark 67 fails both Mark-permutation
+(p=0.47) and time-shuffle (z=+2.0); headline +1.19/u h500 PnL is likely
+drift-correlated, not causal.
+
+Decision rule:
+  - Δ vs Probe 1 ≥ −100 over 3-day BT → ship the lighter form (Mark 67 was noise)
+  - Δ vs Probe 1 < −100 → retain Mark 67 with documented "weak null on 7-Mark set"
+
+Pre-registered: single-rule edit. No tuning.
+
+ORIGINAL Probe 1 docstring:
+r4_mark_lean_v01 - Mark-conditional lean stack on top of v15.
+
+Adds a per-product `mark_lean` accumulator decoded/encoded via traderData JSON.
+Decay 0.985 per tick (HL ~46 ticks).
+
+Per-trade contribution (one per trade in state.market_trades[product]):
+
+HYDROGEL_PACK:
+  Mark 14 buyer:    lean[HYD] += 0.20 * qty * 0.05  (positive)
+  Mark 14 seller:   lean[HYD] -= 0.20 * qty * 0.05
+  Mark 38 buyer:    lean[HYD] -= 0.20 * qty * 0.05
+  Mark 38 seller:   lean[HYD] += 0.20 * qty * 0.05
+  Mark 22 buyer:    lean[HYD] -= 0.20 * qty * 0.05  (R4-HYD-M01 fade)
+
+VELVETFRUIT_EXTRACT:
+  Mark 14 buyer:    lean[VFE] += 0.10 * qty * 0.05
+  Mark 14 seller:   lean[VFE] -= 0.10 * qty * 0.05
+  Mark 38 buyer:    lean[VFE] -= 0.10 * qty * 0.05
+  Mark 38 seller:   lean[VFE] += 0.10 * qty * 0.05
+  Mark 67 buyer:    lean[VFE] += 0.10 * qty * 0.05  (R4-VFE-M01 buy follow)
+  Mark 49 seller:   lean[VFE] += 0.10 * qty * 0.05  (R4-VFE-M02 informed seller -> long)
+  Mark 22 seller:   lean[VFE] += 0.05 * qty * 0.05  (R4-VFE-M03)
+
+Clamp lean to +/- 3.0 per product. Apply lean[HYD] to HYD MM fair after the
+existing skew, and lean[VFE] to VFE MM fair after the existing skew+fade.
 
 Submission contract: run(state) -> (orders, conversions, traderData).
 """
@@ -66,48 +138,26 @@ VFE_AC1_FADE_K = 0.03
 VFE_AC1_FADE_CAP = 3.0
 
 
-# ---------- Mark lean constants (DOSSIER-DERIVED) --------------------------
+# ---------- mark lean constants (NEW) --------------------------------------
 
-# Decay rates: HL ~50 ticks → 0.5^(1/50) = 0.986; HL ~20 ticks → 0.5^(1/20) = 0.966
-LEAN_DECAY_DEFAULT = 0.986       # HL ~50 ticks (was 0.985 / HL ~46 in v01)
-LEAN_DECAY_FAST = 0.966          # HL ~20 ticks (Mark 67 contribution)
-LEAN_CLAMP_PROD = 5.0            # widened from 3.0 in v01
+LEAN_DECAY = 0.985
+LEAN_CLAMP_PROD = 3.0
 
-# Per-Mark per-product weights are the **base lean per qty unit at half spread**.
-# The actual lean contribution = sign * qty * weight * 0.05 (the 0.05 keeps
-# magnitudes comparable to v01).
-
-# HYD: dial back from v02's 0.40 to 0.30 — closer to v01's 0.20 but still
-# benefiting from the counterparty gating below.
-HYD_W_M14 = 0.30
-HYD_W_M38 = 0.30
-HYD_W_M22_BUY_FADE = 0.0    # disabled in v03 — too noisy
-
-# VEV_4000: keep at 0.20 (slightly above v01's 0.10 to amplify the cleanest
-# +10.5/u h100 signal in the dataset).
-VEV4000_W_M14 = 0.20
-VEV4000_W_M38 = 0.20
-
-# VFE: keep the highest-confidence rules.
-VFE_W_M14 = 0.12            # slightly tighter than v02's 0.15
-VFE_W_M38 = 0.0             # Mark 38 doesn't trade VFE
-VFE_W_M67 = 0.30            # reduced from v03's 0.50 to mute down-day risk
-VFE_W_M49_SELL = 0.25       # fade their sells
-VFE_W_M22_SELL = 0.15       # fade their sells
-VFE_W_M55 = 0.0             # disabled in v03 — tail-driven loss hurt day-3
-VFE_W_M01 = 0.10            # mirror their direction (low priority)
-
-# Counterparty-conditional multipliers. Tightened: default multiplier 0.3
-# (vs 0.5 in v02) — when Mark X is paired with someone other than the
-# expected dyad partner, take a much smaller position.
-CP_MULT = {
-    "Mark 14": {"Mark 38": 1.0, "Mark 22": 0.0, "_default_": 0.3},
-    "Mark 38": {"Mark 14": 1.0, "Mark 22": 0.0, "_default_": 0.3},
-    "Mark 49": {"Mark 67": 1.0, "Mark 55": 0.0, "_default_": 0.3},
-    "Mark 55": {"_default_": 0.0},  # disabled
-    "Mark 22": {"_default_": 1.0},
-    "Mark 67": {"_default_": 1.0},  # always copy, no gating
-    "Mark 01": {"Mark 55": 1.0, "_default_": 0.3},
+# Per-product per-Mark weights. Tuple = (sign_on_buyer, sign_on_seller, weight).
+# Convention: contribution = sign * qty * 0.05 * weight.
+# weight = 0 means inactive.
+# (qty * 0.05 is the per-unit base; weight scales it.)
+MARK_RULES_HYD = {
+    "Mark 14": (+0.20, -0.20),  # buyer +, seller -
+    "Mark 38": (-0.20, +0.20),  # buyer -, seller +
+    "Mark 22": (-0.20, 0.0),    # buyer -, seller no-op (R4-HYD-M01)
+}
+MARK_RULES_VFE = {
+    "Mark 14": (+0.10, -0.10),
+    "Mark 38": (-0.10, +0.10),
+    # "Mark 67" REMOVED (Phase 6 nulls fail: perm p=0.47, shuffle z=+2.0)
+    "Mark 49": (0.0, +0.10),    # seller -> +VE (R4-VFE-M02)
+    "Mark 22": (0.0, +0.05),    # seller -> +VE (R4-VFE-M03)
 }
 
 
@@ -144,6 +194,17 @@ SMILE_PER_STRIKE_BIAS: Dict[int, float] = {
 }
 
 SMILE_WARMUP_TICKS = 20
+
+# R4-V5000-C02 standalone constants (NEW — composite-included)
+V5000_IMB_BETA = 3.0
+V5000_IMB_CAP = 1.0
+
+# Phase 2.C — deadband FV-bias hedge constants
+FV_BIAS_DELTA_RATIO = 0.70
+FV_BIAS_DEADBAND = 100.0
+FV_BIAS_DIVISOR = 8.0
+FV_BIAS_HARD_CAP = 1.0
+FV_BIAS_STRIKES = (4000, 4500, 5000, 5100, 5200, 5300, 5400, 5500)
 
 
 # ---------- Black-Scholes ---------------------------------------------------
@@ -296,120 +357,45 @@ def _ew(p, s, a):     return s if p is None else p * (1 - a) + s * a
 def _clamp(x, lo, hi): return max(lo, min(hi, x))
 
 
-# ---------- mark lean update (DOSSIER-DERIVED) -----------------------------
+# ---------- mark lean update (NEW) -----------------------------------------
 
 
-def _cp_mult(mark: str, partner: str) -> float:
-    """Look up the counterparty-conditional multiplier for `mark` given `partner`."""
-    rules = CP_MULT.get(mark)
-    if rules is None:
-        return 0.5
-    return rules.get(partner, rules.get("_default_", 0.5))
-
-
-def _update_mark_lean(
-    mark_lean: Dict[str, float],
-    mark_lean_fast: Dict[str, float],
-    market_trades,
-    current_ts: int,
-    last_ts: int,
-) -> None:
-    """Decay then accumulate per-product lean.
-
-    Two parallel accumulators:
-    - `mark_lean` (HL ~50 ticks): standard decay for all Marks except Mark 67.
-    - `mark_lean_fast` (HL ~20 ticks): Mark 67 only.
-
-    Each is summed into the final fair-value skew at quote time.
-    """
+def _update_mark_lean(mark_lean: Dict[str, float], market_trades, current_ts: int,
+                      last_ts: int) -> None:
+    """Decay then accumulate per-product lean. Mutates `mark_lean` in place."""
     elapsed_ticks = max(0, (current_ts - last_ts) // 100)
     if elapsed_ticks > 0:
-        decay = LEAN_DECAY_DEFAULT ** elapsed_ticks
+        decay = LEAN_DECAY ** elapsed_ticks
         for p in list(mark_lean):
             mark_lean[p] *= decay
-        decay_fast = LEAN_DECAY_FAST ** elapsed_ticks
-        for p in list(mark_lean_fast):
-            mark_lean_fast[p] *= decay_fast
 
     for product, trades in (market_trades or {}).items():
+        if product == HYD:
+            rules = MARK_RULES_HYD
+        elif product == VFE:
+            rules = MARK_RULES_VFE
+        else:
+            continue
         for t in trades:
-            buyer = (getattr(t, "buyer", None) or "").strip()
-            seller = (getattr(t, "seller", None) or "").strip()
+            buyer = getattr(t, "buyer", None) or ""
+            seller = getattr(t, "seller", None) or ""
             qty = float(getattr(t, "quantity", 0))
             if qty == 0:
                 continue
-
-            # Process each principal independently — both sides may contribute.
-            for mark, side, partner in (
-                (buyer, "buy", seller),
-                (seller, "sell", buyer),
-            ):
-                if not mark or mark.startswith("_"):
-                    continue
-                sgn = +1.0 if side == "buy" else -1.0
-
-                # Pick weight by (mark, product, side)
-                w = 0.0
-                use_fast = False
-                if product == HYD:
-                    if mark == "Mark 14":
-                        w = HYD_W_M14
-                    elif mark == "Mark 38":
-                        w = -HYD_W_M38   # opposite direction
-                    elif mark == "Mark 22" and side == "buy":
-                        # Adversarial fade — only on buys, opposite direction.
-                        w = -HYD_W_M22_BUY_FADE
-                elif product == "VEV_4000":
-                    if mark == "Mark 14":
-                        w = VEV4000_W_M14
-                    elif mark == "Mark 38":
-                        w = -VEV4000_W_M38
-                elif product == VFE:
-                    if mark == "Mark 14":
-                        w = VFE_W_M14
-                    elif mark == "Mark 38":
-                        w = -VFE_W_M38
-                    elif mark == "Mark 67":
-                        # Only buys exist for Mark 67; copy direction.
-                        if side == "buy":
-                            w = VFE_W_M67
-                            use_fast = True
-                    elif mark == "Mark 49":
-                        if side == "sell":
-                            # Fade: lean opposite (i.e., buy when they sell)
-                            w = -(-VFE_W_M49_SELL)  # = +VFE_W_M49_SELL applied with sgn
-                            # We want to nudge VFE UP when Mark 49 sells, so:
-                            # contribution = +VFE_W_M49_SELL * qty
-                            # encoded as sgn * w where sgn = -1 (sell) and w<0.
-                            # Set w = -VFE_W_M49_SELL so sgn*w = +VFE_W_M49_SELL.
-                            w = -VFE_W_M49_SELL
-                    elif mark == "Mark 55":
-                        # Fade direction (both sides)
-                        w = -VFE_W_M55
-                    elif mark == "Mark 22":
-                        if side == "sell":
-                            w = -VFE_W_M22_SELL
-                    elif mark == "Mark 01":
-                        # Mirror direction (low priority)
-                        w = VFE_W_M01
-
-                if w == 0.0:
-                    continue
-
-                # Counterparty-conditional gating
-                mult = _cp_mult(mark, partner)
-                contribution = sgn * qty * 0.05 * w * mult
-
-                if use_fast:
-                    target = mark_lean_fast
-                else:
-                    target = mark_lean
-                new_v = target.get(product, 0.0) + contribution
+            delta = 0.0
+            if buyer in rules:
+                w_buy, _ = rules[buyer]
+                delta += w_buy * qty * 0.05
+            if seller in rules:
+                _, w_sell = rules[seller]
+                delta += w_sell * qty * 0.05
+            if delta != 0.0:
+                new_v = mark_lean.get(product, 0.0) + delta
                 if new_v > LEAN_CLAMP_PROD:
                     new_v = LEAN_CLAMP_PROD
                 elif new_v < -LEAN_CLAMP_PROD:
                     new_v = -LEAN_CLAMP_PROD
-                target[product] = new_v
+                mark_lean[product] = new_v
 
 
 # ---------- Phase 1 smile MM (unchanged) -----------------------------------
@@ -512,6 +498,15 @@ def _smile_voucher_orders(state, depths, positions, timestamp, ve_micro):
                 if fade < -AC1_FADE_CAP: fade = -AC1_FADE_CAP
                 fair = fair + fade
 
+        # R4-V5000-C02 (Phase 2 standalone): imb_k2 -> fair skew on V_5000 only,
+        # capped at +/- 1 tick.
+        if k == 5000:
+            imb2_v5000 = _imb_k2(d_)
+            v5000_skew = V5000_IMB_BETA * imb2_v5000
+            if v5000_skew > V5000_IMB_CAP: v5000_skew = V5000_IMB_CAP
+            if v5000_skew < -V5000_IMB_CAP: v5000_skew = -V5000_IMB_CAP
+            fair = fair + v5000_skew
+
         pos = positions.get(sym, 0)
         bid = _bb(d_); ask = _ba(d_)
         bought = sold = 0
@@ -572,15 +567,14 @@ class Trader:
         fs = dict(prior.get("fs", {}) or {})
         smile_state: Dict = dict(prior.get("smile", {}) or {})
         mark_lean: Dict[str, float] = dict(prior.get("mark_lean", {}) or {})
-        mark_lean_fast: Dict[str, float] = dict(prior.get("mark_lean_fast", {}) or {})
         last_ts = int(prior.get("last_ts", state.timestamp))
 
         positions = state.position or {}
         depths = state.order_depths or {}
 
+        # NEW: update mark lean from market trades
         market_trades = getattr(state, "market_trades", {}) or {}
-        _update_mark_lean(mark_lean, mark_lean_fast, market_trades,
-                          int(state.timestamp), last_ts)
+        _update_mark_lean(mark_lean, market_trades, int(state.timestamp), last_ts)
 
         prev_hyd_mid = float(prior.get("prev_hyd_mid") or 0.0)
         hd = depths.get(HYD)
@@ -615,7 +609,7 @@ class Trader:
                 hyd_fade = -HYD_AC1_FADE_K * hyd_ret
                 if hyd_fade > HYD_AC1_FADE_CAP: hyd_fade = HYD_AC1_FADE_CAP
                 if hyd_fade < -HYD_AC1_FADE_CAP: hyd_fade = -HYD_AC1_FADE_CAP
-            lean_h = mark_lean.get(HYD, 0.0) + mark_lean_fast.get(HYD, 0.0)
+            lean_h = mark_lean.get(HYD, 0.0)
             fair = fs[HYD] + H_IMB * himb_k1 + hyd_fade + lean_h
             legs = []; b = s = 0
             if ask is not None and ask + H_TAKE <= fair:
@@ -644,6 +638,38 @@ class Trader:
             if legs:
                 out[HYD] = legs
 
+        # ---------- Phase 2.C — deadband FV-bias hedge --------------------
+        # Compute portfolio voucher delta D from PRIOR tick's smile state +
+        # CURRENT positions. First tick: prior smile state is empty → bias=0.
+        fv_bias = 0.0
+        sm_a0 = smile_state.get("smile_a0")
+        sm_a1 = smile_state.get("smile_a1")
+        sm_a2 = smile_state.get("smile_a2")
+        sm_s = smile_state.get("smile_s")
+        sm_tte_days = smile_state.get("smile_tte_days")
+        if (sm_a0 is not None and sm_a1 is not None and sm_a2 is not None
+                and sm_s is not None and sm_tte_days is not None
+                and sm_s > 0 and sm_tte_days > 0):
+            tte_yrs = float(sm_tte_days) / 365.0
+            D_total = 0.0
+            for kk in FV_BIAS_STRIKES:
+                pos_kk = positions.get(f"VEV_{kk}", 0)
+                if pos_kk == 0:
+                    continue
+                # smile-fit IV at this strike (clamp moneyness to a sane band
+                # for deep-ITM extrapolation; Δ is dominated by moneyness).
+                m_kk = math.log(float(sm_s) / float(kk))
+                m_clamp = max(-0.20, min(0.20, m_kk))
+                iv_kk = float(sm_a0) + float(sm_a1) * m_clamp + float(sm_a2) * m_clamp * m_clamp
+                if iv_kk <= 0.005:
+                    iv_kk = float(sm_a0)
+                delta_kk = bs_call_delta(float(sm_s), float(kk), tte_yrs, iv_kk)
+                D_total += FV_BIAS_DELTA_RATIO * delta_kk * float(pos_kk)
+            if abs(D_total) >= FV_BIAS_DEADBAND:
+                fv_bias = -D_total / FV_BIAS_DIVISOR
+                if fv_bias > FV_BIAS_HARD_CAP: fv_bias = FV_BIAS_HARD_CAP
+                if fv_bias < -FV_BIAS_HARD_CAP: fv_bias = -FV_BIAS_HARD_CAP
+
         # ---------- VFE MM (lean added to fair) ---------------------------
         vfe_mid_now = _mid(vd) if vd is not None else None
         if vd is not None and VFE in fs:
@@ -655,8 +681,8 @@ class Trader:
                 vfe_fade = -VFE_AC1_FADE_K * vfe_ret
                 if vfe_fade > VFE_AC1_FADE_CAP: vfe_fade = VFE_AC1_FADE_CAP
                 if vfe_fade < -VFE_AC1_FADE_CAP: vfe_fade = -VFE_AC1_FADE_CAP
-            lean_v = mark_lean.get(VFE, 0.0) + mark_lean_fast.get(VFE, 0.0)
-            fair = fs[VFE] + skew + vfe_fade + lean_v
+            lean_v = mark_lean.get(VFE, 0.0)
+            fair = fs[VFE] + skew + vfe_fade + lean_v + fv_bias
             legs = []; b = s = 0
             if ask is not None and ask + V_TAKE <= fair:
                 av = -vd.sell_orders[ask]
@@ -738,7 +764,6 @@ class Trader:
             "prev_hyd_mid": round(hyd_mid_now, 4) if hyd_mid_now is not None else 0.0,
             "prev_vfe_mid": round(vfe_mid_now, 4) if vfe_mid_now is not None else 0.0,
             "mark_lean": {k: round(v, 4) for k, v in mark_lean.items()},
-            "mark_lean_fast": {k: round(v, 4) for k, v in mark_lean_fast.items()},
             "last_ts": int(state.timestamp),
             "smile": {
                 "smile_a0": smile_state.get("smile_a0"),

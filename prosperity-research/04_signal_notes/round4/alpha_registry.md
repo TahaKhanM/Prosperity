@@ -26,22 +26,55 @@ params · probe trader file path · one-line falsifier.
 
 ---
 
-## SHIPPING DECISION (the headline) — UPDATED 2026-04-26 (post-dossier project)
+## SHIPPING DECISION (the headline) — UPDATED 2026-04-26 (final implementation)
 
-**Ship `r4_mark_dossier_v08_probe.py` for the next R4 submission.**
-v01 remains the live-day-1 fallback if any v08 falsifier triggers.
+**Ship `prosperity_rust_backtester/traders/Round4/r4_final_v01.py`** —
+the production trader for the next R4 submission. The IMC-upload twin is
+at `submissions/r4_final_v01_imc_upload.py` (byte-identical).
 
-| Trader | 3-day BT | Δ vs v15 | Δ vs v01 | Per-product Δ vs v01 |
-|---|---:|---:|---:|---|
-| `r4_baseline_v15_probe.py` | +222,775 | — | -1,054 | (no Mark lean) |
-| `r4_mark_lean_v01_probe.py` (prior ship) | +223,829 | +1,054 | — | HYD +519, VFE +536 |
-| **`r4_mark_dossier_v08_probe.py`** (new ship) | **+225,357** | **+2,582** | **+1,528** | HYD -108, VFE +1,636 |
+The production trader encodes composite v01 verbatim with kill switches,
+inlined BS pricer, and traderData budget enforcement. Final-implementation
+Phases 1-4 ran 7 probes on top of composite v01; **all 7 REJECTED**.
+Composite v01 remains the canonical alpha stack.
 
-The dossier-derived v08 probe is the winner of an 11-iteration sweep
-(v02–v11) built on the per-Mark dossiers and cross-Mark coordination
-findings of the R4 Mark dossier project (`prosperity-research/04_signal_notes/round4/mark_dossiers/`).
-Detailed parameters and per-day breakdown in
-`06_validation/round4_alpha_probes/r4_mark_dossier_v08_probe.md`.
+| Trader | 3-day BT | Δ vs v15 | Δ vs prior ships |
+|---|---:|---:|---|
+| `r4_baseline_v15_probe.py` | +222,775 | — | (deeper baseline) |
+| `r4_mark_lean_v01_probe.py` | +223,829 | +1,054 | original session ship |
+| `r4_mark_dossier_v08_probe.py` | +225,357 | +2,582 | superseded by composite v01 |
+| `r4_composite_v01_probe.py` | +228,510.50 | +5,735.5 | followup-session ship |
+| **`r4_final_v01.py`** (PRODUCTION) | **+228,510.50** | **+5,735.5** | matches composite v01 bit-identically (Rust BT) |
+
+Per-day Δ vs v15: +1,361 / +2,448 / +1,929 (all 3 days positive).
+Per-product Δ vs v15: HYD +519, VFE +2,560, V_5000 +2,656.5.
+
+Final-implementation rejected probes (decisions in
+`final_implementation_decisions.md`):
+- composite v02 (v08 minus M67 + V_5000 imb2): -3,387 — v08 machinery retired.
+- 2.A adaptive bias EMA: -16,318 — G1 family permanently retired.
+- 2.B V_5200 self-take: -492 — captures Mark 22 noise, not Mark 14.
+- 2.C deadband FV-bias: -37,455 — FV-bias family retired.
+- 3 race-to-touch: -551 — pre-reg formula doesn't tighten.
+- 4.A inventory gate: -1,092 — Marks are flow-consistent.
+- 4.B TTE-conditional + zero bias: -328 — day-3 +19,884 cancels day-1/2.
+
+Validation: Rust BT bit-identical to composite v01; determinism
+confirmed (run twice). traderData peak 488 chars / 49,000 budget. Python
+BT shows -23.8 % deviation (Mark-lean overlay structural fill-model
+divergence; Python BT is a conservative lower bound; v15 baseline
+reconciles within 2 %).
+
+Detailed validation in
+`06_validation/round4_alpha_probes/r4_final_v01_validation.md`.
+
+ARCHIVED HEADLINE (pre-final-implementation):
+The dossier-derived v08 probe was the prior-session winner of an
+11-iteration sweep (v02–v11). It's been SUPERSEDED by composite v01
+which delivers ~3.7× the lift (+5,735 vs v08's +2,582 over v15). v08
+machinery (CP_MULT, larger HYD weights, M55 disabled) was retired
+permanently in Phase 1 of the final-implementation session: Phase 1
+showed v02 = (v08 minus M67) + V_5000 imb2 LOSES to composite v01 by
+-3,387 over 3 days.
 
 Key changes vs v01:
 1. **Counterparty-conditional gating** — full lean only on structural-pair

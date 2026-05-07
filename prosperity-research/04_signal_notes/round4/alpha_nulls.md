@@ -142,3 +142,41 @@ Methodology (seed=42, stdlib). Counterparty alphas: 200-iter Mark-permutation (r
 - HYD Mark 14 / Mark 38 FAIL Null B (time-shuffle z ≈ ±1) because their prints concentrate during directional drift segments — randomising the ts still hits a rising-mid window in expectation. This is the same brittleness flagged in `alpha_registry.md` (F1-Mark14-base).
 - R4-XPROD-VEV5200 PASSES the source-shuffle null (z ≈ 12–15) but FAILS Mark-perm: the VEV_4000 Δmid is driven by the *event* (any large VEV_5200 print) not Mark identity. Consistent with `causality_spillover.md`: voucher Granger is stale-quote ordering. The right operationalisation is event-triggered, NOT Mark-conditioned.
 
+
+
+## Composite v01 — joint robustness (final implementation session, 2026-04-26)
+
+The R4 final-implementation session ran 7 probes (Phases 1–4) on top of
+composite v01 (`r4_composite_v01_probe.py`, +228,510.50 / 3-day BT). All
+7 REJECTED; **no new alphas were composed into composite v03**. The
+production trader (`r4_final_v01.py`) encodes composite v01 verbatim.
+
+### Components shipped (already null-tested individually)
+
+1. Mark-conditional lean (HYD: Mark 14, 38, 22; VFE: Mark 14, 38, 49, 22).
+   Mark 67 EXCLUDED.
+   - Mark 14 / Mark 38 HYD: Null A PASS, Null B FAIL → RESEARCH (kept,
+     brittle-flagged).
+   - Mark 22 VFE-S, Mark 22 HYD-B: BOTH nulls PASS → SHIP.
+   - Mark 49 VFE-S: Null A MARGINAL, Null B FAIL → RESEARCH (kept).
+   - Mark 67 VFE-B: BOTH nulls FAIL → REJECT (already excluded).
+
+2. V_5000 imb2 → fair skew (β=3.0, cap=±1):
+   - Holdout PASS (β decay -5.4%); Cost PASS-by-construction → SHIP.
+
+### Joint-stack determinism check
+
+Re-ran composite v01 BT and got bit-identical per-day PnL: 68,985.50 /
+110,025.50 / 49,499.50 = 228,510.50. Run-to-run determinism confirmed.
+
+### No new joint nulls run
+
+All 7 final-session probes REJECT, so composite v03 = composite v01.
+Joint nulls already cover the SHIP-grade components individually.
+
+A proper joint-trader-level null (running composite v01 against a
+permuted-Mark dataset) was punted to a future session: it requires
+modifying the dataset CSVs in place, which is significant infrastructure
+outside this session's scope. The per-component nulls + the cleanly
+additive composition (Phase 5+Phase 2 sum-of-parts +5,736; actual
++5,735.5) provide the strongest available evidence for joint robustness.
