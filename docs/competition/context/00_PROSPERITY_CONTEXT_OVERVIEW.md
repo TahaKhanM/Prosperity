@@ -49,13 +49,13 @@ Round 3 carries forward; rounds 1–2 do not.
 - `20_MANUAL_TRADING_CONTEXT.md` — manual challenge facts (Round 4 Aether
   Crystal vanilla + exotic options).
 - `30_REPO_AND_TOOLING_CONTEXT.md` — backtester + visualizer + skills context.
-- `New Context/Round 4 Trading round.md` — primary written source for Round 4.
-- `New Context/Round 4 ARIA Uplink.md` — Round 4 ARIA uplink transcript.
-- `New Context/Round 4 Hint Cards.md` — verbatim Round 4 hint cards with
+- `New Context/round_4_trading_round.md` — primary written source for Round 4.
+- `New Context/round_4_aria_uplink.md` — Round 4 ARIA uplink transcript.
+- `New Context/round_4_hint_cards.md` — verbatim Round 4 hint cards with
   research implications.
-- `New Context/Round 3 Trading round.md` — primary written source for Round 3
+- `New Context/round_3_trading_round.md` — primary written source for Round 3
   (kept as reference; same algo products).
-- `New Context/Video Transcript.pdf` — ARIA uplink transcript for Round 3.
+- `New Context/video_transcript.pdf` — ARIA uplink transcript for Round 3.
 - `Unrefined Context/` — original uploaded source material (lower priority).
 
 ## Trust model and source hierarchy
@@ -63,17 +63,17 @@ Round 3 carries forward; rounds 1–2 do not.
 When facts conflict, use this order:
 
 1. **Official Prosperity written docs**
-   - `New Context/Round 4 Trading round.md` (primary for current round)
-   - `New Context/Round 3 Trading round.md` (reference; algo products same)
-   - `Unrefined Context/Official Prosperity Context.md` (general mechanics)
+   - `New Context/round_4_trading_round.md` (primary for current round)
+   - `New Context/round_3_trading_round.md` (reference; algo products same)
+   - `Unrefined Context/official_prosperity_context.md` (general mechanics)
 2. **Repo-context documents that describe local code/tooling**
    - `Unrefined Context/RUST_BACKTESTER_CONTEXT_FOR_AI_TOOLS.md`
    - `Unrefined Context/PYTHON_BACKTESTER_AND_VISUALIZER_CONTEXT_FOR_AI_TOOLS.md`
 3. **Narrative / transcript material**
-   - `New Context/Round 4 ARIA Uplink.md`
-   - `New Context/Round 4 Hint Cards.md`
-   - `New Context/Video Transcript.pdf` (R3)
-   - `Unrefined Context/ARIA Uplink.md`
+   - `New Context/round_4_aria_uplink.md`
+   - `New Context/round_4_hint_cards.md`
+   - `New Context/video_transcript.pdf` (R3)
+   - `Unrefined Context/aria_uplink.md`
 
 Practical rule:
 - Treat official written docs as authoritative for rules, interfaces, position

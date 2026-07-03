@@ -34,9 +34,9 @@ If you are using a real repo checkout:
 ## Round 4 entry point
 
 For a Round 4 session, after the four numbered context files, also read:
-- `New Context/Round 4 Trading round.md`: the official Round 4 wiki page.
-- `New Context/Round 4 ARIA Uplink.md`: the in-fiction uplink transcript.
-- `New Context/Round 4 Hint Cards.md`: six prompt cards with research
+- `New Context/round_4_trading_round.md`: the official Round 4 wiki page.
+- `New Context/round_4_aria_uplink.md`: the in-fiction uplink transcript.
+- `New Context/round_4_hint_cards.md`: six prompt cards with research
   implications for IV / moneyness / volume / counterparty / vanilla-vs-exotic
   / chooser-options.
 

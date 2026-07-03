@@ -13,7 +13,7 @@ Key inputs:
 - [current_diagnosis_packet.md](/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity-research/06_validation/current_diagnosis_packet.md)
 - [round2_blocker_report.md](/Users/tahakhan/Documents/Work/Projects/Prosperity/prosperity-research/06_validation/round2_blocker_report.md)
 - official Round 2 docs under
-  [Prosperity Round 2.md](/Users/tahakhan/Documents/Work/Projects/Prosperity/Prosperity%20Context/Unrefined%20Context/Prosperity%20Round%202.md)
+  [prosperity_round_2.md](/Users/tahakhan/Documents/Work/Projects/Prosperity/Prosperity%20Context/Unrefined%20Context/Prosperity%20Round%202.md)
 
 ## Short Verdict
 

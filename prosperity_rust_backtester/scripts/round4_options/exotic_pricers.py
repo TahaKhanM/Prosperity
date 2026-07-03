@@ -1,6 +1,6 @@
 """Closed-form fair-value pricers for the Round 4 manual exotics.
 
-Three exotics are listed in `New Context/Round 4 Trading round.md`:
+Three exotics are listed in `New Context/round_4_trading_round.md`:
 
 1. **Chooser** — K=50, expiry T=21 days, decision date T_c=14 days.
    Auto-converts to whichever of call/put is in the money at the decision

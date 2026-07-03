@@ -8,9 +8,9 @@ public repo material. Local-tool notes below are verified against this
 checkout and must not be promoted into live-mechanics truth.
 
 Official rule sources used:
-- `Prosperity Context/New Context/Round 3 Trading round.md`
-- `Prosperity Context/New Context/Video Transcript.pdf`
-- `Prosperity Context/Unrefined Context/Official Prosperity Context.md`
+- `Prosperity Context/New Context/round_3_trading_round.md`
+- `Prosperity Context/New Context/video_transcript.pdf`
+- `Prosperity Context/Unrefined Context/official_prosperity_context.md`
 
 Local verification sources used:
 - `prosperity_rust_backtester/README.md`

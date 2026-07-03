@@ -1,7 +1,7 @@
 # ARIA Uplink — Round 4 (Salvinar) opening transcript
 
 > Source: `Data/ROUND 4 ARIA UPLINK.txt`. This is narrative material — lower
-> trust than `Round 4 Trading round.md`. Use it for tone and clue-mining only.
+> trust than `round_4_trading_round.md`. Use it for tone and clue-mining only.
 
 ## Recap of Round 3 outcome (in-fiction)
 
@@ -62,7 +62,7 @@ flavor; treat them as low-signal.
 
 The cinematic hint cards for Round 4 are stored verbatim at
 `Data/ROUND 4 Hints.txt` and summarised with research implications in
-`Round 4 Hint Cards.md`.
+`round_4_hint_cards.md`.
 
 ## What ARIA reminds you of
 

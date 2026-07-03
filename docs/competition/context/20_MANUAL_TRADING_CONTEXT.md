@@ -6,7 +6,7 @@ Round 4 manual challenge: trade the **Aether Crystal** and a set of vanilla
 and exotic options written on it. Independent of the algorithmic trader.
 Submit once before the round timer expires; final manual submission counts.
 
-## Official mechanics (from `New Context/Round 4 Trading round.md`)
+## Official mechanics (from `New Context/round_4_trading_round.md`)
 
 - Underlying: **Aether Crystal**. Manual-only — does not appear in
   algorithmic `order_depths`.

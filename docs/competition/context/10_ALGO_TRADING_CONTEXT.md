@@ -4,7 +4,7 @@
 
 Round 4 ("The More The Merrier", Salvinar) algorithmic trading facts,
 constraints, and strategy-relevant hints extracted from the official Round 4
-doc (`New Context/Round 4 Trading round.md`), the ARIA uplink, the Round 4
+doc (`New Context/round_4_trading_round.md`), the ARIA uplink, the Round 4
 hint cards, and the Round 3 alpha-hunt results that carry over (same
 products, same dynamics).
 
