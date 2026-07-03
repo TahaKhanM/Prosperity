@@ -1,0 +1,18 @@
+# Consolidates each contributor's multiple git identities under one canonical
+# name and email. This only affects how names are displayed (git shortlog,
+# git log --use-mailmap); it does not rewrite commit author or committer data.
+
+Muhammad Taha <73759710+TahaKhanM@users.noreply.github.com> <mtk2982007@outlook.com>
+
+Andy Si <111328484+andy586586@users.noreply.github.com>
+Andy Si <111328484+andy586586@users.noreply.github.com> <si.andy586@gmail.com>
+Andy Si <111328484+andy586586@users.noreply.github.com> <andys@MacBook-Pro.local>
+Andy Si <111328484+andy586586@users.noreply.github.com> <andys@eduroam-campus-10-36-117-54.campus-dynamic.uwaterloo.ca>
+Andy Si <111328484+andy586586@users.noreply.github.com> Andy <si.andy586@gmail.com>
+
+Arham Shuaib <arham.shuaib@gmail.com> <arham.shuaib@gmail.com>
+Arham Shuaib <arham.shuaib@gmail.com> javaxhaskell <arham.shuaib@gmail.com>
+
+Mahmoud Khoder <khodermahmoud09@gmail.com>
+
+Ryan Whalen <rwhalen@college.harvard.edu>

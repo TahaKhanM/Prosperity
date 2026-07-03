@@ -13,8 +13,8 @@ set -euo pipefail
 
 ROOT="/Users/tahakhan/Documents/Work/Projects/Prosperity"
 TRADER="${ROOT}/prosperity_rust_backtester/traders/Round3/probes/probe_v1_matching.py"
-DATA_SRC="${ROOT}/Data/ROUND_3"
-PY_BT="${ROOT}/imc-prosperity-4-backtester"
+DATA_SRC="${ROOT}/prosperity_rust_backtester/datasets/round3"
+PY_BT="${ROOT}/vendor/imc-prosperity-4-backtester"
 PY="/opt/miniconda3/envs/prosperity/bin/python"
 OUT_DIR="${ROOT}/runs/probes"
 STDOUT_LOG="${OUT_DIR}/python_bt_stdout.log"
