@@ -1,0 +1,9 @@
+model = "gpt-5.4"
+model_reasoning_effort = "xhigh"
+review_model = "gpt-5.4"
+approval_policy = "on-request"
+sandbox_mode = "danger-full-access"
+
+[agents]
+max_threads = 8
+max_depth = 2

@@ -11,5 +11,12 @@
 **/target/
 
 output/
+
+# Backtest run outputs (regenerated locally, not tracked)
+/runs/
 prosperity_rust_backtester/runs/*
 !prosperity_rust_backtester/runs/.gitkeep
+
+# Build/analysis caches
+**/.ipynb_checkpoints/
+**/*.egg-info/

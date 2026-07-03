@@ -2,7 +2,7 @@
 
 ## Executive summary
 
-entity["company","IMC Trading","quant trading firm"]’s Prosperity 4 is a five‑round algorithmic + manual trading challenge running 14–30 April 2026, preceded by a “tutorial round” (16 March–13 April). citeturn44view0 The official public landing page is high-level and the public entity["company","Notion","productivity platform"] wiki link appears to be gated or moved (a direct fetch returned 404), so correctness on mechanics should be anchored in the official interface/syntax document you supplied (uploaded “Official Prosperity Context.md”) plus any round-specific PDFs/announcements as they appear. fileciteturn0file0 citeturn44view0
+entity["company","IMC Trading","quant trading firm"]’s Prosperity 4 is a five‑round algorithmic + manual trading challenge running 14–30 April 2026, preceded by a “tutorial round” (16 March–13 April). citeturn44view0 The official public landing page is high-level and the public entity["company","Notion","productivity platform"] wiki link appears to be gated or moved (a direct fetch returned 404), so correctness on mechanics should be anchored in the official interface/syntax document you supplied (uploaded “official_prosperity_context.md”) plus any round-specific PDFs/announcements as they appear. fileciteturn0file0 citeturn44view0
 
 The strongest “still-relevant” public foundation for Prosperity 4 is a combination of:
 - **Prosperity 4-era tooling**: a modern, tutorial‑round focused Monte Carlo backtester + visualiser (entity["company","GitHub","code hosting platform"] repo `chrispyroberts/imc-prosperity-4`) and a deterministic replay backtester (`nabayansaha/imc-prosperity-4-backtester`) that documents order matching and limit enforcement assumptions. citeturn47view0turn48view0  
@@ -33,7 +33,7 @@ Current/stale: current (2026 context and schedule are explicit) citeturn44
 Unique insight: public schedule + structure (tutorial round; 5 rounds; dates) citeturn44view0  
 Reusable vs round-specific: reusable context only
 
-**Uploaded “Official Prosperity Context.md” (interface/syntax document)**  
+**Uploaded “official_prosperity_context.md” (interface/syntax document)**  
 URL: (local upload) fileciteturn0file0  
 Type: official syntax/interface material (as provided by you)  
 Code/explanation: both (interface + constraints)  

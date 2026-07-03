@@ -16,8 +16,8 @@ authoritative_sources:
     locations:
       - prosperity_rust_backtester/datasets/round1
       - prosperity_rust_backtester/datasets/round2
-      - imc-prosperity-4-backtester/prosperity4bt/resources/round1
-      - imc-prosperity-4-backtester/prosperity4bt/resources/round2
+      - vendor/imc-prosperity-4-backtester/prosperity4bt/resources/round1
+      - vendor/imc-prosperity-4-backtester/prosperity4bt/resources/round2
     notes: >
       Raw official CSVs stay in dataset and resource folders. Do not duplicate
       them into prosperity-research.
@@ -216,7 +216,7 @@ stages:
       - prosperity-research/07_manual_round/round1_auction
       - prosperity-research/07_manual_round/round2_budget
     inputs:
-      - Prosperity Context/20_MANUAL_TRADING_CONTEXT.md
+      - docs/competition/context/20_MANUAL_TRADING_CONTEXT.md
       - frozen order books or scenario files
       - manual-round assumptions
     outputs:

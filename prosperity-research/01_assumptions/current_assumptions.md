@@ -11,10 +11,10 @@ Prior version archived at
 `prosperity-research/01_assumptions/archive/current_assumptions_2026-04-24_round3.md`.
 
 Official rule sources used:
-- `Prosperity Context/New Context/Round 4 Trading round.md`
-- `Prosperity Context/New Context/Round 4 ARIA Uplink.md`
-- `Prosperity Context/New Context/Round 4 Hint Cards.md`
-- `Prosperity Context/Unrefined Context/Official Prosperity Context.md`
+- `Prosperity Context/New Context/round_4_trading_round.md`
+- `Prosperity Context/New Context/round_4_aria_uplink.md`
+- `Prosperity Context/New Context/round_4_hint_cards.md`
+- `Prosperity Context/Unrefined Context/official_prosperity_context.md`
 
 Local verification sources used:
 - `prosperity_rust_backtester/README.md`

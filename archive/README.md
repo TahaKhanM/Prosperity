@@ -14,8 +14,8 @@ traders (different products, different position limits, different mechanics).
 ## Layout
 
 - `round1_round2/context/`: stale round-specific context docs
-  (`Official Prosperity Context Round 1.md`, `Prosperity Round 2.md`,
-  `Default_A.R.I.A Uplink_ Round 2.txt`, `ROUND1_PROMPT_HINTS_CONTEXT.md`).
+  (`official_prosperity_context_round_1.md`, `prosperity_round_2.md`,
+  `default_aria_uplink_round_2.txt`, `ROUND1_PROMPT_HINTS_CONTEXT.md`).
 - `round1_round2/data_zips/`: original Round 1 and Round 2 competition data
   (zipped and unpacked), kept as an audit trail.
 - `round1_round2/datasets/round{1,2}/`: copies of the CSVs that used to live

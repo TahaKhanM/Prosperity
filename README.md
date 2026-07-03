@@ -1,145 +1,200 @@
-# Prosperity 4: Round 4 (GOAT) workspace
+# IMC Prosperity 4
 
-This repository is a local IMC Prosperity 4 strategy-development workspace for
-the GOAT (Great Orbital Ascension Trials) phase. The competition PnL was reset
-to zero at the start of Round 3; Rounds 3 and 4 PnL accumulate on the same
-ledger. Round 1/2 work has been moved under `archive/` and is reference-only.
+IMC Prosperity is an algorithmic trading competition run by IMC Trading. It runs
+over five rounds plus a tutorial and draws more than 22,000 teams. Each round
+adds new tradeable products and a separate manual trading puzzle. Rounds last 48
+to 72 hours. This repository is our team's workspace for Prosperity 4: the Python
+traders we submitted, a Rust backtester that runs them against historical order
+book data, the options and volatility tooling we built for the voucher products
+and the research pipeline behind the decisions. After Rounds 1
+and 2 the team peaked at #32 globally and #20 in the UK, in the top 0.15% of the
+field. That is the peak standing, not the final result.
 
-## Current round
+## The team
 
-**Round 4: Salvinar ("The More The Merrier").** Live algorithmic products
-(unchanged from Round 3):
-- `HYDROGEL_PACK` (delta-1, pos limit 200, oscillates ~9990–10005)
-- `VELVETFRUIT_EXTRACT` (VE: delta-1 underlying, pos limit 200, ~5240)
-- Ten call vouchers on VE: `VEV_{4000,4500,5000,5100,5200,5300,5400,5500,6000,6500}` (pos limit 300 each)
+Authorship is preserved in the git history. A `.mailmap` at the repository root
+consolidates each contributor's several git identities under one name.
 
-Voucher TTE at Round 4 start = **4 days**. Historical days 1/2/3 correspond to
-TTE 7/6/5. Expiry settles cash at `max(S_T - K, 0)`.
+- Muhammad Taha ([@TahaKhanM](https://github.com/TahaKhanM))
+- Andy Si ([@andy586586](https://github.com/andy586586))
+- Arham Shuaib ([@javaxhaskell](https://github.com/javaxhaskell))
+- Mahmoud Khoder
+- Ryan Whalen
 
-**What is new in Round 4: the Frontier Trade Watch has disclosed counterparty
-IDs.** Every other participant in `market_trades` now carries a `Mark <NN>`
-identifier: historical CSVs show 7 of them: Mark 01, 14, 22, 38, 49, 55, 67.
-Headline finding: **Mark 14 is the smart bot (+5.71/unit horizon-500 PnL),
-Mark 38 is the bag-holder (−8.34/unit). Copy Mark 14, fade Mark 38.**
+## What is in here
 
-**Round 4 manual task:** Aether Crystal vanilla + 3 exotic options.
-- Chooser (K=50, decision day 14, expiry 21d, auto-converts to ITM side).
-- Binary put (K=40, expiry 21d, pays 10 if `S_T < 40`).
-- Knockout (down-and-out) put (K=45, barrier 35, expiry 21d).
-Manual is independent of algo PnL.
+### Rust backtest harness (`prosperity_rust_backtester/src/`)
 
-## Start here
+The centerpiece. It runs the exact Python `Trader` class we submitted to IMC
+against historical order book data, so iteration is fast, deterministic and
+local instead of waiting on the hosted environment. `src/pytrader.rs` embeds a
+Python interpreter through pyo3, loads the trader file, calls `Trader.run(state)`
+each tick and normalizes the `(orders, conversions, traderData)` tuple that IMC
+expects. `src/runner.rs` matches orders against the book, applies fills and
+writes per-run artifacts (metrics, a submission log and PnL by product). It is
+about 5,000 lines of Rust across seven modules, driven by a Makefile. One
+command replays a full trading day in a few seconds.
 
-1. `CLAUDE.md`: Claude Code entry point (loaded every session).
-2. `AGENTS.md`: Codex entry point.
-3. `Prosperity Context/00_PROSPERITY_CONTEXT_OVERVIEW.md`: source of truth map.
-4. `Prosperity Context/10_ALGO_TRADING_CONTEXT.md`: Round 4 algo playbook.
-5. `Prosperity Context/20_MANUAL_TRADING_CONTEXT.md`: Aether Crystal manual playbook.
-6. `Prosperity Context/30_REPO_AND_TOOLING_CONTEXT.md`: backtester + tooling.
-7. `prosperity-research/03_eda/round4/headline_findings.md`: counterparty
-   findings + actionable bullets from the Round 4 EDA.
-8. `prosperity-research/08_playbooks/round4_strategy_playbook.md`: ranked
-   alpha playbook for Round 4.
+### Options and volatility tooling (`prosperity_rust_backtester/scripts/round4_options/`)
 
-## Repo layout
+Stateless, standard-library-only Python for the voucher products (European call
+vouchers on an underlying) and the manual exotics:
 
-### Active strategy workspace
-- [`prosperity_rust_backtester/`](./prosperity_rust_backtester/): Rust backtester
-  (primary local validator). Key subfolders:
-  - `traders/Round4/`: live trader variants (mirrors Round3 starting set).
-  - `traders/Round3/`: Round 3 trader history; baselines for R4 iteration.
-  - `datasets/round4/`: Round 4 price + trade CSVs (with Mark IDs).
-  - `datasets/round3/`: Round 3 historical (anonymous) CSVs (kept for ref).
-  - `scripts/round4_options/`: voucher + counterparty + exotic-option
-    analysis toolkit.
+- `bs.py`: Black-Scholes call and put pricer with an implied volatility solver.
+- `vol_surface_fit.py`: per-tick quadratic smile fit that extracts the at-the-money
+  implied vol, skew, convexity and per-strike residuals.
+- `parity_scan.py`: put-call parity and identity checks (intrinsic floor, upper
+  bound, monotonicity and butterfly convexity).
+- `exotic_pricers.py`: closed-form fair values for the Round 4 manual puzzle, a
+  chooser option (K=50), a binary put (K=40, pays 10) and a down-and-out barrier
+  put (K=45, barrier 35).
+- `stat_tests.py`: stationarity, Hurst exponent, Ornstein-Uhlenbeck half-life,
+  variance ratio and spectral peak, all without third-party dependencies.
 
-### Secondary tools
-- [`imc-prosperity-4-backtester/`](./imc-prosperity-4-backtester/): Python
-  backtester (`prosperity4bt` CLI). Useful for cross-check and `--vis` auto-open.
-- [`imc-prosperity-4-visualizer/`](./imc-prosperity-4-visualizer/): frontend
-  visualizer. Supports official-JSON and logger-plaintext parser families.
+### Counterparty intelligence (`round4_options/counterparty_scan.py`, `per_mark_features.py`)
 
-### Official context and briefings
-- [`Prosperity Context/`](./Prosperity%20Context/)
-  - `New Context/`: Round 4 official doc + ARIA uplink + hint cards
-    (Round 3 versions retained as `Round 3 Trading round.md` and
-    `Video Transcript.pdf`).
-  - `Unrefined Context/`: original upload (lower authority).
+Round 4 was the round where the exchange disclosed counterparty IDs: every other
+participant is named `Mark <NN>`. We built per-counterparty horizon PnL analysis
+over three days of historical trades and found participants worth trading around:
 
-### Research and notes
-- [`prosperity-research/`](./prosperity-research/)
-  - `01_assumptions/`, `03_eda/round4/`, `04_signal_notes/round4/`,
-    `05_execution_risk/`, `06_validation/`, `07_manual_round/round4_aether/`,
-    `08_playbooks/`, `10_experiment_logs/`.
-  - Round 3 research artefacts remain at `03_eda/round3/`,
-    `04_signal_notes/round3/`, `07_manual_round/round3_biopods/` for
-    reference (alphas often carry over).
+- Mark 14 is an informed bot: about +49,777 in horizon-500 PnL over three days,
+  +5.71 per unit, winning on both sides of HYDROGEL_PACK and VELVETFRUIT_EXTRACT.
+  When it trades, we lean with its flow.
+- Mark 38 is the mirror image: about -41,696, -8.34 per unit. We take the other
+  side of its prints.
+- Mark 67 is buy-only on VELVETFRUIT_EXTRACT (1,510 buys and 0 sells), so we lean
+  long when it prints.
 
-### Skills and agents
-- `.agents/skills/`: Round 4 skill suite (voucher
-  analyst, counterparty-flow analyst, alpha hypothesis lab, backtest auditor,
-  etc). See `.agents/skills/PROSPERITY_4_SKILLS_INDEX.md`.
-- `.codex/agents/`: Codex role TOML files.
+We shipped this as a live signal in the Round 4 trader rather than leaving it as
+a note. We also checked and rejected a time-of-day angle: no Mark concentrates
+more than 14% of its trades in any hour bucket, so the trader does not gate on
+time. The full numbers are in
+`prosperity-research/03_eda/round4/headline_findings.md`.
 
-### Data
-- [`Data/ROUND_4/`](./Data/ROUND_4/): canonical Round 4 source data (prices
-  + trades with Mark IDs). The original zip is at `Data/ROUND_4.zip`.
-- [`Data/ROUND_3/`](./Data/ROUND_3/): Round 3 source data (kept).
+### Market-making strategies (`submissions/`, `prosperity_rust_backtester/traders/`)
 
-### Archive (reference only)
-- [`archive/round1_round2/`](./archive/round1_round2/): Round 1 and Round 2
-  artefacts. Do not ship logic from here into Round 4 traders.
+The shipped traders make markets around estimated fair values with inventory
+control:
 
-## Common commands
+- HYDROGEL_PACK is anchored but not pinned to 10,000. Fair value is an EMA
+  (half-life 200) clamped to [9,980, 10,010] and seeded at 9,991, with
+  position-dependent quote skew.
+- VELVETFRUIT_EXTRACT uses a wall-mid fair value, the mid of the highest-volume
+  resting levels, which led next-tick mid moves with a regression slope of 0.77
+  across three days.
+- Both skew quotes on top-two order book imbalance, with the skew coefficient fit
+  from data (t-statistic 35 on HYDROGEL, 20 on VELVETFRUIT) and capped at two
+  ticks.
 
-```sh
-# Build the backtester
-( cd prosperity_rust_backtester && ./scripts/cargo_local.sh build )
+Each block sits behind a feature flag in `traderData` so it can be toggled
+without redeploying. The parameters and the rejection gate each one passed are in
+`prosperity-research/04_signal_notes/round3/ship_now.md`.
 
-# Run a trader against Round 4 day 1
-( cd prosperity_rust_backtester && \
-  make round4 TRADER=traders/Round4/round4_baseline_v01.py DAY=1 )
+### Research pipeline (`prosperity-research/`)
 
-# Regenerate the voucher analytical panel for Round 4
-python3 prosperity_rust_backtester/scripts/round4_options/build_voucher_panel.py
+A numbered workflow from raw CSVs through assumptions, EDA, signal notes with
+explicit rejection gates, validation, execution-risk analysis and dated
+experiment logs. This is where the discipline under deadline shows. Several
+signals that looked good in EDA were held out of the first submission on purpose.
+An implied-vol residual scalp was dropped because the backtester's fill model
+over-reported it. A deep in-the-money overlay was dropped because its settlement
+semantics were not yet verified against the hosted exchange.
+`prosperity-research/README.md` is the map.
 
-# Identity-only parity arbitrage scan
-python3 prosperity_rust_backtester/scripts/round4_options/parity_scan.py
+### Manual round work (`round3_manual_research/`, `prosperity_rust_backtester/traders/Round4/manual_trading_sims/`)
 
-# Smile fit: ATM IV, skew, convexity per tick (Round 4 TTE indexing)
-python3 prosperity_rust_backtester/scripts/round4_options/vol_surface_fit.py
+Each round has a manual puzzle that is independent of the algorithmic trader. We
+solved them by simulation: the Round 3 sealed-bid puzzle by searching bid pairs
+against an assumed distribution of opponent bids and the Round 4 Aether Crystal
+options by pricing the chooser, binary put and knockout put directly with the
+exotic pricers above.
 
-# Counterparty horizon-PnL rollup with named Mark IDs
-python3 prosperity_rust_backtester/scripts/round4_options/counterparty_scan.py
+## Repository map
 
-# Price the three R4 exotics (chooser, binary put, knockout put)
-python3 prosperity_rust_backtester/scripts/round4_options/exotic_pricers.py
+```text
+.
+├── prosperity_rust_backtester/   Rust backtester, submitted traders and options tooling
+│   ├── src/                        the harness (pytrader.rs runs the trader, runner.rs matches orders)
+│   ├── traders/                    per-round trader variants and single-idea probes
+│   ├── scripts/round4_options/     Black-Scholes, vol surface, parity, exotics, counterparty analysis
+│   ├── datasets/                   canonical historical round data the backtester reads from
+│   └── Makefile                    per-round run targets
+├── prosperity-research/          numbered research pipeline (assumptions, EDA, signals, validation, logs)
+├── submissions/                  traders submitted to the IMC portal, as uploaded
+├── round3_manual_research/       Round 3 manual-puzzle simulation notebooks
+├── official_replays/             logs pulled back from the official exchange, kept as reference
+├── archive/                      Round 1 and 2 material, kept for reference only
+├── vendor/                       adapted third-party tools (jmerle's Python backtester and visualizer)
+├── docs/competition/             frozen competition-era agent instructions, context and briefings
+├── scripts/                      cross-tool probe and environment-setup helpers
+├── environment.yml               conda environment
+└── .mailmap                      contributor identity consolidation
 ```
 
-## Non-negotiable rules
+## Running it
 
-- PnL reset at Round 3 start. Ignore R1/R2 traders and datasets.
-- Return `(orders, conversions, traderData)` for submission compatibility.
-- Use `traderData` (<50k chars) for persistence; no globals or class state.
-- One dominant change per iteration; name the validation step.
-- Prefer explicit `--trader` and `--dataset` on every backtest; auto-pick is
-  nondeterministic in this repo.
-- Conversions and observations are NOT faithfully simulated locally.
-- Official written docs outrank narrative transcripts.
+### Setup
 
-## Round 4 quick tips
+The Rust backtester needs a Rust toolchain and a Python interpreter (it embeds
+Python to run the trader). The full analysis environment is captured in
+`environment.yml`:
 
-- **Counterparty data is the headline alpha.** Mark 14 = copy, Mark 38 = fade,
-  Mark 67 = lean long VE.
-- HYDROGEL_PACK is **not** pinned at 10000: empirical mean ≈ 9992–10003.
-  Use `clamp(EMA, 9980, 10010)` style soft anchor.
-- VEV_6000 and VEV_6500 are stuck at ~0.5: exclude from scalping unless data
-  proves otherwise.
-- Deep-ITM vouchers (VEV_4000, VEV_4500) have essentially zero time value
-  (delta-1 proxies for VE).
-- Smile has deterministic TTE drift; use a TTE-indexed smile, not frozen
-  coefficients.
-- Tradeable parity is clean (0–2 violations / 10,000 ticks); ship the parity
-  guard as a defensive feature, not as alpha.
-- Manual exotics: replicate with vanillas first to bound fair value before
-  taking outright exposure.
+```bash
+conda env create -f environment.yml
+conda activate prosperity
+```
+
+Install Rust once with rustup if you do not have it:
+
+```bash
+curl https://sh.rustup.rs -sSf | sh
+```
+
+### Build and replay a strategy
+
+From the backtester directory, this builds the harness and replays the shipped
+Round 4 trader against Round 4 day 1 order book data:
+
+```bash
+cd prosperity_rust_backtester
+make round4 TRADER=../submissions/r4_final_v01_imc_upload.py DAY=1
+```
+
+On this dataset it returns about 69,000 in PnL and prints a per-product
+breakdown (HYDROGEL_PACK, VELVETFRUIT_EXTRACT and the vouchers). The macOS
+`make` targets build through a wrapper and write Rust artifacts outside the repo;
+see `prosperity_rust_backtester/README.md` for the details and the other round
+targets.
+
+### Run an analysis script
+
+The options tooling is standard-library only, so it runs with a plain
+interpreter:
+
+```bash
+cd prosperity_rust_backtester/scripts/round4_options
+python3 bs.py                                   # Black-Scholes pricer and IV solver self-test
+python3 exotic_pricers.py --spot 48 --sigma 0.20   # chooser, binary put and knockout put fair values
+```
+
+## Acknowledgments
+
+- The Rust backtester is adapted from
+  [GeyzsoN's prosperity_rust_backtester](https://github.com/GeyzsoN/prosperity_rust_backtester).
+  The team added the traders, the options tooling and the counterparty analysis
+  on top of it.
+- The Python backtester and the web visualizer under `vendor/` are adapted from
+  jmerle's (Jasper van Merle) Prosperity 3
+  [backtester](https://github.com/jmerle/imc-prosperity-3-backtester) and
+  visualizer.
+- IMC Trading for running the competition.
+
+## Limitations
+
+- This is competition code written under 48 to 72 hour round deadlines, not a
+  packaged library. It reads best as a working strategy workspace.
+- The local backtester is close to the hosted exchange but does not reproduce it
+  exactly. The fill model in particular is approximate, which is why some signals
+  were deliberately held back from the first submission.
+- Some datasets, logs and research artifacts are kept for provenance, not because
+  they are active entry points.
