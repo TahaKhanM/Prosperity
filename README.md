@@ -18,7 +18,7 @@ consolidates each contributor's several git identities under one name.
 - Muhammad Taha ([@TahaKhanM](https://github.com/TahaKhanM))
 - Andy Si ([@andy586586](https://github.com/andy586586))
 - Arham Shuaib ([@javaxhaskell](https://github.com/javaxhaskell))
-- Mahmoud Khoder
+- Mahmoud Khoder ([@Mkhod51](https://github.com/Mkhod51))
 - Ryan Whalen
 
 ## What is in here
