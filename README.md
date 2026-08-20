@@ -6,9 +6,9 @@ adds new tradeable products and a separate manual trading puzzle. Rounds last 48
 to 72 hours. This repository is our team's workspace for Prosperity 4: the Python
 traders we submitted, a Rust backtester that runs them against historical order
 book data, the options and volatility tooling we built for the voucher products
-and the research pipeline behind the decisions. After Rounds 1
-and 2 the team peaked at #32 globally and #20 in the UK, in the top 0.15% of the
-field. That is the peak standing, not the final result.
+and the research pipeline behind the decisions. After Rounds 1 and 2, the team
+placed in the top 32 for manual trading and the top 20 in the UK. These were
+interim results, not the final overall placement.
 
 ## The team
 
