@@ -1,411 +1,103 @@
-# Rust Backtester
+# Rust replay harness
 
-This repo is a self-contained Rust backtester for IMC Prosperity 4.
+This directory adapts [GeyzsoN's Prosperity backtester](https://github.com/GeyzsoN/prosperity_rust_backtester)
+to this team's trading workspace. Rust owns dataset parsing, order matching,
+inventory and output artifacts; PyO3 runs the Python competition trader.
+The [root README](../README.md) explains the strategies and attribution.
 
-It only supports local backtesting. There is no API surface and no hosted workflow in this repo.
+## Setup and a reproducible replay
 
-Everything needed for the default backtest flow now lives inside this directory. The bundled default trader is:
-
-- this checkout does not currently include `traders/latest_trader.py`
-- use an explicit trader path such as `traders/Round1/Ash.py`
-- new candidate scaffolds are generated into `traders/<Round>/candidates/`
-
-## Setup
-
-Clone the repo:
+Clone this portfolio repository, then enter this directory:
 
 ```bash
-git clone https://github.com/GeyzsoN/prosperity_rust_backtester.git
-cd prosperity_rust_backtester
-```
-
-### macOS
-
-Install the toolchain once:
-
-```bash
-xcode-select --install
-curl https://sh.rustup.rs -sSf | sh
-source "$HOME/.cargo/env"
-python3 --version
-```
-
-Then either install the CLI:
-
-```bash
-make install
-```
-
-or just run the backtester directly:
-
-```bash
-make backtest
-```
-
-The macOS `make` targets intentionally build through a wrapper instead of your full shell environment. By default they write Rust build artifacts to:
-
-```bash
-~/Library/Caches/rust_backtester/target
-```
-
-If you want a different target dir, override it explicitly:
-
-```bash
-CARGO_TARGET_DIR=/path/to/target make build-release
-```
-
-### Windows
-
-Use WSL2. Open an Ubuntu shell inside WSL2 and run the same commands there. Native Windows shells are not the target environment for this repo.
-
-There is no separate manual build step required for normal use:
-
-- `make backtest` and the other `make` run targets use `cargo run`, which builds automatically on first use
-- `make install` installs the CLI once so you can run `rust_backtester` directly afterward
-- `make doctor` prints local diagnostics for macOS build hangs and execution-policy issues
-
-## Included Data
-
-The repo is organized by round:
-
-- `datasets/tutorial/prices_round_0_day_-2.csv`
-- `datasets/tutorial/trades_round_0_day_-2.csv`
-- `datasets/tutorial/prices_round_0_day_-1.csv`
-- `datasets/tutorial/trades_round_0_day_-1.csv`
-- `datasets/tutorial/submission.log`
-- `datasets/round1/`
-- `datasets/round2/`
-- `datasets/round3/`
-- `datasets/round4/`
-- `datasets/round5/`
-- `datasets/round6/`
-- `datasets/round7/`
-- `datasets/round8/`
-
-Right now the bundled public data is the raw IMC tutorial day data in `datasets/tutorial/`, plus a sample tutorial `submission.log` produced with the bundled basic trader. The other round folders are there so future round files can be placed in the correct folder instead of being mixed together.
-If you place a portal `submission.log` file into a round folder, the backtester will use it. `submission.log` is also generated for persisted runs.
-Local raw round data is also checked into `datasets/round1/` and `datasets/round2/` in this checkout. Because `round2/` is populated, the `latest` dataset alias now resolves to `round2` by default.
-
-## CLI
-
-The CLI is intentionally simple:
-
-```bash
-rust_backtester
-```
-
-With no arguments it will:
-
-- auto-pick the newest Python file that looks like a trader from this repo's local `scripts/`, `traders/submissions/` or `traders/`
-- default the dataset to the latest populated round folder under `datasets/`
-- run in fast mode
-- print one compact row per day
-
-That means the simplest local commands are:
-
-```bash
-make backtest
-```
-
-or:
-
-```bash
-rust_backtester
-```
-
-Round-specific shortcuts:
-
-```bash
-make tutorial
-```
-
-Submission and round-specific shortcuts are available for the populated dataset folders under `datasets/`, including `round1` and `round2` in this checkout.
-
-Useful optional variables for any `make` backtest target:
-
-```bash
-make tutorial DAY=-1
-make submission ROUND=round1
-make round3 TRADER=traders/latest_trader.py
-make round2 PERSIST=1
-make tutorial FLAT=1
-make tutorial CARRY=1
-```
-
-Supported input formats:
-
-- normalized dataset JSON files
-- IMC day data as matching `prices_*.csv` and `trades_*.csv`
-- portal submission logs such as `submission.log`
-
-Day selection behavior:
-
-- `DAY=-1` or `DAY=-2` runs only that day file inside the round
-- `DAY=all` or omitting `DAY` runs the whole round bundle, including any submission file when present
-- `make submission ROUND=round1` runs the submission dataset for `datasets/round1/` when a submission file is present
-
-Explicit examples:
-
-```bash
-rust_backtester \
-  --trader /path/to/trader.py \
-  --dataset tutorial
-```
-
-```bash
-rust_backtester \
-  --trader /path/to/trader.py \
-  --dataset datasets/tutorial
-```
-
-```bash
-rust_backtester \
-  --trader /path/to/trader.py \
-  --dataset /path/to/submission.log
-```
-
-```bash
-rust_backtester \
-  --trader /path/to/trader.py \
-  --dataset datasets/round2
-```
-
-Behavior:
-
-- fast mode is the default
-- the CLI prints one result row per day
-- `--dataset` accepts either a path or a short alias
-- when `--dataset` points to a directory, every supported dataset in that directory is run
-- `prices_*.csv` files are paired automatically with matching `trades_*.csv` files from the same folder
-- `tutorial` runs the full bundled tutorial round bundle: day `-2`, day `-1` and the sample tutorial submission log
-- `latest` resolves to the highest populated round folder under `datasets/`; in this checkout that is `round2`
-- use `--day <n>` to run only the matching day dataset within the round bundle; this excludes submission files
-- `metrics.json` is always written under `runs/<backtest-id>/`
-- default fast runs also write `submission.log` under `runs/<backtest-id>/`
-- use `--artifact-mode` to choose which extra artifacts are written
-- use `--carry` or `CARRY=1` to carry positions, own trades, market trades and trader state across non-submission day datasets in the same round
-- use `--flat` or `FLAT=1` to place multi-run outputs in a single directory with dataset/day-prefixed filenames
-- use `--persist` or `PERSIST=1` to write the full replay artifact set under `runs/`
-- persisted multi-day or multi-file runs also write one combined bundle at `runs/<backtest-id>/`, including `combined.log` and `manifest.json`
-- for multi-run visualizer uploads, use each child `RUN_DIR/submission.log`; the top-level bundle does not emit a stitched replay file
-- product output defaults to a compact summary so large product sets do not flood the terminal
-
-Bundled dataset aliases:
-
-- `latest`
-- `tutorial`, `tut`, `tutorial-round`, `tut-round`
-- `round1`, `r1`
-- `round2`, `r2`
-- `round3`, `r3`
-- `round4`, `r4`
-- `round5`, `r5`
-- `round6`, `r6`
-- `round7`, `r7`
-- `round8`, `r8`
-- `tutorial-1`, `tut-1`, `tut-d-1`
-- `tutorial-2`, `tut-2`, `tut-d-2`
-
-Product display modes:
-
-- `--products summary` default: print a separate product table with the top product PnL contributors and an `OTHER(+N)` rollup when needed
-- `--products full`: print a separate product table with every product
-- `--products off`: show only the per-day total
-
-Artifact modes:
-
-- `--artifact-mode none`: write only `metrics.json`
-- `--artifact-mode submission` default when `--persist` is not set: write `metrics.json` and `submission.log`
-- `--artifact-mode diagnostic`: write `metrics.json` and `bundle.json` with the PnL series included for diagnostics
-- `--artifact-mode full`: write the full persisted artifact set: `metrics.json`, `bundle.json`, `submission.log`, `activity.csv`, `pnl_by_product.csv`, `combined.log` and `trades.csv`
-- `--persist` implies `--artifact-mode full` unless you explicitly override `--artifact-mode`
-
-## Workflow Scripts
-
-The active workflow around the moved research analyzer is:
-
-1. refresh analyzer outputs under `../prosperity-research/03_eda/round1/`
-2. run explicit candidate and baseline backtests with `scripts/run_harness.py`
-3. extract a compact diagnosis packet
-4. compare candidate vs baseline
-5. update the durable experiment registry
-
-Explicit run harness:
-
-```bash
-python3 scripts/run_harness.py \
-  --trader traders/Round1/Ash.py \
-  --dataset datasets/round2 \
-  --artifact-mode full
-```
-
-Candidate vs baseline:
-
-```bash
-python3 scripts/run_harness.py \
-  --trader traders/Round1/Ash.py \
-  --baseline traders/Round1/Ash.py \
-  --dataset datasets/round2 \
-  --artifact-mode full
-```
-
-Diagnosis packet:
-
-```bash
-python3 scripts/diagnostics/extract_diagnosis_packet.py \
-  --run runs/<run_label> \
-  --set candidate
-```
-
-Candidate vs baseline report:
-
-```bash
-python3 scripts/diagnostics/candidate_vs_baseline_report.py \
-  --run-root runs/<run_label>
-```
-
-Experiment registry update:
-
-```bash
-python3 scripts/reports/update_experiment_registry.py \
-  --run-root runs/<run_label> \
-  --hypothesis-tag ash_mm \
-  --strategy-family-tag static_fair_value_market_maker \
-  --ship-reject-status reject
-```
-
-Strategy scaffold generator:
-
-```bash
-python3 scripts/generate_strategy_scaffold.py \
-  --family static_fair_value_market_maker \
-  --round round1 \
-  --name ash_candidate_01
-```
-
-Flat layout behavior:
-
-- `--flat` only changes multi-run layouts; single-run outputs stay unchanged
-- multi-run outputs are written into `runs/<backtest-id>/` with prefixed filenames such as `tutorial-day-2-submission.log` and `tutorial-day-2-metrics.json`
-- when `--flat` is combined with `--persist`, the same directory also includes `combined.log` and `manifest.json`
-
-Carry mode behavior:
-
-- `--carry` only applies to non-submission day datasets; submission datasets remain separate runs
-- with `--carry`, consecutive day datasets in the same round are merged into one connected replay ordered by `(day, timestamp)`
-- positions, prior own trades, prior market trades and trader data are carried across those merged day boundaries
-- carry mode also normalizes timestamps into one continuous timeline, so the first tick of the next day starts immediately after the previous day ends
-- a carried run reports `DAY=all` in the summary because it spans multiple days
-
-Artifact mode examples:
-
-```bash
-rust_backtester \
-  --trader /path/to/trader.py \
-  --dataset tutorial \
-  --artifact-mode none
-```
-
-```bash
-rust_backtester \
-  --trader /path/to/trader.py \
-  --dataset tutorial \
-  --artifact-mode diagnostic
-```
-
-```bash
-rust_backtester \
-  --trader /path/to/trader.py \
-  --dataset tutorial \
-  --artifact-mode full
-```
-
-Example output shape:
-
-```text
-trader: latest_trader.py [auto]
-dataset: tutorial [default]
-mode: fast
-artifacts: log-only
-SET             DAY    TICKS  OWN_TRADES    FINAL_PNL  RUN_DIR
-D-2              -2    10000          39       118.10  runs/backtest-123-day-2-day-2
-D-1              -1    10000          42       123.45  runs/backtest-123-day-1-day-1
-SUB              -1     2000          18        51.20  runs/backtest-123-submission-day-1
-
-PRODUCT        D-2        D-1        SUB
-TOM          70.00      77.20      29.10
-EMR          48.10      46.25      22.10
-```
-
-### Bundled Targets
-
-```bash
+git clone https://github.com/TahaKhanM/Prosperity.git
+cd Prosperity/prosperity_rust_backtester
 make doctor
-make build
-make build-release
 make test
-make install
-make install-pip
-make install-uv
-make install-uv-editable
-make backtest
-make tutorial
+make round4 TRADER=../submissions/r4_final_v01_imc_upload.py DAY=1 PRODUCTS=full
 ```
 
-## macOS Troubleshooting
+Install Rust with your usual rustup toolchain and use Python 3.11 or later with
+a linkable Python library. `make` builds automatically. On macOS the build
+wrapper selects a suitable interpreter and uses
+`~/Library/Caches/rust_backtester/target`; override `PYO3_PYTHON` and
+`CARGO_TARGET_DIR` if required. Linux and WSL use Cargo directly. CI tests Linux
+with Python 3.11. Native Windows is not the maintained workflow.
 
-If a local Rust build hangs on macOS, the most likely symptom is that `cargo build`, `make build-release` or `make backtest` stalls during `build-script-build` while `syspolicyd` uses a lot of CPU.
+There is no `traders/latest_trader.py` in this archive. The CLI's legacy automatic
+selection uses file modification times and the latest populated round; do not
+use those defaults to identify an experiment. Explicit trader/dataset pairs
+avoid selecting incompatible products from another round.
 
-First retry path:
+## Execution model
+
+1. Parse matching prices/trades CSVs, normalized JSON or a portal submission log.
+2. Order ticks by day and timestamp. Construct the Python state with current
+   visible depth and the previous tick's public/own trades.
+3. Run the trader. Reject a product's full order set if either possible buy or
+   sell exposure exceeds its position cap.
+4. Match marketable orders against visible depth, then eligible remaining orders
+   against historical trade prints under the queue approximation.
+5. Mark inventory to the snapshot mid and emit metrics/replay artifacts.
+
+The risk check uses separate worst-case buy and sell totals, because the venue
+need not fill both sides. Nonzero conversions are unsupported and now abort the
+replay. Unknown product caps cancel orders with a diagnostic. The implemented
+Round 5 PEBBLES/SNACKPACK subset has 10-unit caps; other Round 5 products still
+need verified definitions.
+
+Visible queue depth is a proxy for queue priority, not a reconstruction of the
+hidden matching engine. There is no impact, latency, fee or expiry-settlement
+model. Missing mids carry the last observed mark without looking ahead; an open
+position with no observed mark fails. Stale marks are not executable liquidation
+prices, so use complete snapshots for performance comparisons.
+
+## Commands and outputs
 
 ```bash
-make doctor
-make build-release
-make backtest
+# Isolate each historical day; outputs reset by default.
+make round4 TRADER=../submissions/r4_final_v01_imc_upload.py DAY=2
+make round4 TRADER=../submissions/r4_final_v01_imc_upload.py DAY=3
+
+# Preserve orders, fills, per-product PnL and replay material.
+make round4 TRADER=../submissions/r4_final_v01_imc_upload.py DAY=1 PERSIST=1
+
+# CLI help includes matching sensitivity and artifact controls.
+./scripts/cargo_local.sh run -- --help
 ```
 
-Those `make` targets already use the repo wrapper and a stable target dir outside the repo.
+The reproduced artifact PnLs are 68,985.50, 110,025.50 and 49,499.50
+(development-set results, default matching). That file starts every independent
+day at seven days to expiry. From the repository root,
+`python3 scripts/replay_round4.py --day 2` applies the retained briefing's
+six-day assumption and produces 89,936.00; day3 at five days gives 56,170.00.
+See the root README for this material sensitivity and its source boundary. `runs/<id>/metrics.json` records the
+selected inputs and matching settings; default runs also write `submission.log`.
+Use `--artifact-mode none` for metrics only, `diagnostic` for a PnL-series bundle or `full` for orders/trades and CSV output. `PERSIST=1` selects full artifacts.
 
-If it still hangs and you do not want to reboot, the non-restart remediation is:
+`--carry` connects positions and trader state across non-submission days and
+normalizes their timestamps into one timeline. That changes the experiment and
+can affect timestamp-based expiry calculations. It was **not** used for the
+reported independent-day table. `--flat` changes only the output layout.
+
+## Source map and verification
+
+| File | Responsibility |
+|---|---|
+| `src/model.rs` | Dataset and artifact types, CSV/JSON/log parsing |
+| `src/pytrader.rs` | Python data model and trader invocation |
+| `src/runner.rs` | Matching, risk limits, accounting and artifacts |
+| `src/cli.rs` | Explicit input selection, multi-day/carry orchestration |
+| `scripts/round4_options/` | Standalone offline pricing and signal analysis |
+| `tests/fixtures/` | Small deterministic test trader, independent of submissions |
 
 ```bash
-sudo killall syspolicyd
-make build-release
+make test
+cd ..
+python3 -m unittest discover -s tests -v
 ```
 
-If local macOS execution policy is still unhealthy, use the isolated fallback:
-
-```bash
-make docker-build
-make docker-smoke
-```
-
-This is a local macOS executable-launch issue, not a backtester logic issue.
-
-Additional `round1` to `round8` and `round1-submission` to `round8-submission` targets are included in the `Makefile`. They become usable once those dataset folders contain raw CSVs and, for submission runs, the expected submission file.
-
-## Isolated Verification
-
-There is a Docker-based smoke path for isolated verification:
-
-```bash
-make docker-smoke
-```
-
-The Docker image builds the project in a clean container and runs the zero-argument backtest flow during image build.
-
-## Repository Layout
-
-- `src/` Rust backtester implementation
-- `traders/latest_trader.py` bundled default trader
-- `datasets/tutorial/` bundled raw IMC tutorial day CSVs and sample submission log
-- `datasets/round1/` and `datasets/round2/` local raw round CSVs
-- `datasets/round3/` ... `datasets/round8/` placeholders for future round data
-- `runs/` persisted outputs when `--persist` is used
-- `runs/<backtest-id>/` combined bundle for persisted multi-day runs, including `combined.log` and `manifest.json`
-
-## Licensing
-
-Dual-licensed under:
-
-- Apache-2.0: `LICENSE-APACHE`
-- MIT: `LICENSE-MIT`
+The [numerical review](../docs/NUMERICAL_REVIEW.md) records the post-competition
+corrections and their assumptions. Tests check price identities and independent
+quadrature as well as replay interfaces and risk limits; passing them does not
+certify parity with the hosted exchange.
