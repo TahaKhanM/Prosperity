@@ -66,8 +66,12 @@ make round4 TRADER=../submissions/r4_final_v01_imc_upload.py DAY=1 PERSIST=1
 ./scripts/cargo_local.sh run -- --help
 ```
 
-The reproduced Round 4 daily PnLs are 68,985.50, 110,025.50 and 49,499.50
-(development-set results, default matching). `runs/<id>/metrics.json` records the
+The reproduced artifact PnLs are 68,985.50, 110,025.50 and 49,499.50
+(development-set results, default matching). That file starts every independent
+day at seven days to expiry. From the repository root,
+`python3 scripts/replay_round4.py --day 2` applies the retained briefing's
+six-day assumption and produces 89,936.00; day3 at five days gives 56,170.00.
+See the root README for this material sensitivity and its source boundary. `runs/<id>/metrics.json` records the
 selected inputs and matching settings; default runs also write `submission.log`.
 Use `--artifact-mode none` for metrics only, `diagnostic` for a PnL-series bundle or `full` for orders/trades and CSV output. `PERSIST=1` selects full artifacts.
 

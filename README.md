@@ -72,6 +72,30 @@ competition PnL. Day 3 is particularly instructive: HYDROGEL contributes
 57,417 while VELVETFRUIT and several vouchers lose money. The aggregate hides
 material variation by product.
 
+There is an expiry caveat behind that reproduction. The retained upload fixes
+`START_TTE_DAYS=7`, so independent day-2/day-3 runs reuse seven days. The
+[transcribed Round 4 briefing](docs/competition/context/new_context/round_4_trading_round.md#voucher--tte-rules)
+records a 7/6/5 historical schedule and four days at the start of live Round 4.
+CSV day labels alone do not establish expiry and that transcription was not
+reverified against a live competition portal during this review.
+
+An explicit post-competition sensitivity run changes **only** the starting-TTE
+literal, leaving the archived file untouched:
+
+| Dataset | Documented starting-TTE assumption | Local PnL with that assumption |
+|---|---:|---:|
+| Day 1 | 7 | 68,985.50 (same as archive) |
+| Day 2 | 6 | 89,936.00 |
+| Day 3 | 5 | 56,170.00 |
+| Sum | | 215,091.50 |
+
+The difference from 228,510.50 is material. It is not a new alpha result or a
+retroactive change to the submission: it shows why contract-time assumptions
+must accompany a derivatives backtest. [`scripts/replay_round4.py`](scripts/replay_round4.py)
+saves the configured source and a hash/parameter manifest; run
+`python3 scripts/replay_round4.py --day 2` (or `--day 3`) from the root.
+[Review evidence](docs/verification/2026-09-08.json) records both sets of metrics.
+
 The retained team standing is top 32 in manual trading and top 20 in the UK
 after Rounds 1 and 2. That is an interim result, not a final overall placing.
 No final-placement claim is made here.
