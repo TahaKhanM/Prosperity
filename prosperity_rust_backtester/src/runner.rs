@@ -18,7 +18,7 @@ use crate::model::{
 };
 use crate::pytrader::{PythonTrader, TraderInvocation};
 
-const DEFAULT_POSITION_LIMIT: i64 = 100;
+
 const LOG_CHAR_LIMIT: usize = 3750;
 const ACTIVITY_HEADER: &str = "day;timestamp;product;bid_price_1;bid_volume_1;bid_price_2;bid_volume_2;bid_price_3;bid_volume_3;ask_price_1;ask_volume_1;ask_price_2;ask_volume_2;ask_price_3;ask_volume_3;mid_price;profit_and_loss";
 
@@ -136,6 +136,11 @@ pub fn run_backtest(request: &RunRequest) -> Result<RunOutput> {
         bail!("No ticks available for selected dataset/day");
     }
 
+    let unsupported: Vec<&str> = dataset.products.iter().filter(|p| position_limit(p) == 0)
+        .map(String::as_str).collect();
+    if !unsupported.is_empty() {
+        eprintln!("Unsupported position limits (orders will be rejected): {}", unsupported.join(", "));
+    }
     let mut trader = PythonTrader::new(&workspace_root(), &request.trader_file)?;
     let run_id = resolve_run_id(request)?;
     let run_dir = request.output_root.join(&run_id);
@@ -170,6 +175,7 @@ pub fn run_backtest(request: &RunRequest) -> Result<RunOutput> {
     let mut own_trades_prev: IndexMap<String, Vec<Trade>> = IndexMap::new();
     let mut market_trades_prev: IndexMap<String, Vec<Trade>> = IndexMap::new();
     let mut trader_data = String::new();
+    let mut last_mid: IndexMap<String, f64> = IndexMap::new();
 
     let mut own_trade_count = 0usize;
     let mut final_pnl_total = 0.0f64;
@@ -201,6 +207,9 @@ pub fn run_backtest(request: &RunRequest) -> Result<RunOutput> {
             position: &position,
         })?;
 
+        if tick_result.conversions != 0 {
+            bail!("nonzero conversions at timestamp {} are unsupported by this backtester", tick.timestamp);
+        }
         trader_data = tick_result.trader_data;
         let (orders_by_symbol, limit_messages) =
             enforce_position_limits(&position, tick_result.orders_by_symbol);
@@ -277,10 +286,21 @@ pub fn run_backtest(request: &RunRequest) -> Result<RunOutput> {
         let mut pnl_by_product = IndexMap::with_capacity(dataset.products.len());
         for product in &dataset.products {
             let snapshot = tick.products.get(product);
-            let mid_price = snapshot.and_then(|row| row.mid_price);
-            let mark_to_market = mid_price
-                .map(|price| position.get(product).copied().unwrap_or(0) as f64 * price)
-                .unwrap_or(0.0);
+            if let Some(mid) = snapshot.and_then(|row| row.mid_price) {
+                if !mid.is_finite() {
+                    bail!("non-finite mid for {product} at timestamp {}", tick.timestamp);
+                }
+                last_mid.insert(product.clone(), mid);
+            }
+            let quantity = position.get(product).copied().unwrap_or(0);
+            let mark_to_market = if quantity == 0 {
+                0.0
+            } else {
+                let mid = last_mid.get(product).with_context(|| format!(
+                    "cannot mark nonzero {product} inventory: no observed mid at timestamp {}", tick.timestamp
+                ))?;
+                quantity as f64 * mid
+            };
             let pnl = cash_by_product.get(product).copied().unwrap_or(0.0) + mark_to_market;
             pnl_by_product.insert(product.clone(), pnl);
 
@@ -520,11 +540,16 @@ fn enforce_position_limits(
 
     for (symbol, orders) in orders_by_symbol {
         let product_position = position.get(&symbol).copied().unwrap_or(0);
-        let total_long: i64 = orders.iter().map(|order| order.quantity.max(0)).sum();
-        let total_short: i64 = orders.iter().map(|order| (-order.quantity).max(0)).sum();
+        let total_long: i128 = orders.iter().map(|order| i128::from(order.quantity).max(0)).sum();
+        let total_short: i128 = orders.iter().map(|order| (-i128::from(order.quantity)).max(0)).sum();
         let limit = position_limit(&symbol);
+        if limit == 0 {
+            messages.push(format!("Unknown position limit for {symbol}; product orders canceled"));
+            continue;
+        }
 
-        if product_position + total_long > limit || product_position - total_short < -limit {
+        if i128::from(product_position) + total_long > i128::from(limit)
+            || i128::from(product_position) - total_short < -i128::from(limit) {
             messages.push(format!(
                 "Orders for product {symbol} exceeded limit {limit}; product orders canceled for this tick"
             ));
@@ -559,6 +584,12 @@ fn position_limit(symbol: &str) -> i64 {
         "VEV_5500" => 300,
         "VEV_6000" => 300,
         "VEV_6500" => 300,
+        // Round 5 subset: cross-checked against the team's Python LIMITS
+        // table and archived PEBBLES/SNACKPACK traders. Other R5 products
+        // remain unsupported rather than inheriting an invented cap.
+        "PEBBLES_XS" | "PEBBLES_S" | "PEBBLES_M" | "PEBBLES_L" | "PEBBLES_XL"
+        | "SNACKPACK_CHOCOLATE" | "SNACKPACK_PISTACHIO" | "SNACKPACK_RASPBERRY"
+        | "SNACKPACK_STRAWBERRY" | "SNACKPACK_VANILLA" => 10,
         // Legacy Prosperity 3 products retained for cross-version reference
         "RAINFOREST_RESIN" => 50,
         "KELP" => 50,
@@ -575,7 +606,7 @@ fn position_limit(symbol: &str) -> i64 {
         "VOLCANIC_ROCK_VOUCHER_10250" => 200,
         "VOLCANIC_ROCK_VOUCHER_10500" => 200,
         "MAGNIFICENT_MACARONS" => 75,
-        _ => DEFAULT_POSITION_LIMIT,
+        _ => 0,
     }
 }
 
@@ -1480,6 +1511,32 @@ mod tests {
     }
 
     #[test]
+    fn round5_limits_reject_overexposure_and_unknown_products() {
+        for (symbol, quantity, allowed) in [("PEBBLES_XL", 10, true),
+            ("SNACKPACK_VANILLA", 11, false), ("UNRECOGNIZED", 1, false)] {
+            let orders = IndexMap::from([(symbol.to_string(), vec![Order {
+                symbol: symbol.to_string(), price: 100, quantity,
+            }])]);
+            let (filtered, messages) = enforce_position_limits(&IndexMap::new(), orders);
+            assert_eq!(!filtered.is_empty(), allowed);
+            assert_eq!(messages.is_empty(), allowed);
+        }
+    }
+
+    #[test]
+    fn position_limit_checks_do_not_overflow_on_invalid_orders() {
+        for quantity in [i64::MIN, i64::MAX] {
+            let orders = IndexMap::from([("EMERALDS".to_string(), vec![
+                Order { symbol: "EMERALDS".to_string(), price: 10000, quantity },
+                Order { symbol: "EMERALDS".to_string(), price: 10000, quantity },
+            ])]);
+            let (filtered, messages) = enforce_position_limits(&IndexMap::new(), orders);
+            assert!(filtered.is_empty());
+            assert_eq!(messages.len(), 1);
+        }
+    }
+
+    #[test]
     fn log_only_mode_writes_submission_log_and_metrics() {
         let unique = format!(
             "runner-log-only-{}",
@@ -1490,7 +1547,7 @@ mod tests {
         );
         let output_root = std::env::temp_dir().join(unique);
         let request = RunRequest {
-            trader_file: project_root().join("traders/latest_trader.py"),
+            trader_file: project_root().join("tests/fixtures/smoke_trader.py"),
             dataset_file: project_root().join("datasets/tutorial/prices_round_0_day_-1.csv"),
             dataset_override: None,
             day: Some(-1),
@@ -1585,7 +1642,7 @@ class Trader:
                                 price: 10000,
                                 volume: 1,
                             }],
-                            mid_price: Some(9999.5),
+                            mid_price: None,
                         },
                     )]),
                     market_trades: IndexMap::new(),
@@ -1621,6 +1678,7 @@ class Trader:
             .as_array()
             .expect("timeline should be an array");
 
+        assert_eq!(output.metrics.final_pnl_total, -0.5);
         assert_eq!(timeline.len(), 2);
         assert_eq!(timeline[0]["day"].as_i64(), Some(-2));
         assert_eq!(timeline[1]["day"].as_i64(), Some(-1));
