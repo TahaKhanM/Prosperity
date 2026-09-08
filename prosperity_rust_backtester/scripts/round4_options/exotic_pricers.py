@@ -66,7 +66,10 @@ def chooser_value(
     Chooser = Call(S, K, T) + Put(S, K * exp(-r * (T - T_c)), T_c).
     Under r=0 the put strike collapses to K.
     """
-    if t_total <= 0.0:
+    bs._validate(s, k, t_total, sigma, r)
+    if not 0 <= t_choice <= t_total:
+        raise ValueError("decision date must be between now and expiry")
+    if t_total == 0.0:
         # at expiry the chooser collapses to max(intrinsic_call, intrinsic_put)
         return max(s - k, k - s, 0.0)
     if t_choice <= 0.0:
@@ -85,8 +88,19 @@ def chooser_value(
 def chooser_delta(
     s: float, k: float, t_total: float, t_choice: float, sigma: float, r: float = 0.0
 ) -> float:
-    if t_total <= 0.0 or t_choice <= 0.0:
-        return 0.0
+    bs._validate(s, k, t_total, sigma, r)
+    if not 0 <= t_choice <= t_total:
+        raise ValueError("decision date must be between now and expiry")
+    if t_total == 0:
+        return 1.0 if s > k else (-1.0 if s < k else 0.0)
+    if t_choice == 0:
+        call = bs.bs_call_price(s, k, t_total, sigma, r)
+        put = bs.bs_put_price(s, k, t_total, sigma, r)
+        if call == put:
+            return bs.bs_call_delta(s, k, t_total, sigma, r) - 0.5
+        if call > put:
+            return bs.bs_call_delta(s, k, t_total, sigma, r)
+        return bs.bs_put_delta(s, k, t_total, sigma, r)
     k_put = k * math.exp(-r * (t_total - t_choice))
     return (
         bs.bs_call_delta(s, k, t_total, sigma, r)
@@ -108,10 +122,13 @@ def digital_put_value(
 
     Closed form: Q * exp(-r*t) * N(-d2).
     """
-    if t <= 0.0:
+    bs._validate(s, k, t, sigma, r)
+    if not math.isfinite(payoff) or payoff < 0:
+        raise ValueError("payoff must be finite and nonnegative")
+    if t == 0.0:
         return payoff if s < k else 0.0
-    if sigma <= 0.0:
-        return payoff if s < k else 0.0
+    if sigma == 0.0:
+        return payoff * math.exp(-r * t) if s * math.exp(r * t) < k else 0.0
     d1, d2, _ = bs._d1d2(s, k, t, sigma, r)  # noqa: SLF001
     return payoff * math.exp(-r * t) * bs._ncdf(-d2)  # noqa: SLF001
 
@@ -129,52 +146,64 @@ def digital_put_delta(
 # Closed form via Reiner-Rubinstein. With r=q=0, the put DI/DO formulas
 # simplify; below we keep r as a parameter for generality.
 
-def _di_put(
-    s: float, k: float, b: float, t: float, sigma: float, r: float = 0.0
-) -> float:
-    """Down-and-in put (no dividends, no rebate) under BS.
-
-    Two regimes (Hull 26.6):
-      - K >= B: DI put = -S * (B/S)^(2*lambda) * N(-y) + K e^{-rT} * (B/S)^(2*lambda - 2) * N(-y + sigma*sqrt(T))
-      - K <  B: DI put = Put(S,K,T) - C_lookup_term  (more complex; degenerate
-        case for our parameters because K=45 >= B=35).
-
-    For Round 4 we always have K=45 and B=35, so we are in the K >= B branch.
-    """
-    if t <= 0.0 or sigma <= 0.0:
-        # Degenerate: at t=0, no chance of further crossing. DI put = 0 if
-        # spot already above barrier; equals vanilla put if at/below.
-        return bs.bs_put_price(s, k, t, sigma, r) if s <= b else 0.0
-    if s <= b:
-        # Already touched / below barrier — knock-in has occurred.
-        return bs.bs_put_price(s, k, t, sigma, r)
-    if b >= k:
-        # B above strike: outside our regime; fall back to vanilla put as a
-        # conservative upper bound (DI ≤ vanilla).
-        return bs.bs_put_price(s, k, t, sigma, r)
-    sigma_sq = sigma * sigma
-    lam = (r + 0.5 * sigma_sq) / sigma_sq
-    sqrt_t = math.sqrt(t)
-    y = math.log(b * b / (s * k)) / (sigma * sqrt_t) + lam * sigma * sqrt_t
-    term1 = -s * (b / s) ** (2 * lam) * bs._ncdf(-y)  # noqa: SLF001
-    term2 = (
-        k * math.exp(-r * t)
-        * (b / s) ** (2 * lam - 2)
-        * bs._ncdf(-y + sigma * sqrt_t)  # noqa: SLF001
-    )
-    return term1 + term2
+def _normal_interval(lo: float, hi: float) -> float:
+    """Normal mass in [lo, hi], using the smaller tail to avoid cancellation."""
+    if lo >= 0:
+        return bs._ncdf(-lo) - bs._ncdf(-hi)
+    return bs._ncdf(hi) - bs._ncdf(lo)
 
 
 def down_and_out_put(
     s: float, k: float, b: float, t: float, sigma: float, r: float = 0.0
 ) -> float:
-    """Down-and-out put: vanilla put minus down-and-in put."""
-    if s <= b:
-        # Barrier already breached at t=0 → contract worth zero.
+    """Continuously monitored, zero-rebate put under GBM, no past breach.
+
+    Integrate the payoff against the absorbing log-price transition density:
+    the free normal density minus its reflected image at log(barrier).
+    See docs/NUMERICAL_REVIEW.md for the derivation and validation. This is
+    equivalent to the full Reiner–Rubinstein K > B branch, not just its
+    reflection term. Discrete monitoring requires a different model.
+    """
+    bs._validate(s, k, t, sigma, r)
+    if not math.isfinite(b) or b <= 0:
+        raise ValueError("barrier must be finite and positive")
+    if s <= b or k <= b:
         return 0.0
-    p = bs.bs_put_price(s, k, t, sigma, r)
-    di = _di_put(s, k, b, t, sigma, r)
-    return max(p - di, 0.0)
+    if t == 0:
+        return max(k - s, 0.0)
+    if sigma == 0:
+        terminal = s * math.exp(r * t)
+        if min(s, terminal) <= b:
+            return 0.0
+        return math.exp(-r * t) * max(k - terminal, 0.0)
+
+    variance = sigma * sigma * t
+    sd = math.sqrt(variance)
+    drift = (r - 0.5 * sigma * sigma) * t
+    x = math.log(s / b)
+    cap = math.log(k / b)
+
+    def truncated_payoff(mean):
+        mass = _normal_interval(-mean / sd, (cap - mean) / sd)
+        first_moment = math.exp(mean + variance / 2) * _normal_interval(
+            (-mean - variance) / sd, (cap - mean - variance) / sd
+        )
+        return max(k * mass - b * first_moment, 0.0)
+
+    direct = truncated_payoff(x + drift)
+    reflected = truncated_payoff(-x + drift)
+    # If the reflected tail is below floating-point resolution its contribution
+    # is zero in the supported parameter range. Avoid 0 * infinity.
+    image = 0.0 if reflected == 0 else math.exp(-2 * drift * x / variance) * reflected
+    return max(0.0, min(bs.bs_put_price(s, k, t, sigma, r),
+                        math.exp(-r * t) * (direct - image)))
+
+
+def _di_put(
+    s: float, k: float, b: float, t: float, sigma: float, r: float = 0.0
+) -> float:
+    """Knock-in value from in/out parity (same continuous-monitoring model)."""
+    return bs.bs_put_price(s, k, t, sigma, r) - down_and_out_put(s, k, b, t, sigma, r)
 
 
 def down_and_out_put_delta(
@@ -203,6 +232,8 @@ ROUND4_DEFAULTS = {
 
 
 def price_round4_set(spot: float, sigma: float, year_basis: float = 365.0):
+    if not math.isfinite(year_basis) or year_basis <= 0:
+        raise ValueError("year_basis must be finite and positive")
     t = ROUND4_DEFAULTS["expiry_days"] / year_basis
     t_c = ROUND4_DEFAULTS["chooser_decision_days"] / year_basis
     chooser = chooser_value(
@@ -250,7 +281,7 @@ def price_round4_set(spot: float, sigma: float, year_basis: float = 365.0):
             "binary_put_K=40_pays=10",
             binary,
             binary_d,
-            f"= 10 * N(-d2). Pure tail bet; vega ≈ 0.",
+            "= 10 * N(-d2). Tail probability depends on spot and volatility.",
         ),
         ExoticContract(
             "down_and_out_put_K=45_B=35",

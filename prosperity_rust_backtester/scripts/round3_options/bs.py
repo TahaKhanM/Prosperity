@@ -35,10 +35,10 @@ def _npdf(x: float) -> float:
 def bs_call_price(s: float, k: float, t: float, sigma: float, r: float = 0.0) -> float:
     """European call price under Black-Scholes.
 
-    Returns the exact intrinsic at `t <= 0` or `sigma <= 0`.
+    At expiry returns intrinsic; zero volatility uses the discounted strike.
     """
     if t <= 0.0 or sigma <= 0.0:
-        return max(s - k, 0.0)
+        return max(s - k * math.exp(-r * max(t, 0.0)), 0.0)
     vsqrt_t = sigma * math.sqrt(t)
     d1 = (math.log(s / k) + (r + 0.5 * sigma * sigma) * t) / vsqrt_t
     d2 = d1 - vsqrt_t
@@ -98,7 +98,7 @@ def implied_vol_call(
     (i.e., below intrinsic or above S). Newton first, then a bisection
     fallback for pathological inputs.
     """
-    intrinsic = max(s - k, 0.0)
+    intrinsic = max(s - k * math.exp(-r * max(t, 0.0)), 0.0)
     if price < intrinsic - 1e-9 or price > s + 1e-9 or t <= 0.0:
         return float("nan")
     if price <= intrinsic + 1e-9:
