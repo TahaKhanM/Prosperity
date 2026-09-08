@@ -40,6 +40,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import math
 from collections import defaultdict
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -54,7 +55,8 @@ def _as_int(s: str) -> Optional[int]:
 
 def _as_float(s: str) -> Optional[float]:
     try:
-        return float(s)
+        value = float(s)
+        return value if math.isfinite(value) else None
     except (ValueError, TypeError):
         return None
 
@@ -77,12 +79,11 @@ def load_mids(prices_path: Path) -> Dict[Tuple[int, str], float]:
 def mid_at(
     mids: Dict[Tuple[int, str], float], ts: int, product: str, horizon: int
 ) -> Optional[float]:
-    # try [ts + horizon, ts + horizon + 100, ...] up to 4× horizon for gaps
-    for step in range(0, max(horizon, 100) * 4, 100):
-        key = (ts + horizon + step, product)
-        if key in mids:
-            return mids[key]
-    return None
+    if horizon <= 0:
+        raise ValueError("horizon must be positive")
+    # A missing future observation is censored, not a zero return or a
+    # different horizon silently chosen by searching farther into the future.
+    return mids.get((ts + horizon, product))
 
 
 def scan_day(
@@ -93,6 +94,8 @@ def scan_day(
     long_horizon: int,
 ) -> Tuple[List[Dict[str, object]], List[Dict[str, object]]]:
     """Returns (rollup_rows, temporal_rows) for one day."""
+    if horizon <= 0 or long_horizon <= 0 or horizon == long_horizon:
+        raise ValueError("horizons must be distinct positive integers")
     mids = load_mids(prices_path)
 
     # rollup keyed by (symbol, side, counterparty)
@@ -103,6 +106,8 @@ def scan_day(
             "price_sum": 0.0,
             "horizon_pnl": 0.0,
             "horizon_pnl_long": 0.0,
+            "observed_qty": 0.0,
+            "observed_qty_long": 0.0,
         }
     )
 
@@ -118,7 +123,7 @@ def scan_day(
             symbol = row.get("symbol", "")
             price = _as_float(row.get("price", ""))
             qty = _as_float(row.get("quantity", ""))
-            if ts is None or symbol == "" or price is None or qty is None:
+            if ts is None or symbol == "" or price is None or qty is None or qty <= 0:
                 continue
 
             fut = mid_at(mids, ts, symbol, horizon)
@@ -147,8 +152,10 @@ def scan_day(
                 rb["price_sum"] += price * qty
                 if fut is not None:
                     rb["horizon_pnl"] += pnl_h
+                    rb["observed_qty"] += qty
                 if fut_long is not None:
                     rb["horizon_pnl_long"] += pnl_l
+                    rb["observed_qty_long"] += qty
 
             # temporal: 10 buckets across the day. Day of 1,000,000 ts → 100k each.
             bucket = (ts // 100_000) % 10
@@ -170,9 +177,12 @@ def scan_day(
             "total_qty": stats["signed_qty"],
             "mean_trade_price": round(stats["price_sum"] / denom, 6),
             "signed_flow": stats["signed_qty"] if side == "buyer" else -stats["signed_qty"],
-            "horizon_pnl_500": round(stats["horizon_pnl"], 4),
-            "horizon_pnl_2000": round(stats["horizon_pnl_long"], 4),
-            "mean_horizon_pnl_500": round(stats["horizon_pnl"] / denom, 4),
+            f"horizon_pnl_{horizon}": round(stats["horizon_pnl"], 4),
+            f"horizon_pnl_{long_horizon}": round(stats["horizon_pnl_long"], 4),
+            f"observed_qty_{horizon}": stats["observed_qty"],
+            f"observed_qty_{long_horizon}": stats["observed_qty_long"],
+            f"mean_horizon_pnl_{horizon}": (round(stats["horizon_pnl"] / stats["observed_qty"], 4)
+                                             if stats["observed_qty"] else None),
         })
 
     temporal_rows: List[Dict[str, object]] = [
@@ -194,46 +204,31 @@ def write_csv(rows: List[Dict[str, object]], path: Path) -> None:
 
 
 def write_findings_md(
-    rollup_rows: List[Dict[str, object]], out_path: Path
+    rollup_rows: List[Dict[str, object]], out_path: Path,
+    horizon: int = 500, long_horizon: int = 2000,
 ) -> None:
-    """Quick-look ranking by mark."""
+    """Descriptive mark-outs: this ranking is not a trading recommendation."""
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    by_mark: Dict[str, Dict[str, float]] = defaultdict(
-        lambda: {"buy_qty": 0.0, "sell_qty": 0.0, "h500": 0.0, "h2000": 0.0}
-    )
-    for r in rollup_rows:
-        cp = str(r["counterparty"])
+    by_mark = defaultdict(lambda: {"gross": 0.0, "observed": 0.0, "pnl": 0.0, "long": 0.0})
+    for row in rollup_rows:
+        cp = str(row["counterparty"])
         if cp == "_anon_":
             continue
-        if r["side"] == "buyer":
-            by_mark[cp]["buy_qty"] += float(r["total_qty"])  # type: ignore[arg-type]
-        else:
-            by_mark[cp]["sell_qty"] += float(r["total_qty"])  # type: ignore[arg-type]
-        by_mark[cp]["h500"] += float(r["horizon_pnl_500"])  # type: ignore[arg-type]
-        by_mark[cp]["h2000"] += float(r["horizon_pnl_2000"])  # type: ignore[arg-type]
-
-    ranked = sorted(by_mark.items(), key=lambda kv: -kv[1]["h500"])
-
-    lines = ["# Counterparty findings (Round 4)\n",
-             "| Mark | Buy qty | Sell qty | h500 PnL | per-unit | h2000 PnL | Note |",
-             "|---|---|---|---|---|---|---|"]
-    for cp, s in ranked:
-        gross = s["buy_qty"] + s["sell_qty"]
-        per_unit = s["h500"] / max(gross, 1.0)
-        if per_unit > 4.0:
-            note = "**SMART** — copy"
-        elif per_unit < -4.0:
-            note = "**BAG-HOLDER** — fade"
-        elif per_unit > 0.5:
-            note = "lean with"
-        elif per_unit < -0.5:
-            note = "fade lightly"
-        else:
-            note = "noise / MM"
-        lines.append(
-            f"| {cp} | {s['buy_qty']:.0f} | {s['sell_qty']:.0f} | "
-            f"{s['h500']:+.0f} | {per_unit:+.2f} | {s['h2000']:+.0f} | {note} |"
-        )
+        stats = by_mark[cp]
+        stats["gross"] += float(row["total_qty"])
+        stats["observed"] += float(row[f"observed_qty_{horizon}"])
+        stats["pnl"] += float(row[f"horizon_pnl_{horizon}"])
+        stats["long"] += float(row[f"horizon_pnl_{long_horizon}"])
+    lines = ["# Counterparty mark-outs (Round 4)", "",
+             "Exploratory, in-sample trade-to-future-mid associations. They exclude execution costs",
+             "and do not establish that the same prices were available to this trader. Missing",
+             "future mids are censored; per-unit means use only observed volume. A separate",
+             "chronological holdout and execution test are needed before using a signal.", "",
+             f"| Mark | Gross qty | Observed qty (h={horizon}) | h={horizon} PnL | per observed unit | h={long_horizon} PnL |",
+             "|---|---:|---:|---:|---:|---:|"]
+    for cp, row in sorted(by_mark.items(), key=lambda item: -item[1]["pnl"]):
+        mean = f"{row['pnl']/row['observed']:+.2f}" if row['observed'] else "n/a"
+        lines.append(f"| {cp} | {row['gross']:.0f} | {row['observed']:.0f} | {row['pnl']:+.0f} | {mean} | {row['long']:+.0f} |")
     out_path.write_text("\n".join(lines) + "\n")
 
 
@@ -268,7 +263,7 @@ def main() -> int:
 
     write_csv(all_rollup, args.out_dir / "counterparty_scan.csv")
     write_csv(all_temporal, args.out_dir / "counterparty_temporal.csv")
-    write_findings_md(all_rollup, args.out_dir / "counterparty_findings.md")
+    write_findings_md(all_rollup, args.out_dir / "counterparty_findings.md", args.horizon, args.long_horizon)
     print(
         f"wrote {len(all_rollup)} rollup rows, {len(all_temporal)} temporal rows "
         f"to {args.out_dir}"
