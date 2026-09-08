@@ -36,7 +36,7 @@ def _validate(s: float, k: float, t: float, sigma: float, r: float) -> None:
 
 def _d1d2(s: float, k: float, t: float, sigma: float, r: float):
     vsqrt_t = sigma * math.sqrt(t)
-    d1 = (math.log(s / k) + (r + 0.5 * sigma * sigma) * t) / vsqrt_t
+    d1 = (math.log(s) - math.log(k) + (r + 0.5 * sigma * sigma) * t) / vsqrt_t
     d2 = d1 - vsqrt_t
     return d1, d2, vsqrt_t
 
@@ -72,24 +72,31 @@ def bs_put_delta(s: float, k: float, t: float, sigma: float, r: float = 0.0) -> 
 
 def bs_call_vega(s: float, k: float, t: float, sigma: float, r: float = 0.0) -> float:
     _validate(s, k, t, sigma, r)
-    if t == 0.0 or sigma == 0.0:
+    if t == 0.0:
         return 0.0
+    if sigma == 0.0:
+        return s * math.sqrt(t) / SQRT_2PI if s == k * math.exp(-r * t) else 0.0
     d1, _, _ = _d1d2(s, k, t, sigma, r)
     return s * _npdf(d1) * math.sqrt(t)
 
 
 def bs_call_gamma(s: float, k: float, t: float, sigma: float, r: float = 0.0) -> float:
     _validate(s, k, t, sigma, r)
-    if t == 0.0 or sigma == 0.0:
+    if t == 0.0:
         return 0.0
+    if sigma == 0.0:
+        return float('nan') if s == k * math.exp(-r * t) else 0.0
     d1, _, vsqrt_t = _d1d2(s, k, t, sigma, r)
     return _npdf(d1) / (s * vsqrt_t)
 
 
 def bs_call_theta(s: float, k: float, t: float, sigma: float, r: float = 0.0) -> float:
     _validate(s, k, t, sigma, r)
-    if t == 0.0 or sigma == 0.0:
+    if t == 0.0:
         return 0.0
+    if sigma == 0.0:
+        # Calendar theta is minus the derivative with respect to time remaining.
+        return -r * k * math.exp(-r * t) * bs_call_delta(s, k, t, sigma, r)
     d1, d2, _ = _d1d2(s, k, t, sigma, r)
     term1 = -(s * _npdf(d1) * sigma) / (2.0 * math.sqrt(t))
     term2 = -r * k * math.exp(-r * t) * _ncdf(d2)

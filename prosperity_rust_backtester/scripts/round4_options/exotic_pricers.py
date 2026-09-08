@@ -73,11 +73,9 @@ def chooser_value(
         # at expiry the chooser collapses to max(intrinsic_call, intrinsic_put)
         return max(s - k, k - s, 0.0)
     if t_choice <= 0.0:
-        # chooser already became a call or put at the spot's ITM side
+        # A decision made now selects the more valuable vanilla option.
         return max(bs.bs_call_price(s, k, t_total, sigma, r),
                    bs.bs_put_price(s, k, t_total, sigma, r))
-    if t_choice > t_total:
-        raise ValueError("decision date cannot be after expiry")
     k_put = k * math.exp(-r * (t_total - t_choice))
     return (
         bs.bs_call_price(s, k, t_total, sigma, r)
@@ -136,8 +134,13 @@ def digital_put_value(
 def digital_put_delta(
     s: float, k: float, t: float, sigma: float, payoff: float = 10.0, r: float = 0.0
 ) -> float:
-    if t <= 0.0 or sigma <= 0.0:
+    bs._validate(s, k, t, sigma, r)
+    if not math.isfinite(payoff) or payoff < 0:
+        raise ValueError("payoff must be finite and nonnegative")
+    if payoff == 0:
         return 0.0
+    if t == 0.0 or sigma == 0.0:
+        return float('nan') if s == k * math.exp(-r * t) else 0.0
     d1, d2, vsqrt_t = bs._d1d2(s, k, t, sigma, r)  # noqa: SLF001
     return -payoff * math.exp(-r * t) * bs._npdf(d2) / (s * vsqrt_t)  # noqa: SLF001
 
@@ -151,6 +154,49 @@ def _normal_interval(lo: float, hi: float) -> float:
     if lo >= 0:
         return bs._ncdf(-lo) - bs._ncdf(-hi)
     return bs._ncdf(hi) - bs._ncdf(lo)
+
+
+def _absorbed_payoff_fraction(x: float, cap: float, drift: float, variance: float) -> float:
+    """Stable quadrature when an analytic image multiplier exhausts float range.
+
+    Image/free density = exp(-2*x*y/variance). Integrating their positive
+    difference in normal-standard-deviation units avoids both a huge multiplier
+    and narrow peaks in log-price space. The integrand is bounded by the normal
+    density; truncating at 12 standard deviations omits <4e-33 of strike PV.
+    """
+    sd = math.sqrt(variance)
+    mean = x + drift
+    lo, hi = max(-12.0, -mean / sd), min(12.0, (cap - mean) / sd)
+    if lo >= hi:
+        return 0.0
+
+    def value(z):
+        y = max(0.0, min(cap, mean + sd * z))
+        return bs._npdf(z) * (-math.expm1(y - cap)) * (-math.expm1(-2*x*y/variance))
+
+    def refine(a, b, fa, fm, fb, estimate, tolerance, depth):
+        midpoint = (a + b) / 2
+        left_mid, right_mid = value((a + midpoint)/2), value((midpoint + b)/2)
+        left = (midpoint-a) * (fa + 4*left_mid + fm) / 6
+        right = (b-midpoint) * (fm + 4*right_mid + fb) / 6
+        error = left + right - estimate
+        if abs(error) <= 15*tolerance:
+            return left + right + error/15
+        if depth == 0:
+            raise ArithmeticError('barrier quadrature did not converge')
+        return (refine(a, midpoint, fa, left_mid, fm, left, tolerance/2, depth-1)
+                + refine(midpoint, b, fm, right_mid, fb, right, tolerance/2, depth-1))
+
+    # Unit-width panels ensure a distant normal peak cannot be missed by an
+    # initial wide-panel error estimate. No extra runtime dependency is needed.
+    panels = max(1, math.ceil(hi-lo))
+    pieces = []
+    for index in range(panels):
+        a, b = lo+(hi-lo)*index/panels, lo+(hi-lo)*(index+1)/panels
+        fa, fm, fb = value(a), value((a+b)/2), value(b)
+        estimate = (b-a)*(fa+4*fm+fb)/6
+        pieces.append(refine(a,b,fa,fm,fb,estimate,1e-12/panels,24))
+    return math.fsum(pieces)
 
 
 def down_and_out_put(
@@ -171,17 +217,22 @@ def down_and_out_put(
         return 0.0
     if t == 0:
         return max(k - s, 0.0)
-    if sigma == 0:
+    if sigma == 0 or sigma * sigma * t == 0:
         terminal = s * math.exp(r * t)
         if min(s, terminal) <= b:
             return 0.0
         return math.exp(-r * t) * max(k - terminal, 0.0)
 
     variance = sigma * sigma * t
+    if not math.isfinite(variance):
+        raise ValueError('combined variance exceeds floating-point range')
     sd = math.sqrt(variance)
     drift = (r - 0.5 * sigma * sigma) * t
     x = math.log(s / b)
     cap = math.log(k / b)
+    image_exponent = -2 * drift * x / variance
+    if image_exponent > 500:
+        return k * math.exp(-r*t) * _absorbed_payoff_fraction(x, cap, drift, variance)
 
     def truncated_payoff(mean):
         mass = _normal_interval(-mean / sd, (cap - mean) / sd)
@@ -192,9 +243,9 @@ def down_and_out_put(
 
     direct = truncated_payoff(x + drift)
     reflected = truncated_payoff(-x + drift)
-    # If the reflected tail is below floating-point resolution its contribution
-    # is zero in the supported parameter range. Avoid 0 * infinity.
-    image = 0.0 if reflected == 0 else math.exp(-2 * drift * x / variance) * reflected
+    # Large positive exponents use the stable density integral above; here an
+    # underflowed reflected tail has negligible contribution even after scaling.
+    image = 0.0 if reflected == 0 else math.exp(image_exponent) * reflected
     return max(0.0, min(bs.bs_put_price(s, k, t, sigma, r),
                         math.exp(-r * t) * (direct - image)))
 
@@ -210,7 +261,15 @@ def down_and_out_put_delta(
     s: float, k: float, b: float, t: float, sigma: float, r: float = 0.0,
     h: float = 1e-3,
 ) -> float:
-    """Numerical delta via central difference (close-form is messy)."""
+    """Numerical delta with a stencil that stays above an unbreached barrier."""
+    down_and_out_put(s, k, b, t, sigma, r)  # validate all pricing inputs first
+    if not math.isfinite(h) or h <= 0:
+        raise ValueError('finite-difference step must be finite and positive')
+    if s <= b:
+        return 0.0  # already knocked out; moving spot does not revive the contract
+    h = min(h, (s-b)/2)
+    if s+h == s or s-h == s:
+        return float('nan')
     return (
         down_and_out_put(s + h, k, b, t, sigma, r)
         - down_and_out_put(s - h, k, b, t, sigma, r)

@@ -57,8 +57,36 @@ class VanillaPricingTests(unittest.TestCase):
         self.assertAlmostEqual(bs.bs_call_delta(s,k,t,v,r), (bs.bs_call_price(s+h,k,t,v,r)-bs.bs_call_price(s-h,k,t,v,r))/(2*h), places=8)
         self.assertAlmostEqual(bs.bs_call_vega(s,k,t,v,r), (bs.bs_call_price(s,k,t,v+h,r)-bs.bs_call_price(s,k,t,v-h,r))/(2*h), places=4)
 
+    def test_zero_volatility_greeks_use_deterministic_limits(self):
+        rate, expiry, strike = .05, 1.0, 100.0
+        self.assertAlmostEqual(bs.bs_call_theta(120, strike, expiry, 0, rate), -rate*strike*math.exp(-rate*expiry))
+        self.assertEqual(bs.bs_call_theta(80, strike, expiry, 0, rate), 0)
+        # At-the-money forward vega is a right derivative at sigma=0.
+        self.assertAlmostEqual(bs.bs_call_vega(100, 100, 1, 0), 100/math.sqrt(2*math.pi))
+        self.assertTrue(math.isnan(bs.bs_call_gamma(100, 100, 1, 0)))
+
 
 class ExoticPricingTests(unittest.TestCase):
+    def test_barrier_reflection_does_not_overflow_or_drop_its_tail(self):
+        # 80-digit mpmath evaluation of the analytic truncated-normal moments.
+        # Drift ends the zero-volatility path exactly on the barrier: the
+        # reflected tail matters even when its unscaled probability underflows.
+        expected = {0.007: 5.467289468975442, 0.0069: 5.470813230119541,
+                    0.005: 5.537800254559332, 0.001: 5.678976684293369}
+        for sigma, price in expected.items():
+            with self.subTest(sigma=sigma):
+                self.assertAlmostEqual(ex.down_and_out_put(40,45,35,1,sigma,-math.log(40/35)), price, delta=2e-9)
+
+    def test_exotic_delta_rejects_invalid_inputs(self):
+        for args in [(40,45,-1,.2), (40,45,1,-.2), (0,45,1,.2)]:
+            with self.assertRaises(ValueError):
+                ex.digital_put_delta(*args)
+        with self.assertRaises(ValueError):
+            ex.digital_put_delta(40,45,1,.2,payoff=-1)
+        for h in [0, -1, float('nan')]:
+            with self.assertRaises(ValueError):
+                ex.down_and_out_put_delta(40,45,35,1,.2,h=h)
+
     @staticmethod
     def integrate_absorbed_payoff(s, k, b, t, sigma, r):
         # Independent numerical quadrature of the killed GBM density: no use
