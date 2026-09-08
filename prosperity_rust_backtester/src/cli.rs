@@ -1614,7 +1614,7 @@ mod tests {
     use super::{
         ProductDisplayMode, ProductMatrix, ProductMatrixRow, SummaryRow, build_carry_dataset,
         build_product_matrix, build_run_plan, collect_dataset_files, collect_requested_days,
-        merge_submission_logs, resolve_dataset_input, resolve_dataset_input_with_root,
+        merge_submission_logs, resolve_dataset_input_with_root,
         round_submission_entry, run_suffix, short_dataset_label,
     };
     use crate::model::{ArtifactSet, MatchingConfig, RunMetrics, RunOutput, load_dataset};
@@ -1753,10 +1753,18 @@ mod tests {
 
     #[test]
     fn dataset_alias_defaults_to_latest_round() {
-        let dataset = resolve_dataset_input(None).expect("dataset should resolve");
-        assert_eq!(dataset.label, "tutorial");
-        assert_eq!(dataset.roots.len(), 1);
+        let scratch = std::env::temp_dir().join(format!("dataset-alias-{}", std::process::id()));
+        fs::create_dir_all(scratch.join("tutorial")).unwrap();
+        fs::create_dir_all(scratch.join("round4")).unwrap();
+        fs::create_dir_all(scratch.join("round5")).unwrap();
+        fs::write(scratch.join("tutorial/prices_round_0_day_-1.csv"), "").unwrap();
+        fs::write(scratch.join("round4/prices_round_4_day_1.csv"), "").unwrap();
+        // An empty later round must not hide the latest usable dataset.
+        let dataset = resolve_dataset_input_with_root(None, &scratch).unwrap();
+        assert_eq!(dataset.label, "round4");
+        assert_eq!(dataset.roots, vec![scratch.join("round4")]);
         assert!(dataset.auto_selected);
+        fs::remove_dir_all(scratch).unwrap();
     }
 
     #[test]
