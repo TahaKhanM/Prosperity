@@ -46,7 +46,6 @@ Key paths:
 - `prosperity-research/08_playbooks/round4_strategy_playbook.md` — ranked
   alpha playbook.
 - `.agents/skills/` — Round-4-active skill suite; see skills INDEX.
-- `.codex/agents/` — role TOML files.
 - `archive/` — prior-round artefacts (R1/R2), kept for reference only.
 
 ## Rust backtester (primary local validator)
@@ -137,7 +136,7 @@ The Round 3 toolkit at `scripts/round3_options/` is preserved and safe to
 import from. New work should default to `scripts/round4_options/` because
 TTE indexing differs.
 
-## Prompting defaults
+## Experiment configuration
 
 For Round 4 strategy work:
 - Name the trader: `prosperity_rust_backtester/traders/Round4/<variant>.py`.
@@ -155,7 +154,7 @@ For manual R4 work:
   `prosperity-research/07_manual_round/round4_aether/decision_memo.md` each
   time the prices in the Manual Challenge window change.
 
-## One-paragraph handoff
+## Historical research summary
 
 The repo is a Rust-backtester-first Prosperity workspace in its Round 4
 configuration. Round 1/2 artefacts sit under `archive/` and must not feed

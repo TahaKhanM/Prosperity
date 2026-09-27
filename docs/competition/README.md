@@ -1,15 +1,9 @@
-# docs/competition
+# Competition reference archive
 
-Operational files from the competition, frozen after it ended. They are kept
-for provenance: they show how the team organized the work under 48 to 72 hour
-round deadlines. Paths inside these documents reflect the competition-era
-layout, before the repository was reorganized.
+Retained rules, product notes and briefings from IMC Prosperity 4. These are historical records; the root [README](../../README.md) documents the reviewed replay commands and their limitations.
 
-- `CLAUDE.md`, `AGENTS.md` are the agent instructions used during the rounds.
-- `RESOURCES.md` is the collected reference links and reading.
-- `context/` is the written Prosperity rules and product notes (`new_context/`
-  was the source of truth, `unrefined_context/` was raw material).
-- `agents/`, `codex/` hold the skill definitions and agent tooling config.
-- `round_briefings/` holds the per-round text briefings and hints from IMC.
+- [Reference links](RESOURCES.md)
+- [Rules and product notes](context/README.md)
+- [Round briefings](round_briefings/)
 
-For how the repository is laid out now, see the root `README.md`.
+The notes distinguish official rules from narrative hints and local modelling assumptions. Historical strategy recommendations may have been rejected by later research; consult the submitted trader and dated verification results before drawing conclusions about performance.

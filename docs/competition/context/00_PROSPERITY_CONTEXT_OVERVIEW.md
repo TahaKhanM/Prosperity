@@ -2,13 +2,9 @@
 
 ## Purpose
 
-This pack is a compact, high-signal context layer for coding agents working on
-the IMC Prosperity 4 repository during the GOAT (Great Orbital Ascension
-Trials) phase. Round 4 is currently live ("The More The Merrier"). The pack is
-designed to be consumed by tools such as Codex and Claude Code without wasting
-always-loaded context on details that are only relevant to some tasks.
+Historical rules and research context from Round 4 of IMC Prosperity 4.
 
-Use this pack to keep three things separate:
+Use these notes to keep three things separate:
 
 1. **Official competition facts**: rules, interfaces, products, limits, manual
    challenge mechanics (Round 4).
@@ -28,20 +24,8 @@ At the start of Round 3 ("Gloves Off", on Salvinar):
 We are now in **Round 4** ("The More The Merrier", same setting). PnL from
 Round 3 carries forward; rounds 1–2 do not.
 
-## Design principles
-
-- Keep always-loaded entry files short.
-- Put broad persistent rules in `AGENTS.md` / `CLAUDE.md`.
-- Put task-specific detail in dedicated markdown files.
-- Preserve every materially useful fact, including small caveats that can
-  change agent behavior.
-- Prefer references and reading order over pasting huge blobs into every
-  prompt.
-
 ## File map
 
-- `AGENTS.md` — thin Codex-facing entry file with durable repo rules.
-- `CLAUDE.md` — thin Claude Code entry file using `@` imports.
 - `00_PROSPERITY_CONTEXT_OVERVIEW.md` (this file) — trust model, cross-round
   facts, naming collisions, routing.
 - `10_ALGO_TRADING_CONTEXT.md` — algorithmic challenge facts for Round 4
@@ -49,31 +33,31 @@ Round 3 carries forward; rounds 1–2 do not.
 - `20_MANUAL_TRADING_CONTEXT.md` — manual challenge facts (Round 4 Aether
   Crystal vanilla + exotic options).
 - `30_REPO_AND_TOOLING_CONTEXT.md` — backtester + visualizer + skills context.
-- `New Context/round_4_trading_round.md` — primary written source for Round 4.
-- `New Context/round_4_aria_uplink.md` — Round 4 ARIA uplink transcript.
-- `New Context/round_4_hint_cards.md` — verbatim Round 4 hint cards with
+- `new_context/round_4_trading_round.md` — primary written source for Round 4.
+- `new_context/round_4_aria_uplink.md` — Round 4 ARIA uplink transcript.
+- `new_context/round_4_hint_cards.md` — verbatim Round 4 hint cards with
   research implications.
-- `New Context/round_3_trading_round.md` — primary written source for Round 3
+- `new_context/round_3_trading_round.md` — primary written source for Round 3
   (kept as reference; same algo products).
-- `New Context/video_transcript.pdf` — ARIA uplink transcript for Round 3.
-- `Unrefined Context/` — original uploaded source material (lower priority).
+- `new_context/video_transcript.pdf` — ARIA uplink transcript for Round 3.
+- `unrefined_context/` — original uploaded source material (lower priority).
 
 ## Trust model and source hierarchy
 
 When facts conflict, use this order:
 
 1. **Official Prosperity written docs**
-   - `New Context/round_4_trading_round.md` (primary for current round)
-   - `New Context/round_3_trading_round.md` (reference; algo products same)
-   - `Unrefined Context/official_prosperity_context.md` (general mechanics)
+   - `new_context/round_4_trading_round.md` (primary for current round)
+   - `new_context/round_3_trading_round.md` (reference; algo products same)
+   - `unrefined_context/official_prosperity_context.md` (general mechanics)
 2. **Repo-context documents that describe local code/tooling**
-   - `Unrefined Context/RUST_BACKTESTER_CONTEXT_FOR_AI_TOOLS.md`
-   - `Unrefined Context/PYTHON_BACKTESTER_AND_VISUALIZER_CONTEXT_FOR_AI_TOOLS.md`
+   - `unrefined_context/RUST_BACKTESTER_CONTEXT_FOR_AI_TOOLS.md`
+   - `unrefined_context/PYTHON_BACKTESTER_AND_VISUALIZER_CONTEXT_FOR_AI_TOOLS.md`
 3. **Narrative / transcript material**
-   - `New Context/round_4_aria_uplink.md`
-   - `New Context/round_4_hint_cards.md`
-   - `New Context/video_transcript.pdf` (R3)
-   - `Unrefined Context/aria_uplink.md`
+   - `new_context/round_4_aria_uplink.md`
+   - `new_context/round_4_hint_cards.md`
+   - `new_context/video_transcript.pdf` (R3)
+   - `unrefined_context/aria_uplink.md`
 
 Practical rule:
 - Treat official written docs as authoritative for rules, interfaces, position
@@ -157,7 +141,7 @@ zero time value; deterministic TTE drift in the smile; clean tradeable parity)
 **continue to apply in Round 4** since the underlying products and dynamics
 are unchanged.
 
-## Routing rules for agents
+## Reading guide
 
 If the task is about:
 - algorithm design, signal mining, execution logic, or voucher pricing:

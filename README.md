@@ -1,5 +1,7 @@
 # IMC Prosperity 4
 
+[![verify](https://github.com/TahaKhanM/Prosperity/actions/workflows/verify.yml/badge.svg?branch=main)](https://github.com/TahaKhanM/Prosperity/actions/workflows/verify.yml)
+
 Team algorithmic-trading research with Python strategies and a Rust/Python replay backtester. The Round 4 trader combines inventory-aware market making, pricing for ten call vouchers and signals from disclosed counterparties.
 
 The work connects strategy research to execution: fair values become orders subject to position limits, visible depth and a configurable fill model. The same `Trader.run(state)` interface runs in the competition and local replay.
